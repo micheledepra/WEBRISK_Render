@@ -7,14 +7,22 @@ class MultiplayerClient {
   constructor(serverUrl = null) {
     // Auto-detect server URL based on environment
     if (!serverUrl) {
-      const isLocalhost = window.location.hostname === 'localhost' || 
-                          window.location.hostname === '127.0.0.1';
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname === 'localhost' || 
+                          hostname === '127.0.0.1' ||
+                          hostname === '';
       
-      if (isLocalhost) {
-        this.serverUrl = 'http://localhost:3000';
-      } else {
-        // Production: use current domain (origin)
+      // Check if on Render.com
+      const isRender = hostname.includes('onrender.com');
+      
+      if (isRender || (!isLocalhost && hostname !== '')) {
+        // Production: use current domain
         this.serverUrl = window.location.origin;
+        console.log('🌐 Production mode detected');
+      } else {
+        // Development: use localhost
+        this.serverUrl = 'http://localhost:3000';
+        console.log('🔧 Development mode detected');
       }
     } else {
       this.serverUrl = serverUrl;

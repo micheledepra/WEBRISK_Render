@@ -63,13 +63,26 @@ class MapCalibration {
             return;
         }
         
+        const baseWidth = 1920;
+        const baseHeight = 1080;
+        
+        // Calculate scaled dimensions
+        const scaledWidth = baseWidth * this.calibrationData.scale;
+        const scaledHeight = baseHeight * this.calibrationData.scale;
+        
+        // Calculate offset to keep everything centered when scaling
+        // When scaling down, we need to shift the image to compensate
+        const scaleOffset = (1 - this.calibrationData.scale) / 2;
+        const adjustedX = this.calibrationData.offsetX + (baseWidth * scaleOffset);
+        const adjustedY = this.calibrationData.offsetY + (baseHeight * scaleOffset);
+        
         // Update world map pattern position and scale
         const image = bgPattern.querySelector('image');
         if (image) {
-            image.setAttribute('x', this.calibrationData.offsetX);
-            image.setAttribute('y', this.calibrationData.offsetY);
-            image.setAttribute('width', 1920 * this.calibrationData.scale);
-            image.setAttribute('height', 1080 * this.calibrationData.scale);
+            image.setAttribute('x', adjustedX);
+            image.setAttribute('y', adjustedY);
+            image.setAttribute('width', scaledWidth);
+            image.setAttribute('height', scaledHeight);
         }
         
         // Update world map opacity
@@ -79,12 +92,16 @@ class MapCalibration {
         if (waterPattern) {
             const waterImage = waterPattern.querySelector('image');
             if (waterImage) {
-                const baseWidth = 1920;
-                const baseHeight = 1080;
-                waterImage.setAttribute('x', this.calibrationData.offsetX);
-                waterImage.setAttribute('y', this.calibrationData.offsetY);
-                waterImage.setAttribute('width', baseWidth * this.calibrationData.bgScale);
-                waterImage.setAttribute('height', baseHeight * this.calibrationData.bgScale);
+                const waterScaledWidth = baseWidth * this.calibrationData.bgScale;
+                const waterScaledHeight = baseHeight * this.calibrationData.bgScale;
+                const waterScaleOffset = (1 - this.calibrationData.bgScale) / 2;
+                const waterAdjustedX = this.calibrationData.offsetX + (baseWidth * waterScaleOffset);
+                const waterAdjustedY = this.calibrationData.offsetY + (baseHeight * waterScaleOffset);
+                
+                waterImage.setAttribute('x', waterAdjustedX);
+                waterImage.setAttribute('y', waterAdjustedY);
+                waterImage.setAttribute('width', waterScaledWidth);
+                waterImage.setAttribute('height', waterScaledHeight);
             }
         }
         
@@ -101,7 +118,7 @@ class MapCalibration {
             vignetteGradient.setAttribute('r', `${this.calibrationData.vignetteScale}%`);
         }
         
-        console.log('Applied calibration to all layers:', this.calibrationData);
+        console.log('Applied unified calibration to all layers:', this.calibrationData);
     }
     
     /**

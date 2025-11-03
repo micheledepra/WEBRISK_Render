@@ -7,15 +7,12 @@ class RiskMap {
         
         this.selectedTerritory = null;
         
-        // **DEFAULT TRANSFORM VALUES - SET YOUR DESIRED STARTUP POSITION HERE**
-        this.defaultTranslateX = -573.104;
-        this.defaultTranslateY = -345.59;
-        this.defaultScale = 0.321286;
-        
-        // Initialize to default values
-        this.translateX = this.defaultTranslateX;
-        this.translateY = this.defaultTranslateY;
-        this.scale = this.defaultScale;
+        // **ZOOM/PAN STATE - Neutral by default (no initial transform)**
+        // These values are only used when user actively zooms/pans
+        // Initial layer positioning is controlled by MapCalibration
+        this.translateX = 0;
+        this.translateY = 0;
+        this.scale = 1.0;
         
         this.isDragging = false;
         this.startX = 0;
@@ -38,26 +35,20 @@ class RiskMap {
         this.setupEventListeners();
         this.setupKeyboardShortcuts();
         
-        // **APPLY DEFAULT TRANSFORM ON STARTUP**
-        this.applyDefaultTransform();
-    }
-
-    applyDefaultTransform() {
-        this.translateX = this.defaultTranslateX;
-        this.translateY = this.defaultTranslateY;
-        this.scale = this.defaultScale;
-        this.updateTransform();
+        // **DO NOT APPLY DEFAULT TRANSFORM**
+        // Let MapCalibration handle initial layer positioning
+        console.log('🗺️ RiskMap initialized - layers positioned by MapCalibration');
     }
 
     setupViewBox() {
-        // Set viewBox dimensions  
-        const viewBoxWidth = 1600;
-        const viewBoxHeight = 900;
+        // Set viewBox dimensions to match MapCalibration system
+        const viewBoxWidth = 1920;
+        const viewBoxHeight = 1080;
         
-        // Set viewBox
+        // Set default viewBox - MapCalibration will override if needed
         this.svg.setAttribute('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
         
-        // Don't auto-calculate transform - we'll use our default values instead
+        console.log('📐 ViewBox initialized to MapCalibration base: 1920x1080');
     }
 
     createTerritoryPaths() {
@@ -444,12 +435,14 @@ class RiskMap {
     }
 
     resetZoom() {
-        // **RESET TO DEFAULT POSITION INSTEAD OF CALCULATED VALUES**
-        this.scale = this.defaultScale;
-        this.translateX = this.defaultTranslateX;
-        this.translateY = this.defaultTranslateY;
+        // **RESET TO NEUTRAL (NO ZOOM/PAN)**
+        // This returns to MapCalibration's default layer positioning
+        this.scale = 1.0;
+        this.translateX = 0;
+        this.translateY = 0;
         
         this.updateTransform();
+        console.log('🔄 Zoom reset to neutral - MapCalibration positioning restored');
     }
 
     resetView() {
@@ -464,8 +457,8 @@ class RiskMap {
         
         // Territory info panel removed - no longer updating it
         
-        // **RESET TO DEFAULT POSITION**
-        this.applyDefaultTransform();
+        // **RESET TO NEUTRAL POSITION**
+        this.resetZoom();
     }
 
     updateTransform() {

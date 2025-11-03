@@ -377,8 +377,13 @@
     </div>
   </div>
 
-  <!-- Socket.IO Client -->
-  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <!-- Socket.IO Client from CDN -->
+  <script src="https://cdn.socket.io/4.6.0/socket.io.min.js" 
+          integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+" 
+          crossorigin="anonymous"
+          onerror="console.error('Failed to load Socket.IO from CDN')"></script>
+  
+  <!-- Multiplayer Client -->
   <script src="MultiplayerClient.js"></script>
   <script>
     // Get URL parameters

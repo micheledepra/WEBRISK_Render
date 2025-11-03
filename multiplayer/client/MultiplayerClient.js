@@ -7,17 +7,14 @@ class MultiplayerClient {
   constructor(serverUrl = null) {
     // Auto-detect server URL based on environment
     if (!serverUrl) {
-      // In production, use the same host as the page
-      // In development, default to localhost:3000
       const isLocalhost = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1';
       
       if (isLocalhost) {
         this.serverUrl = 'http://localhost:3000';
       } else {
-        // Production: use current domain with https
-        const protocol = window.location.protocol === 'https:' ? 'https:' : 'http:';
-        this.serverUrl = `${protocol}//${window.location.host}`;
+        // Production: use current domain (origin)
+        this.serverUrl = window.location.origin;
       }
     } else {
       this.serverUrl = serverUrl;
@@ -25,7 +22,7 @@ class MultiplayerClient {
     
     this.socket = null;
     this.sessionId = null;
-    this.userId = null;
+    this.userId = this.generateUserId();
     this.playerName = null;
     this.isConnected = false;
     this.isMyTurn = false;
@@ -48,40 +45,68 @@ class MultiplayerClient {
     console.log('🌐 Server URL:', this.serverUrl);
   }
 
+  generateUserId() {
+    return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   /**
    * Connect to the multiplayer server
    */
   connect() {
     return new Promise((resolve, reject) => {
-      if (this.socket) {
+      if (this.socket && this.isConnected) {
         console.log('Already connected');
         return resolve();
       }
 
       console.log(`🔌 Connecting to server: ${this.serverUrl}`);
-      this.socket = io(this.serverUrl);
+      
+      // Check if Socket.IO is loaded
+      if (typeof io === 'undefined') {
+        reject(new Error('Socket.IO library not loaded. Make sure socket.io.js is included before MultiplayerClient.js'));
+        return;
+      }
 
-      // Connection established
-      this.socket.on('connect', () => {
-        this.isConnected = true;
-        console.log('✅ Connected to server:', this.socket.id);
-        this.trigger('onConnect');
-        resolve();
-      });
+      try {
+        this.socket = io(this.serverUrl, {
+          transports: ['websocket', 'polling'],
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionAttempts: 5
+        });
 
-      // Connection error
-      this.socket.on('connect_error', (error) => {
-        console.error('❌ Connection error:', error);
-        this.isConnected = false;
+        // Connection established
+        this.socket.on('connect', () => {
+          this.isConnected = true;
+          console.log('✅ Connected to server:', this.socket.id);
+          this.trigger('onConnect');
+          resolve();
+        });
+
+        // Connection error
+        this.socket.on('connect_error', (error) => {
+          console.error('❌ Connection error:', error);
+          this.isConnected = false;
+          reject(error);
+        });
+
+        // Disconnection
+        this.socket.on('disconnect', (reason) => {
+          this.isConnected = false;
+          console.log('🔌 Disconnected from server:', reason);
+          this.trigger('onDisconnect');
+        });
+
+        // Reconnection
+        this.socket.on('reconnect', (attemptNumber) => {
+          console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+          this.isConnected = true;
+        });
+
+      } catch (error) {
+        console.error('❌ Failed to create socket:', error);
         reject(error);
-      });
-
-      // Disconnection
-      this.socket.on('disconnect', () => {
-        this.isConnected = false;
-        console.log('🔌 Disconnected from server');
-        this.trigger('onDisconnect');
-      });
+      }
 
       // Session updates
       this.socket.on('session:update', (session) => {

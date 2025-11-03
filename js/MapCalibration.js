@@ -1,23 +1,49 @@
 /**
- * MapCalibration.js
+ * MapCalibration.js - Enhanced Multi-Layer Calibration System
  * 
- * Provides development tools for aligning the background world map image 
- * with SVG territory paths. Includes calibration points, offset adjustment,
- * and opacity controls for precise positioning.
+ * Provides independent controls for three distinct layers:
+ * 1. Water Texture Background (summerWaterTexture.png)
+ * 2. World Map (preview.png)
+ * 3. SVG Territories
+ * Plus unified controls after solidification.
  */
 
 class MapCalibration {
     constructor() {
         this.calibrationData = {
-            offsetX: 4,
-            offsetY: -24,
-            opacity: 0.85,
-            scale: 0.8,
-            bgScale: 0.8,
-            // Separate controls for SVG territories
-            territoryOffsetX: 0,
-            territoryOffsetY: 0,
-            territoryScale: 1.0,
+            // Layer 1: Water Texture Background
+            waterLayer: {
+                offsetX: 0,
+                offsetY: 0,
+                scale: 1.0,
+                opacity: 0.85
+            },
+            
+            // Layer 2: World Map Preview
+            mapLayer: {
+                offsetX: 4,
+                offsetY: -24,
+                scale: 0.8,
+                opacity: 0.85
+            },
+            
+            // Layer 3: SVG Territories
+            territoryLayer: {
+                offsetX: 0,
+                offsetY: 0,
+                scale: 1.0,
+                opacity: 1.0
+            },
+            
+            // Unified controls (after solidification)
+            solidified: false,
+            unifiedOffset: {
+                offsetX: 0,
+                offsetY: 0,
+                scale: 1.0
+            },
+            
+            // Vignette
             vignetteCenterX: 50,
             vignetteCenterY: 50,
             vignetteScale: 70
@@ -38,14 +64,30 @@ class MapCalibration {
                 const parsed = JSON.parse(saved);
                 // Merge with defaults to ensure all properties exist
                 this.calibrationData = {
-                    offsetX: parsed.offsetX ?? 4,
-                    offsetY: parsed.offsetY ?? -24,
-                    opacity: parsed.opacity ?? 0.85,
-                    scale: parsed.scale ?? 0.8,
-                    bgScale: parsed.bgScale ?? 0.8,
-                    territoryOffsetX: parsed.territoryOffsetX ?? 0,
-                    territoryOffsetY: parsed.territoryOffsetY ?? 0,
-                    territoryScale: parsed.territoryScale ?? 1.0,
+                    waterLayer: { 
+                        offsetX: parsed.waterLayer?.offsetX ?? 0,
+                        offsetY: parsed.waterLayer?.offsetY ?? 0,
+                        scale: parsed.waterLayer?.scale ?? 1.0,
+                        opacity: parsed.waterLayer?.opacity ?? 0.85
+                    },
+                    mapLayer: {
+                        offsetX: parsed.mapLayer?.offsetX ?? 4,
+                        offsetY: parsed.mapLayer?.offsetY ?? -24,
+                        scale: parsed.mapLayer?.scale ?? 0.8,
+                        opacity: parsed.mapLayer?.opacity ?? 0.85
+                    },
+                    territoryLayer: {
+                        offsetX: parsed.territoryLayer?.offsetX ?? 0,
+                        offsetY: parsed.territoryLayer?.offsetY ?? 0,
+                        scale: parsed.territoryLayer?.scale ?? 1.0,
+                        opacity: parsed.territoryLayer?.opacity ?? 1.0
+                    },
+                    solidified: parsed.solidified ?? false,
+                    unifiedOffset: {
+                        offsetX: parsed.unifiedOffset?.offsetX ?? 0,
+                        offsetY: parsed.unifiedOffset?.offsetY ?? 0,
+                        scale: parsed.unifiedOffset?.scale ?? 1.0
+                    },
                     vignetteCenterX: parsed.vignetteCenterX ?? 50,
                     vignetteCenterY: parsed.vignetteCenterY ?? 50,
                     vignetteScale: parsed.vignetteScale ?? 70
@@ -66,92 +108,132 @@ class MapCalibration {
     }
     
     /**
-     * Apply current calibration to the unified map layer
+     * Apply current calibration to all three layers
      */
     applyCalibration() {
-        const unifiedLayer = document.getElementById('unified-map-layer');
-        const territoryLayer = document.getElementById('territory-layer');
-        const bgRect = document.querySelector('rect[fill="url(#world-map-bg)"]');
-        const vignetteGradient = document.getElementById('water-vignette');
+        // Apply to each layer independently
+        this.applyWaterLayer();
+        this.applyMapLayer();
+        this.applyTerritoryLayer();
         
-        if (!unifiedLayer) {
-            console.warn('Unified map layer not found');
-            return;
+        // Apply vignette
+        this.applyVignette();
+        
+        // Apply unified offset if solidified
+        if (this.calibrationData.solidified) {
+            this.applyUnifiedOffset();
         }
         
-        // Get values with safe defaults
-        const offsetX = this.calibrationData.offsetX ?? 4;
-        const offsetY = this.calibrationData.offsetY ?? -24;
-        const scale = this.calibrationData.scale ?? 0.8;
-        const opacity = this.calibrationData.opacity ?? 0.85;
-        const territoryOffsetX = this.calibrationData.territoryOffsetX ?? 0;
-        const territoryOffsetY = this.calibrationData.territoryOffsetY ?? 0;
-        const territoryScale = this.calibrationData.territoryScale ?? 1.0;
-        
-        // Apply base transform to unified layer (backgrounds only)
-        const baseTransform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
-        unifiedLayer.setAttribute('transform', baseTransform);
-        
-        // Apply territory-specific transform to separate territory layer
-        if (territoryLayer) {
-            const territoryTransform = `translate(${territoryOffsetX}, ${territoryOffsetY}) scale(${territoryScale})`;
-            territoryLayer.setAttribute('transform', territoryTransform);
-        } else {
-            console.warn('Territory layer not found - SVG territories may not be positioned correctly');
-        }
-        
-        // Update world map opacity only
-        if (bgRect) {
-            bgRect.setAttribute('opacity', opacity);
-        }
-        
-        // Update vignette gradient if present
-        if (vignetteGradient) {
-            const vignetteCenterX = this.calibrationData.vignetteCenterX ?? 50;
-            const vignetteCenterY = this.calibrationData.vignetteCenterY ?? 50;
-            const vignetteScale = this.calibrationData.vignetteScale ?? 70;
-            
-            vignetteGradient.setAttribute('cx', `${vignetteCenterX}%`);
-            vignetteGradient.setAttribute('cy', `${vignetteCenterY}%`);
-            vignetteGradient.setAttribute('r', `${vignetteScale}%`);
-        }
-        
-        console.log('Applied calibration:', {
-            background: baseTransform,
-            territories: territoryOffsetX !== 0 || territoryOffsetY !== 0 || territoryScale !== 1.0 
-                ? `translate(${territoryOffsetX}, ${territoryOffsetY}) scale(${territoryScale})` 
-                : 'default (0, 0, 1.0)'
+        console.log('Applied multi-layer calibration:', {
+            water: this.calibrationData.waterLayer,
+            map: this.calibrationData.mapLayer,
+            territories: this.calibrationData.territoryLayer,
+            solidified: this.calibrationData.solidified
         });
     }
     
     /**
-     * Solidify the alignment by saving current territory position as the new baseline
-     * This allows you to start fresh with territory fine-tuning from the current position
+     * Apply water texture layer settings
+     */
+    applyWaterLayer() {
+        const waterRect = document.querySelector('rect[fill*="ocean-water-texture"]');
+        if (!waterRect) return;
+        
+        const { offsetX, offsetY, scale, opacity } = this.calibrationData.waterLayer;
+        
+        waterRect.setAttribute('x', offsetX);
+        waterRect.setAttribute('y', offsetY);
+        waterRect.setAttribute('width', 1920 * scale);
+        waterRect.setAttribute('height', 1080 * scale);
+        waterRect.setAttribute('opacity', opacity);
+    }
+    
+    /**
+     * Apply world map layer settings
+     */
+    applyMapLayer() {
+        const mapRect = document.querySelector('rect[fill*="world-map-bg"]');
+        if (!mapRect) return;
+        
+        const { offsetX, offsetY, scale, opacity } = this.calibrationData.mapLayer;
+        
+        mapRect.setAttribute('x', offsetX);
+        mapRect.setAttribute('y', offsetY);
+        mapRect.setAttribute('width', 1920 * scale);
+        mapRect.setAttribute('height', 1080 * scale);
+        mapRect.setAttribute('opacity', opacity);
+    }
+    
+    /**
+     * Apply territory layer settings
+     */
+    applyTerritoryLayer() {
+        const territoryLayer = document.getElementById('territory-layer');
+        if (!territoryLayer) return;
+        
+        const { offsetX, offsetY, scale } = this.calibrationData.territoryLayer;
+        
+        const transform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
+        territoryLayer.setAttribute('transform', transform);
+    }
+    
+    /**
+     * Apply vignette settings
+     */
+    applyVignette() {
+        const vignetteGradient = document.getElementById('water-vignette');
+        if (!vignetteGradient) return;
+        
+        vignetteGradient.setAttribute('cx', `${this.calibrationData.vignetteCenterX}%`);
+        vignetteGradient.setAttribute('cy', `${this.calibrationData.vignetteCenterY}%`);
+        vignetteGradient.setAttribute('r', `${this.calibrationData.vignetteScale}%`);
+    }
+    
+    /**
+     * Apply unified offset to all layers (when solidified)
+     */
+    applyUnifiedOffset() {
+        const svg = document.getElementById('risk-map');
+        if (!svg) return;
+        
+        const { offsetX, offsetY, scale } = this.calibrationData.unifiedOffset;
+        
+        // Adjust viewBox to create pan/zoom effect on all layers
+        const newX = -offsetX / scale;
+        const newY = -offsetY / scale;
+        const newW = 1920 / scale;
+        const newH = 1080 / scale;
+        
+        svg.setAttribute('viewBox', `${newX} ${newY} ${newW} ${newH}`);
+    }
+    
+    /**
+     * Toggle solidification - locks all three layers together with unified controls
      */
     solidifyAlignment() {
-        // Get the territory layer element
-        const territoryLayer = document.getElementById('territory-layer');
+        this.calibrationData.solidified = !this.calibrationData.solidified;
         
-        if (!territoryLayer) {
-            console.warn('Cannot solidify: Territory layer not found');
-            return;
+        if (this.calibrationData.solidified) {
+            // Reset unified offset when solidifying
+            this.calibrationData.unifiedOffset = { offsetX: 0, offsetY: 0, scale: 1.0 };
+            console.log('🔒 Layers solidified - unified controls enabled');
+            this.showNotification('Layers solidified! Use unified controls to adjust all layers together.');
+        } else {
+            // Reset SVG viewBox when unsolidifying
+            const svg = document.getElementById('risk-map');
+            if (svg) svg.setAttribute('viewBox', '0 0 1920 1080');
+            console.log('🔓 Layers unsolidified - individual controls active');
+            this.showNotification('Layers unsolidified! Adjust each layer independently.');
         }
         
-        // The current transform on territory layer represents the desired final position
-        // We need to preserve this visually while resetting the adjustment controls
-        
-        // Option: We could store the current values as a base offset for territories
-        // For now, just inform user that current position is locked in
-        
-        this.showNotification('⚠️ Territory position locked! Use territory sliders to adjust from current position.');
-        console.log('✅ Territory position solidified at:', {
-            territoryOffsetX: this.calibrationData.territoryOffsetX,
-            territoryOffsetY: this.calibrationData.territoryOffsetY,
-            territoryScale: this.calibrationData.territoryScale
-        });
-        
-        // Save current state
+        this.applyCalibration();
         this.saveCalibration();
+        
+        // Refresh UI to show/hide unified controls
+        if (this.isDevelopmentMode) {
+            this.disableDevelopmentMode();
+            this.enableDevelopmentMode();
+        }
     }
     
     /**
@@ -176,7 +258,7 @@ class MapCalibration {
     }
     
     /**
-     * Create calibration control UI
+     * Create calibration control UI with multi-layer controls
      */
     createCalibrationUI() {
         // Remove existing UI if present
@@ -189,105 +271,195 @@ class MapCalibration {
         ui.id = 'calibration-ui';
         ui.style.cssText = `
             position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.85);
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            background: rgba(30, 30, 30, 0.95);
             color: white;
-            padding: 15px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
+            padding: 20px;
+            border-radius: 12px;
+            font-family: Arial, sans-serif;
+            font-size: 13px;
             z-index: 10000;
-            min-width: 250px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            width: 380px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         `;
         
+        const solidifiedStyle = this.calibrationData.solidified ? 'block' : 'none';
+        
         ui.innerHTML = `
-            <div style="margin-bottom: 10px; font-weight: bold; border-bottom: 1px solid #555; padding-bottom: 5px;">
-                🎯 Map Calibration
-            </div>
+            <style>
+                #calibration-ui h3 { margin: 0 0 15px 0; font-size: 18px; color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 10px; }
+                #calibration-ui h4 { margin: 15px 0 10px 0; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+                #calibration-ui .layer-section { padding: 12px; background: rgba(255,255,255,0.05); border-radius: 6px; margin-bottom: 15px; border-left: 3px solid; }
+                #calibration-ui .water-section { border-left-color: #03A9F4; }
+                #calibration-ui .map-section { border-left-color: #FFC107; }
+                #calibration-ui .territory-section { border-left-color: #4CAF50; }
+                #calibration-ui .unified-section { border-left-color: #9C27B0; }
+                #calibration-ui .control-group { margin-bottom: 12px; }
+                #calibration-ui .control-group label { display: block; margin-bottom: 5px; font-size: 11px; color: #bbb; text-transform: uppercase; }
+                #calibration-ui .slider-row { display: flex; align-items: center; gap: 10px; }
+                #calibration-ui input[type="range"] { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.2); cursor: pointer; }
+                #calibration-ui .value-display { min-width: 55px; text-align: right; font-weight: 600; font-size: 12px; }
+                #calibration-ui .btn-group { display: flex; gap: 8px; margin-top: 15px; }
+                #calibration-ui button { flex: 1; padding: 10px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px; }
+                #calibration-ui button:hover { transform: translateY(-1px); }
+                #calibration-ui .btn-solidify { background: #9C27B0; color: white; }
+                #calibration-ui .btn-reset { background: #f44336; color: white; }
+                #calibration-ui .btn-save { background: #4CAF50; color: white; }
+                #calibration-ui .solidified-badge { display: inline-block; padding: 3px 6px; background: #9C27B0; border-radius: 3px; font-size: 10px; margin-left: 5px; }
+            </style>
             
-            <div style="margin-bottom: 10px;">
-                <label style="display: block; margin-bottom: 3px;">X Offset: <span id="cal-x-value">${this.calibrationData.offsetX}</span></label>
-                <input type="range" id="cal-x" min="-500" max="500" value="${this.calibrationData.offsetX}" 
-                       style="width: 100%;">
-            </div>
+            <h3>🔧 Multi-Layer Calibration</h3>
             
-            <div style="margin-bottom: 10px;">
-                <label style="display: block; margin-bottom: 3px;">Y Offset: <span id="cal-y-value">${this.calibrationData.offsetY}</span></label>
-                <input type="range" id="cal-y" min="-500" max="500" value="${this.calibrationData.offsetY}" 
-                       style="width: 100%;">
-            </div>
-            
-            <div style="margin-bottom: 10px;">
-                <label style="display: block; margin-bottom: 3px;">Map Opacity: <span id="cal-opacity-value">${this.calibrationData.opacity}</span></label>
-                <input type="range" id="cal-opacity" min="0" max="1" step="0.05" value="${this.calibrationData.opacity}" 
-                       style="width: 100%;">
-            </div>
-            
-            <div style="margin-bottom: 10px;">
-                <label style="display: block; margin-bottom: 3px;">Map Scale: <span id="cal-scale-value">${this.calibrationData.scale}</span></label>
-                <input type="range" id="cal-scale" min="0.5" max="2.0" step="0.05" value="${this.calibrationData.scale}" 
-                       style="width: 100%;">
-            </div>
-            
-            <div style="margin-bottom: 10px; padding-top: 10px; border-top: 1px dashed #555;">
-                <label style="display: block; margin-bottom: 3px; color: #4dd0e1;">🌊 Background Scale: <span id="cal-bg-scale-value">${this.calibrationData.bgScale}</span></label>
-                <input type="range" id="cal-bg-scale" min="0.5" max="3.0" step="0.1" value="${this.calibrationData.bgScale}" 
-                       style="width: 100%;">
-            </div>
-            
-            <div style="margin-bottom: 10px; padding-top: 10px; border-top: 2px solid #ff6b6b;">
-                <div style="margin-bottom: 8px; font-weight: bold; color: #ff6b6b;">🎨 Territory Fine-Tuning</div>
+            <!-- Water Texture Layer -->
+            <div class="layer-section water-section">
+                <h4><span>🌊</span> Water Texture Background</h4>
                 
-                <label style="display: block; margin-bottom: 3px;">Territory X: <span id="cal-territory-x-value">${this.calibrationData.territoryOffsetX}</span></label>
-                <input type="range" id="cal-territory-x" min="-100" max="100" step="0.5" value="${this.calibrationData.territoryOffsetX}" 
-                       style="width: 100%; margin-bottom: 8px;">
+                <div class="control-group">
+                    <label>X Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="water-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.waterLayer.offsetX}">
+                        <span class="value-display" id="water-offset-x-value">${this.calibrationData.waterLayer.offsetX}px</span>
+                    </div>
+                </div>
                 
-                <label style="display: block; margin-bottom: 3px;">Territory Y: <span id="cal-territory-y-value">${this.calibrationData.territoryOffsetY}</span></label>
-                <input type="range" id="cal-territory-y" min="-100" max="100" step="0.5" value="${this.calibrationData.territoryOffsetY}" 
-                       style="width: 100%; margin-bottom: 8px;">
+                <div class="control-group">
+                    <label>Y Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="water-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.waterLayer.offsetY}">
+                        <span class="value-display" id="water-offset-y-value">${this.calibrationData.waterLayer.offsetY}px</span>
+                    </div>
+                </div>
                 
-                <label style="display: block; margin-bottom: 3px;">Territory Scale: <span id="cal-territory-scale-value">${this.calibrationData.territoryScale}</span></label>
-                <input type="range" id="cal-territory-scale" min="0.8" max="1.2" step="0.01" value="${this.calibrationData.territoryScale}" 
-                       style="width: 100%;">
+                <div class="control-group">
+                    <label>Scale</label>
+                    <div class="slider-row">
+                        <input type="range" id="water-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.waterLayer.scale}">
+                        <span class="value-display" id="water-scale-value">${this.calibrationData.waterLayer.scale.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Opacity</label>
+                    <div class="slider-row">
+                        <input type="range" id="water-opacity" min="0" max="1" step="0.05" value="${this.calibrationData.waterLayer.opacity}">
+                        <span class="value-display" id="water-opacity-value">${Math.round(this.calibrationData.waterLayer.opacity * 100)}%</span>
+                    </div>
+                </div>
             </div>
             
-            <div style="margin-bottom: 10px; padding-top: 10px; border-top: 1px solid #555;">
-                <div style="margin-bottom: 8px; font-weight: bold; color: #ff9800;">✨ Dynamic Vignette</div>
+            <!-- World Map Layer -->
+            <div class="layer-section map-section">
+                <h4><span>🗺️</span> World Map (preview.png)</h4>
                 
-                <label style="display: block; margin-bottom: 3px;">Center X: <span id="cal-vignette-x-value">${this.calibrationData.vignetteCenterX}%</span></label>
-                <input type="range" id="cal-vignette-x" min="0" max="100" step="1" value="${this.calibrationData.vignetteCenterX}" 
-                       style="width: 100%; margin-bottom: 8px;">
+                <div class="control-group">
+                    <label>X Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="map-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.mapLayer.offsetX}">
+                        <span class="value-display" id="map-offset-x-value">${this.calibrationData.mapLayer.offsetX}px</span>
+                    </div>
+                </div>
                 
-                <label style="display: block; margin-bottom: 3px;">Center Y: <span id="cal-vignette-y-value">${this.calibrationData.vignetteCenterY}%</span></label>
-                <input type="range" id="cal-vignette-y" min="0" max="100" step="1" value="${this.calibrationData.vignetteCenterY}" 
-                       style="width: 100%; margin-bottom: 8px;">
+                <div class="control-group">
+                    <label>Y Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="map-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.mapLayer.offsetY}">
+                        <span class="value-display" id="map-offset-y-value">${this.calibrationData.mapLayer.offsetY}px</span>
+                    </div>
+                </div>
                 
-                <label style="display: block; margin-bottom: 3px;">Radius: <span id="cal-vignette-scale-value">${this.calibrationData.vignetteScale}%</span></label>
-                <input type="range" id="cal-vignette-scale" min="30" max="150" step="5" value="${this.calibrationData.vignetteScale}" 
-                       style="width: 100%;">
+                <div class="control-group">
+                    <label>Scale</label>
+                    <div class="slider-row">
+                        <input type="range" id="map-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.mapLayer.scale}">
+                        <span class="value-display" id="map-scale-value">${this.calibrationData.mapLayer.scale.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Opacity</label>
+                    <div class="slider-row">
+                        <input type="range" id="map-opacity" min="0" max="1" step="0.05" value="${this.calibrationData.mapLayer.opacity}">
+                        <span class="value-display" id="map-opacity-value">${Math.round(this.calibrationData.mapLayer.opacity * 100)}%</span>
+                    </div>
+                </div>
             </div>
             
-            <div style="display: flex; gap: 5px; margin-top: 15px;">
-                <button id="cal-solidify" style="flex: 1; padding: 8px; border: none; background: #9C27B0; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                    🔒 Solidify
-                </button>
+            <!-- Territory Layer -->
+            <div class="layer-section territory-section">
+                <h4><span>🎯</span> SVG Territories</h4>
+                
+                <div class="control-group">
+                    <label>X Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="territory-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.territoryLayer.offsetX}">
+                        <span class="value-display" id="territory-offset-x-value">${this.calibrationData.territoryLayer.offsetX}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Y Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="territory-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.territoryLayer.offsetY}">
+                        <span class="value-display" id="territory-offset-y-value">${this.calibrationData.territoryLayer.offsetY}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Scale</label>
+                    <div class="slider-row">
+                        <input type="range" id="territory-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.territoryLayer.scale}">
+                        <span class="value-display" id="territory-scale-value">${this.calibrationData.territoryLayer.scale.toFixed(2)}x</span>
+                    </div>
+                </div>
             </div>
             
-            <div style="display: flex; gap: 5px; margin-top: 5px;">
-                <button id="cal-save" style="flex: 1; padding: 8px; border: none; background: #4CAF50; color: white; border-radius: 4px; cursor: pointer;">
-                    💾 Save
-                </button>
-                <button id="cal-reset" style="flex: 1; padding: 8px; border: none; background: #f44336; color: white; border-radius: 4px; cursor: pointer;">
-                    🔄 Reset
-                </button>
+            <!-- Unified Controls (shown when solidified) -->
+            <div class="layer-section unified-section" id="unified-controls" style="display: ${solidifiedStyle};">
+                <h4><span>🔒</span> Unified Controls <span class="solidified-badge">Solidified</span></h4>
+                
+                <div class="control-group">
+                    <label>Global X Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="unified-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.unifiedOffset.offsetX}">
+                        <span class="value-display" id="unified-offset-x-value">${this.calibrationData.unifiedOffset.offsetX}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Global Y Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="unified-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.unifiedOffset.offsetY}">
+                        <span class="value-display" id="unified-offset-y-value">${this.calibrationData.unifiedOffset.offsetY}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Global Scale</label>
+                    <div class="slider-row">
+                        <input type="range" id="unified-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.unifiedOffset.scale}">
+                        <span class="value-display" id="unified-scale-value">${this.calibrationData.unifiedOffset.scale.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <p style="font-size: 11px; color: #999; margin-top: 8px; font-style: italic;">These controls affect all three layers together.</p>
             </div>
             
-            <div style="margin-top: 10px; font-size: 10px; color: #aaa; border-top: 1px solid #555; padding-top: 5px;">
-                <div>Press 'C' to toggle calibration mode</div>
-                <div>Adjust territory position, then <b>Solidify</b></div>
+            <div class="btn-group">
+                <button class="btn-solidify" id="solidify-btn">${this.calibrationData.solidified ? '🔓 Unsolidify' : '🔒 Solidify'}</button>
             </div>
+            
+            <div class="btn-group">
+                <button class="btn-reset" id="reset-btn">↺ Reset</button>
+                <button class="btn-save" id="save-btn">💾 Save</button>
+            </div>
+            
+            <p style="font-size: 10px; color: #999; margin-top: 10px; border-top: 1px solid #555; padding-top: 8px;">
+                Press <b>C</b> to toggle calibration mode
+            </p>
         `;
         
         document.body.appendChild(ui);
@@ -300,128 +472,122 @@ class MapCalibration {
      * Attach event listeners to calibration controls
      */
     attachCalibrationListeners() {
-        const xSlider = document.getElementById('cal-x');
-        const ySlider = document.getElementById('cal-y');
-        const opacitySlider = document.getElementById('cal-opacity');
-        const scaleSlider = document.getElementById('cal-scale');
-        const bgScaleSlider = document.getElementById('cal-bg-scale');
-        const territoryXSlider = document.getElementById('cal-territory-x');
-        const territoryYSlider = document.getElementById('cal-territory-y');
-        const territoryScaleSlider = document.getElementById('cal-territory-scale');
-        const vignetteXSlider = document.getElementById('cal-vignette-x');
-        const vignetteYSlider = document.getElementById('cal-vignette-y');
-        const vignetteScaleSlider = document.getElementById('cal-vignette-scale');
-        const solidifyBtn = document.getElementById('cal-solidify');
-        const saveBtn = document.getElementById('cal-save');
-        const resetBtn = document.getElementById('cal-reset');
+        // Helper function to attach layer listeners
+        const attachLayerControls = (prefix, layerKey) => {
+            const offsetX = document.getElementById(`${prefix}-offset-x`);
+            const offsetY = document.getElementById(`${prefix}-offset-y`);
+            const scale = document.getElementById(`${prefix}-scale`);
+            const opacity = document.getElementById(`${prefix}-opacity`);
+            
+            offsetX?.addEventListener('input', (e) => {
+                this.calibrationData[layerKey].offsetX = parseFloat(e.target.value);
+                document.getElementById(`${prefix}-offset-x-value`).textContent = `${e.target.value}px`;
+                this.applyCalibration();
+            });
+            
+            offsetY?.addEventListener('input', (e) => {
+                this.calibrationData[layerKey].offsetY = parseFloat(e.target.value);
+                document.getElementById(`${prefix}-offset-y-value`).textContent = `${e.target.value}px`;
+                this.applyCalibration();
+            });
+            
+            scale?.addEventListener('input', (e) => {
+                this.calibrationData[layerKey].scale = parseFloat(e.target.value);
+                document.getElementById(`${prefix}-scale-value`).textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+                this.applyCalibration();
+            });
+            
+            opacity?.addEventListener('input', (e) => {
+                this.calibrationData[layerKey].opacity = parseFloat(e.target.value);
+                document.getElementById(`${prefix}-opacity-value`).textContent = `${Math.round(parseFloat(e.target.value) * 100)}%`;
+                this.applyCalibration();
+            });
+        };
         
-        // X offset
-        xSlider?.addEventListener('input', (e) => {
-            this.calibrationData.offsetX = parseFloat(e.target.value);
-            document.getElementById('cal-x-value').textContent = this.calibrationData.offsetX;
+        // Water Layer
+        attachLayerControls('water', 'waterLayer');
+        
+        // Map Layer
+        attachLayerControls('map', 'mapLayer');
+        
+        // Territory Layer (no opacity control)
+        const terrOffsetX = document.getElementById('territory-offset-x');
+        const terrOffsetY = document.getElementById('territory-offset-y');
+        const terrScale = document.getElementById('territory-scale');
+        
+        terrOffsetX?.addEventListener('input', (e) => {
+            this.calibrationData.territoryLayer.offsetX = parseFloat(e.target.value);
+            document.getElementById('territory-offset-x-value').textContent = `${e.target.value}px`;
             this.applyCalibration();
         });
         
-        // Y offset
-        ySlider?.addEventListener('input', (e) => {
-            this.calibrationData.offsetY = parseFloat(e.target.value);
-            document.getElementById('cal-y-value').textContent = this.calibrationData.offsetY;
+        terrOffsetY?.addEventListener('input', (e) => {
+            this.calibrationData.territoryLayer.offsetY = parseFloat(e.target.value);
+            document.getElementById('territory-offset-y-value').textContent = `${e.target.value}px`;
             this.applyCalibration();
         });
         
-        // Opacity
-        opacitySlider?.addEventListener('input', (e) => {
-            this.calibrationData.opacity = parseFloat(e.target.value);
-            document.getElementById('cal-opacity-value').textContent = this.calibrationData.opacity.toFixed(2);
+        terrScale?.addEventListener('input', (e) => {
+            this.calibrationData.territoryLayer.scale = parseFloat(e.target.value);
+            document.getElementById('territory-scale-value').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
             this.applyCalibration();
         });
         
-        // Scale
-        scaleSlider?.addEventListener('input', (e) => {
-            this.calibrationData.scale = parseFloat(e.target.value);
-            document.getElementById('cal-scale-value').textContent = this.calibrationData.scale.toFixed(2);
-            this.applyCalibration();
-        });
-        
-        // Background Scale
-        bgScaleSlider?.addEventListener('input', (e) => {
-            this.calibrationData.bgScale = parseFloat(e.target.value);
-            document.getElementById('cal-bg-scale-value').textContent = this.calibrationData.bgScale.toFixed(2);
-            this.applyCalibration();
-        });
-        
-        // Territory X offset
-        territoryXSlider?.addEventListener('input', (e) => {
-            this.calibrationData.territoryOffsetX = parseFloat(e.target.value);
-            document.getElementById('cal-territory-x-value').textContent = this.calibrationData.territoryOffsetX.toFixed(1);
-            this.applyCalibration();
-        });
-        
-        // Territory Y offset
-        territoryYSlider?.addEventListener('input', (e) => {
-            this.calibrationData.territoryOffsetY = parseFloat(e.target.value);
-            document.getElementById('cal-territory-y-value').textContent = this.calibrationData.territoryOffsetY.toFixed(1);
-            this.applyCalibration();
-        });
-        
-        // Territory Scale
-        territoryScaleSlider?.addEventListener('input', (e) => {
-            this.calibrationData.territoryScale = parseFloat(e.target.value);
-            document.getElementById('cal-territory-scale-value').textContent = this.calibrationData.territoryScale.toFixed(2);
-            this.applyCalibration();
-        });
-        
-        // Vignette Center X
-        vignetteXSlider?.addEventListener('input', (e) => {
-            this.calibrationData.vignetteCenterX = parseFloat(e.target.value);
-            document.getElementById('cal-vignette-x-value').textContent = this.calibrationData.vignetteCenterX + '%';
-            this.applyCalibration();
-        });
-        
-        // Vignette Center Y
-        vignetteYSlider?.addEventListener('input', (e) => {
-            this.calibrationData.vignetteCenterY = parseFloat(e.target.value);
-            document.getElementById('cal-vignette-y-value').textContent = this.calibrationData.vignetteCenterY + '%';
-            this.applyCalibration();
-        });
-        
-        // Vignette Scale (Radius)
-        vignetteScaleSlider?.addEventListener('input', (e) => {
-            this.calibrationData.vignetteScale = parseFloat(e.target.value);
-            document.getElementById('cal-vignette-scale-value').textContent = this.calibrationData.vignetteScale + '%';
-            this.applyCalibration();
-        });
+        // Unified Controls (if solidified)
+        if (this.calibrationData.solidified) {
+            const unifiedOffsetX = document.getElementById('unified-offset-x');
+            const unifiedOffsetY = document.getElementById('unified-offset-y');
+            const unifiedScale = document.getElementById('unified-scale');
+            
+            unifiedOffsetX?.addEventListener('input', (e) => {
+                this.calibrationData.unifiedOffset.offsetX = parseFloat(e.target.value);
+                document.getElementById('unified-offset-x-value').textContent = `${e.target.value}px`;
+                this.applyCalibration();
+            });
+            
+            unifiedOffsetY?.addEventListener('input', (e) => {
+                this.calibrationData.unifiedOffset.offsetY = parseFloat(e.target.value);
+                document.getElementById('unified-offset-y-value').textContent = `${e.target.value}px`;
+                this.applyCalibration();
+            });
+            
+            unifiedScale?.addEventListener('input', (e) => {
+                this.calibrationData.unifiedOffset.scale = parseFloat(e.target.value);
+                document.getElementById('unified-scale-value').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+                this.applyCalibration();
+            });
+        }
         
         // Solidify button
+        const solidifyBtn = document.getElementById('solidify-btn');
         solidifyBtn?.addEventListener('click', () => {
             this.solidifyAlignment();
-            this.showNotification('Territory alignment solidified!');
         });
         
         // Save button
+        const saveBtn = document.getElementById('save-btn');
         saveBtn?.addEventListener('click', () => {
             this.saveCalibration();
-            this.showNotification('Calibration saved!');
+            this.showNotification('✅ Calibration saved!');
         });
         
         // Reset button
+        const resetBtn = document.getElementById('reset-btn');
         resetBtn?.addEventListener('click', () => {
             this.calibrationData = {
-                offsetX: 4,
-                offsetY: -24,
-                opacity: 0.85,
-                scale: 0.8,
-                bgScale: 0.8,
-                territoryOffsetX: 0,
-                territoryOffsetY: 0,
-                territoryScale: 1.0,
+                waterLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 0.85 },
+                mapLayer: { offsetX: 4, offsetY: -24, scale: 0.8, opacity: 0.85 },
+                territoryLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 1.0 },
+                solidified: false,
+                unifiedOffset: { offsetX: 0, offsetY: 0, scale: 1.0 },
                 vignetteCenterX: 50,
                 vignetteCenterY: 50,
                 vignetteScale: 70
             };
             this.applyCalibration();
-            this.updateUIValues();
-            this.showNotification('Calibration reset to defaults!');
+            this.disableDevelopmentMode();
+            this.enableDevelopmentMode();
+            this.showNotification('↺ Reset to defaults!');
         });
     }
     

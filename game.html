@@ -4157,52 +4157,58 @@
           </defs>
           
           <!-- LAYER 1: Water Texture Background (independently controllable) -->
-          <rect id="water-layer" width="1920" height="1080" fill="url(#ocean-water-texture)" opacity="0.85" />
-          
-          <!-- Dynamic vignette overlay for water texture -->
-          <rect x="0" y="0" width="1920" height="1080" fill="url(#water-vignette)" opacity="0.85">
-            <animate attributeName="opacity" values="0.85;0.92;0.88;0.85" dur="8s" repeatCount="indefinite" />
-          </rect>
+          <g id="water-layer-container" transform="translate(0, 0) scale(1)">
+            <rect width="1920" height="1080" fill="url(#ocean-water-texture)" opacity="0.85" />
+            
+            <!-- Dynamic vignette overlay for water texture -->
+            <rect x="0" y="0" width="1920" height="1080" fill="url(#water-vignette)" opacity="0.85">
+              <animate attributeName="opacity" values="0.85;0.92;0.88;0.85" dur="8s" repeatCount="indefinite" />
+            </rect>
+          </g>
           
           <!-- LAYER 2: World Map Background (independently controllable) -->
-          <rect id="map-layer" width="1920" height="1080" fill="url(#world-map-bg)" opacity="0.85" />
-          
-          <!-- Subtle overlay for better territory contrast -->
-          <rect width="1920" height="1080" fill="url(#overlay-gradient)" opacity="0.2" />
+          <g id="map-layer-container" transform="translate(0, 0) scale(1)">
+            <rect width="1920" height="1080" fill="url(#world-map-bg)" opacity="0.85" />
+            
+            <!-- Subtle overlay for better territory contrast -->
+            <rect width="1920" height="1080" fill="url(#overlay-gradient)" opacity="0.2" />
+          </g>
           
           <!-- LAYER 3: SVG Territories (independently controllable) -->
-          <g id="territory-layer" class="map-group">
-            <g
-              id="north-america"
-              class="continent continent-na"
-              filter="url(#drop-shadow)"
-            ></g>
-            <g
-              id="south-america"
-              class="continent continent-sa"
-              filter="url(#drop-shadow)"
-            ></g>
-            <g
-              id="europe"
-              class="continent continent-eu"
-              filter="url(#drop-shadow)"
-            ></g>
-            <g
-              id="africa"
-              class="continent continent-af"
-              filter="url(#drop-shadow)"
-            ></g>
-            <g
-              id="asia"
-              class="continent continent-as"
-              filter="url(#drop-shadow)"
-            ></g>
-            <g
-              id="australia"
-              class="continent continent-au"
-              filter="url(#drop-shadow)"
-            ></g>
-          </g> <!-- End of territory-layer -->
+          <g id="territory-layer-container" transform="translate(0, 0) scale(1)">
+            <g id="territory-content" class="map-group">
+              <g
+                id="north-america"
+                class="continent continent-na"
+                filter="url(#drop-shadow)"
+              ></g>
+              <g
+                id="south-america"
+                class="continent continent-sa"
+                filter="url(#drop-shadow)"
+              ></g>
+              <g
+                id="europe"
+                class="continent continent-eu"
+                filter="url(#drop-shadow)"
+              ></g>
+              <g
+                id="africa"
+                class="continent continent-af"
+                filter="url(#drop-shadow)"
+              ></g>
+              <g
+                id="asia"
+                class="continent continent-as"
+                filter="url(#drop-shadow)"
+              ></g>
+              <g
+                id="australia"
+                class="continent continent-au"
+                filter="url(#drop-shadow)"
+              ></g>
+            </g>
+          </g> <!-- End of territory-layer-container -->
         </svg>
         <div class="tooltip"></div>
       </div>
@@ -9998,90 +10004,11 @@
       console.log('📱 Mobile sidebar gestures initialized');
       
       // ═══════════════════════════════════════════════════════
-      // PINCH-TO-ZOOM FOR MAP
+      // PINCH-TO-ZOOM REMOVED - NOW HANDLED BY RiskMap.js
       // ═══════════════════════════════════════════════════════
-      
-      const mapContainer = document.querySelector('.map-container');
-      const mapSvg = document.getElementById('risk-map');
-      
-      let lastDistance = 0;
-      let isPinching = false;
-      
-      function getDistance(touch1, touch2) {
-        const dx = touch1.clientX - touch2.clientX;
-        const dy = touch1.clientY - touch2.clientY;
-        return Math.sqrt(dx * dx + dy * dy);
-      }
-      
-      function getMidpoint(touch1, touch2) {
-        return {
-          x: (touch1.clientX + touch2.clientX) / 2,
-          y: (touch1.clientY + touch2.clientY) / 2
-        };
-      }
-      
-      if (mapSvg && 'ontouchstart' in window) {
-        mapSvg.addEventListener('touchstart', function(e) {
-          if (e.touches.length === 2) {
-            e.preventDefault();
-            isPinching = true;
-            lastDistance = getDistance(e.touches[0], e.touches[1]);
-          }
-        }, { passive: false });
-        
-        mapSvg.addEventListener('touchmove', function(e) {
-          if (e.touches.length === 2 && isPinching) {
-            e.preventDefault();
-            
-            const currentDistance = getDistance(e.touches[0], e.touches[1]);
-            const delta = currentDistance - lastDistance;
-            
-            // Scale adjustment using MapCalibration system
-            if (window.mapCalibration) {
-              const scaleChange = delta * 0.005; // Reduced sensitivity
-              
-              if (window.mapCalibration.calibrationData.solidified) {
-                // When solidified, adjust unified scale
-                const currentScale = window.mapCalibration.calibrationData.unifiedOffset.scale;
-                const newScale = Math.max(0.3, Math.min(2.5, currentScale + scaleChange));
-                
-                if (newScale !== currentScale) {
-                  window.mapCalibration.calibrationData.unifiedOffset.scale = newScale;
-                  window.mapCalibration.applyCalibration();
-                }
-              } else {
-                // When not solidified, adjust all three layers proportionally
-                const waterScale = window.mapCalibration.calibrationData.waterLayer.scale;
-                const mapScale = window.mapCalibration.calibrationData.mapLayer.scale;
-                const territoryScale = window.mapCalibration.calibrationData.territoryLayer.scale;
-                
-                const newWaterScale = Math.max(0.3, Math.min(2.5, waterScale + scaleChange));
-                const newMapScale = Math.max(0.3, Math.min(2.5, mapScale + scaleChange));
-                const newTerritoryScale = Math.max(0.3, Math.min(2.5, territoryScale + scaleChange));
-                
-                window.mapCalibration.calibrationData.waterLayer.scale = newWaterScale;
-                window.mapCalibration.calibrationData.mapLayer.scale = newMapScale;
-                window.mapCalibration.calibrationData.territoryLayer.scale = newTerritoryScale;
-                window.mapCalibration.applyCalibration();
-              }
-            }
-            
-            lastDistance = currentDistance;
-          }
-        }, { passive: false });
-        
-        mapSvg.addEventListener('touchend', function(e) {
-          if (e.touches.length < 2) {
-            isPinching = false;
-            // Save the scale on pinch end
-            if (window.mapCalibration) {
-              window.mapCalibration.saveCalibration();
-            }
-          }
-        }, { passive: true });
-        
-        console.log('📱 Pinch-to-zoom enabled for multi-layer map system');
-      }
+      // The RiskMap class now handles all zoom/pan functionality
+      // including touch events for mobile devices. This ensures
+      // all layers (background, map, SVG) stay synchronized.
       
       // ═══════════════════════════════════════════════════════
       // ENHANCED TOUCH HANDLING FOR TERRITORIES

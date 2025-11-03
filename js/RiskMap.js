@@ -80,6 +80,11 @@ class RiskMap {
                     console.warn(`No path data for territory: ${territory}`);
                 }
                 
+                // Apply manual position adjustments for specific territories
+                if (territory === 'greenland') {
+                    path.setAttribute('transform', 'translate(-2, -3)');
+                }
+                
                 group.appendChild(path);
             });
         });
@@ -146,6 +151,75 @@ class RiskMap {
             // Pass the mouse coordinates for centered zooming
             this.zoomAtPoint(e.clientX, e.clientY, newScale);
         });
+
+        // **ADD: Touch event support for mobile**
+        this.setupTouchControls();
+    }
+
+    setupTouchControls() {
+        let lastTouchDistance = 0;
+        let lastTouchCenter = { x: 0, y: 0 };
+        
+        this.svg.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                // Pinch zoom starting
+                e.preventDefault();
+                lastTouchDistance = this.getTouchDistance(e.touches);
+                lastTouchCenter = this.getTouchCenter(e.touches);
+            } else if (e.touches.length === 1) {
+                // Single touch pan
+                const touch = e.touches[0];
+                this.startX = touch.clientX - this.translateX;
+                this.startY = touch.clientY - this.translateY;
+                this.isDragging = true;
+            }
+        });
+        
+        this.svg.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                // Pinch zoom
+                e.preventDefault();
+                const currentDistance = this.getTouchDistance(e.touches);
+                const currentCenter = this.getTouchCenter(e.touches);
+                
+                // Calculate zoom
+                const zoomDelta = currentDistance / lastTouchDistance;
+                const newScale = this.scale * zoomDelta;
+                
+                // Zoom at center point
+                this.zoomAtPoint(currentCenter.x, currentCenter.y, newScale);
+                
+                lastTouchDistance = currentDistance;
+                lastTouchCenter = currentCenter;
+            } else if (e.touches.length === 1 && this.isDragging) {
+                // Pan
+                e.preventDefault();
+                const touch = e.touches[0];
+                this.translateX = touch.clientX - this.startX;
+                this.translateY = touch.clientY - this.startY;
+                this.updateTransform();
+            }
+        });
+        
+        this.svg.addEventListener('touchend', () => {
+            this.isDragging = false;
+            lastTouchDistance = 0;
+        });
+        
+        console.log('📱 Touch controls initialized for mobile zoom/pan');
+    }
+
+    getTouchDistance(touches) {
+        const dx = touches[0].clientX - touches[1].clientX;
+        const dy = touches[0].clientY - touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    getTouchCenter(touches) {
+        return {
+            x: (touches[0].clientX + touches[1].clientX) / 2,
+            y: (touches[0].clientY + touches[1].clientY) / 2
+        };
     }
 
     handleTerritoryClick(event) {
@@ -395,8 +469,37 @@ class RiskMap {
     }
 
     updateTransform() {
+        const transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+        
+        // **CRITICAL: Apply to ALL layers synchronously**
         if (this.mapGroup) {
-            this.mapGroup.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+            this.mapGroup.style.transform = transform;
+        }
+        
+        // Sync water layer
+        const waterLayer = document.getElementById('water-layer-container');
+        if (waterLayer) {
+            waterLayer.style.transform = transform;
+        }
+        
+        // Sync map background layer
+        const mapLayer = document.getElementById('map-layer-container');
+        if (mapLayer) {
+            mapLayer.style.transform = transform;
+        }
+        
+        // Sync territory layer container
+        const territoryLayer = document.getElementById('territory-layer-container');
+        if (territoryLayer) {
+            territoryLayer.style.transform = transform;
+        }
+        
+        // Sync map-container background for parallax effect (optional - subtle movement)
+        const mapContainer = document.querySelector('.map-container');
+        if (mapContainer) {
+            // Apply subtle parallax (0.05x movement) for depth without breaking alignment
+            const bgTransform = `translate(${this.translateX * 0.05}px, ${this.translateY * 0.05}px) scale(${this.scale})`;
+            mapContainer.style.transformOrigin = 'center';
         }
     }
 

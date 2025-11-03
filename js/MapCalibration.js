@@ -9,11 +9,11 @@
 class MapCalibration {
     constructor() {
         this.calibrationData = {
-            offsetX: 0,
-            offsetY: 0,
+            offsetX: 4,
+            offsetY: -24,
             opacity: 0.85,
-            scale: 1.0,
-            bgScale: 1.0,
+            scale: 0.8,
+            bgScale: 0.8,
             vignetteCenterX: 50,
             vignetteCenterY: 50,
             vignetteScale: 70
@@ -55,13 +55,15 @@ class MapCalibration {
         const bgRect = document.querySelector('rect[fill="url(#world-map-bg)"]');
         const waterPattern = document.getElementById('ocean-water-texture');
         const vignetteGradient = document.getElementById('water-vignette');
+        const mapGroup = document.querySelector('.map-group');
+        const svg = document.getElementById('risk-map');
         
         if (!bgPattern || !bgRect) {
             console.warn('Background pattern elements not found');
             return;
         }
         
-        // Update world map pattern position
+        // Update world map pattern position and scale
         const image = bgPattern.querySelector('image');
         if (image) {
             image.setAttribute('x', this.calibrationData.offsetX);
@@ -73,15 +75,23 @@ class MapCalibration {
         // Update world map opacity
         bgRect.setAttribute('opacity', this.calibrationData.opacity);
         
-        // Update water texture background scale if present
+        // Update water texture background scale and position
         if (waterPattern) {
             const waterImage = waterPattern.querySelector('image');
             if (waterImage) {
                 const baseWidth = 1920;
                 const baseHeight = 1080;
+                waterImage.setAttribute('x', this.calibrationData.offsetX);
+                waterImage.setAttribute('y', this.calibrationData.offsetY);
                 waterImage.setAttribute('width', baseWidth * this.calibrationData.bgScale);
                 waterImage.setAttribute('height', baseHeight * this.calibrationData.bgScale);
             }
+        }
+        
+        // Apply scale and offset to SVG territories (map-group)
+        if (mapGroup) {
+            const transform = `translate(${this.calibrationData.offsetX}, ${this.calibrationData.offsetY}) scale(${this.calibrationData.scale})`;
+            mapGroup.setAttribute('transform', transform);
         }
         
         // Update vignette gradient if present
@@ -91,7 +101,7 @@ class MapCalibration {
             vignetteGradient.setAttribute('r', `${this.calibrationData.vignetteScale}%`);
         }
         
-        console.log('Applied calibration:', this.calibrationData);
+        console.log('Applied calibration to all layers:', this.calibrationData);
     }
     
     /**
@@ -294,18 +304,18 @@ class MapCalibration {
         // Reset button
         resetBtn?.addEventListener('click', () => {
             this.calibrationData = {
-                offsetX: 0,
-                offsetY: 0,
+                offsetX: 4,
+                offsetY: -24,
                 opacity: 0.85,
-                scale: 1.0,
-                bgScale: 1.0,
+                scale: 0.8,
+                bgScale: 0.8,
                 vignetteCenterX: 50,
                 vignetteCenterY: 50,
                 vignetteScale: 70
             };
             this.applyCalibration();
             this.updateUIValues();
-            this.showNotification('Calibration reset!');
+            this.showNotification('Calibration reset to defaults!');
         });
     }
     

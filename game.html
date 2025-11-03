@@ -10004,9 +10004,6 @@
       const mapContainer = document.querySelector('.map-container');
       const mapSvg = document.getElementById('risk-map');
       
-      let scale = 1;
-      let posX = 0;
-      let posY = 0;
       let lastDistance = 0;
       let isPinching = false;
       
@@ -10039,17 +10036,17 @@
             const currentDistance = getDistance(e.touches[0], e.touches[1]);
             const delta = currentDistance - lastDistance;
             
-            // Scale adjustment
-            const scaleChange = delta * 0.01;
-            const newScale = Math.max(0.5, Math.min(3, scale + scaleChange));
-            
-            if (newScale !== scale) {
-              scale = newScale;
+            // Scale adjustment using MapCalibration system
+            if (window.mapCalibration) {
+              const scaleChange = delta * 0.005; // Reduced sensitivity
+              const currentScale = window.mapCalibration.calibrationData.scale;
+              const newScale = Math.max(0.3, Math.min(2.5, currentScale + scaleChange));
               
-              // Apply transform
-              const mapGroup = mapSvg.querySelector('.map-group') || mapSvg;
-              mapGroup.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
-              mapGroup.style.transformOrigin = 'center center';
+              if (newScale !== currentScale) {
+                window.mapCalibration.calibrationData.scale = newScale;
+                window.mapCalibration.calibrationData.bgScale = newScale;
+                window.mapCalibration.applyCalibration();
+              }
             }
             
             lastDistance = currentDistance;
@@ -10059,10 +10056,14 @@
         mapSvg.addEventListener('touchend', function(e) {
           if (e.touches.length < 2) {
             isPinching = false;
+            // Save the scale on pinch end
+            if (window.mapCalibration) {
+              window.mapCalibration.saveCalibration();
+            }
           }
         }, { passive: true });
         
-        console.log('📱 Pinch-to-zoom enabled for map');
+        console.log('📱 Pinch-to-zoom enabled for all map layers');
       }
       
       // ═══════════════════════════════════════════════════════

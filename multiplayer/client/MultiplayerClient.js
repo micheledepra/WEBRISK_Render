@@ -64,6 +64,9 @@ class MultiplayerClient {
 
     console.log('🎮 MultiplayerClient initialized');
     console.log('🌐 Server URL:', this.serverUrl);
+    
+    // Initialize socket connection immediately
+    this.initSocket();
   }
 
   generateUserId() {
@@ -71,7 +74,118 @@ class MultiplayerClient {
   }
 
   /**
-   * Connect to the multiplayer server
+   * Initialize Socket.IO connection immediately
+   */
+  initSocket() {
+    if (this.socket && this.socket.connected) {
+      console.log('✅ Socket already connected');
+      return;
+    }
+
+    console.log('🔌 Initializing socket connection to:', this.serverUrl);
+    
+    // Check if Socket.IO is loaded
+    if (typeof io === 'undefined') {
+      console.error('❌ Socket.IO library not loaded');
+      return;
+    }
+
+    try {
+      this.socket = io(this.serverUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+        timeout: 10000
+      });
+
+      // Connection established
+      this.socket.on('connect', () => {
+        this.isConnected = true;
+        console.log('✅ Connected to server:', this.socket.id);
+        this.trigger('onConnect');
+      });
+
+      // Connection error
+      this.socket.on('connect_error', (error) => {
+        console.error('❌ Connection error:', error.message);
+        this.isConnected = false;
+        this.trigger('onError', error);
+      });
+
+      // Disconnection
+      this.socket.on('disconnect', (reason) => {
+        this.isConnected = false;
+        console.log('🔌 Disconnected from server:', reason);
+        this.trigger('onDisconnect', reason);
+      });
+
+      // Reconnection
+      this.socket.on('reconnect', (attemptNumber) => {
+        console.log('🔄 Reconnected after', attemptNumber, 'attempts');
+        this.isConnected = true;
+      });
+
+      this.setupEventListeners();
+
+    } catch (error) {
+      console.error('❌ Failed to initialize socket:', error);
+    }
+  }
+
+  /**
+   * Setup all socket event listeners
+   */
+  setupEventListeners() {
+    if (!this.socket) return;
+
+    // Session updates
+    this.socket.on('session:update', (session) => {
+      console.log('📥 Session update:', session);
+      this.trigger('onSessionUpdate', session);
+    });
+
+    // Player list updates
+    this.socket.on('session:playersUpdate', (data) => {
+      console.log('👥 Players update:', data);
+      this.trigger('onPlayersUpdate', data);
+    });
+
+    // Game state updates
+    this.socket.on('gameState:update', (gameState) => {
+      console.log('🎮 Game state update received');
+      this.trigger('onGameStateUpdate', gameState);
+    });
+
+    // Turn notifications
+    this.socket.on('turn:start', (data) => {
+      console.log('🔄 Turn start:', data);
+      this.isMyTurn = data.currentPlayerId === this.userId;
+      this.currentPlayerName = data.currentPlayerName;
+      this.trigger('onTurnStart', data);
+    });
+
+    // Turn validation errors
+    this.socket.on('turn:validationError', (data) => {
+      console.warn('⚠️ Turn validation error:', data.message);
+      this.trigger('onTurnValidationError', data);
+    });
+
+    // Session errors
+    this.socket.on('session:error', (data) => {
+      console.error('❌ Session error:', data.message);
+      this.trigger('onSessionError', data);
+    });
+
+    // General errors
+    this.socket.on('error', (data) => {
+      console.error('❌ Error:', data.message);
+      this.trigger('onError', data);
+    });
+  }
+
+  /**
+   * Connect to the multiplayer server (legacy method for compatibility)
    */
   connect() {
     return new Promise((resolve, reject) => {
@@ -80,98 +194,25 @@ class MultiplayerClient {
         return resolve();
       }
 
-      console.log(`🔌 Connecting to server: ${this.serverUrl}`);
-      
-      // Check if Socket.IO is loaded
-      if (typeof io === 'undefined') {
-        reject(new Error('Socket.IO library not loaded. Make sure socket.io.js is included before MultiplayerClient.js'));
-        return;
+      if (!this.socket) {
+        this.initSocket();
       }
 
-      try {
-        this.socket = io(this.serverUrl, {
-          transports: ['websocket', 'polling'],
-          reconnection: true,
-          reconnectionDelay: 1000,
-          reconnectionAttempts: 5
-        });
-
-        // Connection established
-        this.socket.on('connect', () => {
-          this.isConnected = true;
-          console.log('✅ Connected to server:', this.socket.id);
-          this.trigger('onConnect');
+      // Wait for connection
+      const checkConnection = setInterval(() => {
+        if (this.isConnected) {
+          clearInterval(checkConnection);
           resolve();
-        });
+        }
+      }, 100);
 
-        // Connection error
-        this.socket.on('connect_error', (error) => {
-          console.error('❌ Connection error:', error);
-          this.isConnected = false;
-          reject(error);
-        });
-
-        // Disconnection
-        this.socket.on('disconnect', (reason) => {
-          this.isConnected = false;
-          console.log('🔌 Disconnected from server:', reason);
-          this.trigger('onDisconnect');
-        });
-
-        // Reconnection
-        this.socket.on('reconnect', (attemptNumber) => {
-          console.log('🔄 Reconnected after', attemptNumber, 'attempts');
-          this.isConnected = true;
-        });
-
-      } catch (error) {
-        console.error('❌ Failed to create socket:', error);
-        reject(error);
-      }
-
-      // Session updates
-      this.socket.on('session:update', (session) => {
-        console.log('📥 Session update:', session);
-        this.trigger('onSessionUpdate', session);
-      });
-
-      // Player list updates
-      this.socket.on('session:playersUpdate', (data) => {
-        console.log('👥 Players update:', data);
-        this.trigger('onPlayersUpdate', data);
-      });
-
-      // Game state updates
-      this.socket.on('gameState:update', (gameState) => {
-        console.log('🎮 Game state update received');
-        this.trigger('onGameStateUpdate', gameState);
-      });
-
-      // Turn notifications
-      this.socket.on('turn:start', (data) => {
-        console.log('🔄 Turn start:', data);
-        this.isMyTurn = data.currentPlayerId === this.userId;
-        this.currentPlayerName = data.currentPlayerName;
-        this.trigger('onTurnStart', data);
-      });
-
-      // Turn validation errors
-      this.socket.on('turn:validationError', (data) => {
-        console.warn('⚠️ Turn validation error:', data.message);
-        this.trigger('onTurnValidationError', data);
-      });
-
-      // Session errors
-      this.socket.on('session:error', (data) => {
-        console.error('❌ Session error:', data.message);
-        this.trigger('onSessionError', data);
-      });
-
-      // General errors
-      this.socket.on('error', (data) => {
-        console.error('❌ Error:', data.message);
-        this.trigger('onError', data);
-      });
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        clearInterval(checkConnection);
+        if (!this.isConnected) {
+          reject(new Error('Connection timeout'));
+        }
+      }, 10000);
     });
   }
 

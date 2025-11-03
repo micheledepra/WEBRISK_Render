@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Risk - Multiplayer Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Risk Multiplayer Game</title>
   <link rel="icon" type="image/x-icon" href="../../favicon.ico">
   
   <!-- Firebase SDK - Cloud Persistence -->
@@ -12,225 +18,932 @@
   <script src="../../js/firebase-config.js"></script>
   
   <!-- Original game styles -->
-  <link rel="stylesheet" href="../../css/combat-system.css" />
-  <link rel="stylesheet" href="../../css/combat-animations.css" />
-  <link rel="stylesheet" href="../../css/combat-testing.css" />
-  <link rel="stylesheet" href="../../css/army-counts.css" />
+  <link rel="stylesheet" href="../../css/combat-system.css">
+  <link rel="stylesheet" href="../../css/combat-animations.css">
+  <link rel="stylesheet" href="../../css/combat-testing.css">
+  <link rel="stylesheet" href="../../css/army-counts.css">
   
   <!-- Multiplayer UI styles -->
-  <link rel="stylesheet" href="multiplayer-ui.css" />
+  <link rel="stylesheet" href="multiplayer-ui.css">
   
   <style>
-    /* Hide original single-player controls if needed */
-    .single-player-only {
-      display: none !important;
+    /* Multiplayer-specific overrides */
+    body {
+      font-family: 'Australian Flying Corps Stencil', Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    
+    /* Multiplayer HUD - Top bar */
+    #multiplayer-hud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border-bottom: 3px solid #ffd700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 10000;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+    
+    #multiplayer-hud .session-info {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      color: #ffd700;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    
+    #multiplayer-hud .session-code {
+      background: rgba(255, 215, 0, 0.2);
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 2px solid #ffd700;
+      font-size: 1.3em;
+      letter-spacing: 0.2em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    #multiplayer-hud .session-code:hover {
+      background: rgba(255, 215, 0, 0.3);
+      transform: scale(1.05);
+    }
+    
+    #multiplayer-hud .connection-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.9em;
+    }
+    
+    #multiplayer-hud .connection-status.connected {
+      background: rgba(0, 255, 0, 0.1);
+      border: 2px solid #0f3;
+      color: #0f3;
+    }
+    
+    #multiplayer-hud .connection-status.connecting {
+      background: rgba(255, 193, 7, 0.1);
+      border: 2px solid #ffc107;
+      color: #ffc107;
+    }
+    
+    #multiplayer-hud .connection-status.disconnected {
+      background: rgba(244, 67, 54, 0.1);
+      border: 2px solid #f44336;
+      color: #f44336;
+    }
+    
+    #multiplayer-hud .online-players {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #eee;
+    }
+    
+    #multiplayer-hud .player-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+      transition: transform 0.2s;
+      position: relative;
+    }
+    
+    #multiplayer-hud .player-dot:hover {
+      transform: scale(1.2);
+    }
+    
+    #multiplayer-hud .player-dot.offline {
+      opacity: 0.3;
+      border-color: #666;
+    }
+    
+    #multiplayer-hud .player-dot.current-turn {
+      box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+      animation: pulse-turn 2s infinite;
+    }
+    
+    @keyframes pulse-turn {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    
+    /* Action Log - Right side */
+    #action-log {
+      position: fixed;
+      right: 20px;
+      top: 80px;
+      width: 300px;
+      max-height: 400px;
+      background: rgba(15, 32, 62, 0.95);
+      border: 2px solid #ffd700;
+      border-radius: 12px;
+      padding: 15px;
+      color: #eee;
+      z-index: 9000;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    
+    #action-log h3 {
+      margin: 0 0 10px 0;
+      color: #ffd700;
+      border-bottom: 2px solid #ffd700;
+      padding-bottom: 8px;
+    }
+    
+    #action-log ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    #action-log li {
+      padding: 8px;
+      margin: 5px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 6px;
+      font-size: 0.9em;
+      border-left: 3px solid #ffd700;
+    }
+    
+    #action-log li.action-attack {
+      border-left-color: #f44336;
+    }
+    
+    #action-log li.action-fortify {
+      border-left-color: #2196f3;
+    }
+    
+    #action-log li.action-reinforce {
+      border-left-color: #4caf50;
+    }
+    
+    /* Loading screen */
+    #mp-loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 20000;
+    }
+    
+    #mp-loading-screen .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid rgba(255, 215, 0, 0.1);
+      border-top-color: #ffd700;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Adjust game container for multiplayer HUD */
+    .game-container {
+      margin-top: 60px;
+      height: calc(100vh - 60px);
+    }
+    
+    /* Turn indicator in sidebar */
+    .turn-indicator-mp {
+      background: rgba(255, 215, 0, 0.1);
+      border: 2px solid #ffd700;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    
+    .turn-indicator-mp.my-turn {
+      background: rgba(76, 175, 80, 0.2);
+      border-color: #4caf50;
+      animation: pulse-my-turn 2s infinite;
+    }
+    
+    @keyframes pulse-my-turn {
+      0%, 100% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); }
+      50% { box-shadow: 0 0 25px rgba(76, 175, 80, 0.8); }
+    }
+    
+    .turn-indicator-mp .turn-label {
+      font-size: 0.9em;
+      color: #999;
+      margin-bottom: 5px;
+    }
+    
+    .turn-indicator-mp .turn-player {
+      font-size: 1.3em;
+      font-weight: bold;
+    }
+    
+    /* Waiting for turn overlay */
+    #waiting-overlay {
+      position: fixed;
+      top: 60px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      pointer-events: none;
+    }
+    
+    #waiting-overlay.active {
+      display: flex;
+    }
+    
+    #waiting-overlay .waiting-message {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      border: 3px solid #ffd700;
+      border-radius: 20px;
+      padding: 40px 60px;
+      text-align: center;
+      color: #ffd700;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    }
+    
+    #waiting-overlay .waiting-message h2 {
+      margin: 0 0 15px 0;
+      font-size: 2em;
+    }
+    
+    #waiting-overlay .waiting-message .spinner {
+      margin: 20px auto;
+    }
+    
+    /* Copy notification */
+    .copy-notification {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #4caf50;
+      color: white;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-weight: bold;
+      z-index: 10001;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    
+    .copy-notification.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      #multiplayer-hud {
+        height: auto;
+        padding: 10px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      
+      #action-log {
+        width: calc(100% - 40px);
+        max-height: 200px;
+        right: 20px;
+        left: 20px;
+      }
+      
+      .game-container {
+        margin-top: 100px;
+        height: calc(100vh - 100px);
+      }
     }
   </style>
 </head>
 <body>
   <!-- Loading Screen -->
-  <div id="mp-loading-screen" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 20000;
-  ">
+  <div id="mp-loading-screen">
     <div style="text-align: center; color: #ffd700;">
-      <div class="waiting-spinner" style="margin: 0 auto 20px;"></div>
+      <div class="spinner"></div>
       <h2 style="font-size: 2em; margin-bottom: 10px;">Connecting to Game...</h2>
-      <p id="loading-message">Initializing multiplayer session</p>
+      <p id="loading-message" style="font-size: 1.2em;">Initializing multiplayer session</p>
     </div>
   </div>
-
-  <!-- Load original game in iframe -->
-  <iframe 
-    id="game-frame" 
-    src="../../game.html" 
-    style="
-      width: 100%;
-      height: 100vh;
-      border: none;
-      display: none;
-    "
-  ></iframe>
-
-  <!-- Socket.IO Client -->
-  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
   
-  <!-- Multiplayer modules -->
-  <script src="MultiplayerClient.js"></script>
-  <script src="MultiplayerGameAdapter.js"></script>
-  
-  <script>
-    /**
-     * Multiplayer Game Initialization
-     * Connects to server and syncs game state
-     */
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const sessionId = urlParams.get('session');
+  <!-- Multiplayer HUD -->
+  <div id="multiplayer-hud" style="display:none;">
+    <div class="session-info">
+      <div>
+        <span style="font-size: 0.8em;">SESSION:</span>
+        <div class="session-code" id="hud-session-code" title="Click to copy">
+          ------
+        </div>
+      </div>
+      <div class="connection-status connected" id="connection-status">
+        <span>🟢</span>
+        <span id="connection-text">Connected</span>
+      </div>
+    </div>
     
-    if (!sessionId) {
+    <div style="text-align: center;">
+      <div style="font-size: 0.8em; color: #999;">CURRENT TURN</div>
+      <div id="hud-current-player" style="color: #ffd700; font-size: 1.3em; font-weight: bold;">
+        Waiting...
+      </div>
+    </div>
+    
+    <div class="online-players">
+      <span style="font-size: 0.9em;">Players:</span>
+      <div id="online-player-list" style="display: flex; gap: 8px;">
+        <!-- Player dots will be added dynamically -->
+      </div>
+    </div>
+  </div>
+  
+  <!-- Waiting for Turn Overlay -->
+  <div id="waiting-overlay">
+    <div class="waiting-message">
+      <h2>⏳ Waiting for Turn</h2>
+      <p id="waiting-player-name" style="font-size: 1.2em;">Player X is playing...</p>
+      <div class="spinner"></div>
+    </div>
+  </div>
+  
+  <!-- Action Log -->
+  <div id="action-log" style="display:none;">
+    <h3>📜 Recent Actions</h3>
+    <ul id="action-list">
+      <li>Game started!</li>
+    </ul>
+  </div>
+  
+  <!-- Copy Notification -->
+  <div class="copy-notification" id="copy-notification">
+    ✅ Session code copied to clipboard!
+  </div>
+  
+  <!-- Main Game Container (will be injected from game.html content) -->
+  <div id="game-root"></div>
+  
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
+  
+  <!-- Load all game scripts in order -->
+  <script>
+    // Global multiplayer state
+    window.multiplayerState = {
+      sessionId: null,
+      userId: null,
+      playerName: null,
+      isMyTurn: false,
+      currentPlayerName: null,
+      players: {},
+      isHost: false,
+      isConnected: false
+    };
+    
+    // Extract session ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    window.multiplayerState.sessionId = urlParams.get('session');
+    
+    if (!window.multiplayerState.sessionId) {
       alert('No session ID provided!');
       window.location.href = 'lobby.html';
     }
-
-    // Initialize multiplayer client (auto-detect server URL)
-    const client = new MultiplayerClient();
-    const userId = client.getUserId();
-    const playerName = localStorage.getItem('risk_playerName') || 'Player';
-
-    let gameFrame;
-    let gameWindow;
-    let adapter;
-
+    
+    // Get stored player info
+    window.multiplayerState.userId = localStorage.getItem('risk_userId') || generateUserId();
+    window.multiplayerState.playerName = localStorage.getItem('risk_playerName') || 'Player';
+    
+    function generateUserId() {
+      const id = 'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('risk_userId', id);
+      return id;
+    }
+    
+    function updateLoadingMessage(message) {
+      const elem = document.getElementById('loading-message');
+      if (elem) elem.textContent = message;
+    }
+    
+    console.log('🎮 Multiplayer Game Loading...');
+    console.log('Session:', window.multiplayerState.sessionId);
+    console.log('Player:', window.multiplayerState.playerName);
+  </script>
+  
+  <!-- Load game scripts -->
+  <script src="../../js/MusicPlayer.js"></script>
+  <script src="../../js/mapData.js"></script>
+  <script src="../../js/territory-paths.js"></script>
+  <script src="../../js/ColorManager.js"></script>
+  <script src="../../js/ArmyCountManager.js"></script>
+  <script src="../../js/EnhancedTooltip.js"></script>
+  <script src="../../js/DiceRoller.js"></script>
+  <script src="../../js/DirectCombat.js"></script>
+  <script src="../../js/attackLogic.js"></script>
+  <script src="../../js/ReinforcementManager.js"></script>
+  <script src="../../js/FortificationManager.js"></script>
+  <script src="../../js/GameState.js"></script>
+  <script src="../../js/GameStateManager.js"></script>
+  <script src="../../js/FirebaseManager.js"></script>
+  <script src="../../js/ValidationManager.js"></script>
+  <script src="../../js/CombatSystem.js"></script>
+  <script src="../../js/CombatAnimations.js"></script>
+  <script src="../../js/CombatDebugger.js"></script>
+  <script src="../../js/CombatManager.js"></script>
+  <script src="../../js/CombatUI.js"></script>
+  <script src="../../js/CombatEnhancements.js"></script>
+  <script src="../../js/CombatEnhancedIntegration.js"></script>
+  <script src="../../js/CombatTester.js"></script>
+  <script src="../../js/PhaseManager.js"></script>
+  <script src="../../js/PhaseSynchronizer.js"></script>
+  <script src="../../js/PhaseDebugger.js"></script>
+  <script src="../../js/TurnManager.js"></script>
+  <script src="../../js/RiskUI.js"></script>
+  <script src="../../js/RiskUI.AttackExtension.js"></script>
+  <script src="../../js/CombatIntegration.js"></script>
+  <script src="../../js/RiskMap.js"></script>
+  <script src="../../js/MapCalibrationPresets.js"></script>
+  <script src="../../js/MapCalibration.js"></script>
+  <script src="../../js/RiskGame.js"></script>
+  <script src="../../js/AttackManager.js"></script>
+  <script src="../../js/AttackManager.integration.js"></script>
+  <script src="../../js/AttackPathVisualizer.js"></script>
+  <script src="../../js/EnhancedAttackUI.js"></script>
+  <script src="../../js/EnhancedAttackUI.integration.js"></script>
+  <script src="../../js/StatisticsManager.js"></script>
+  
+  <!-- Multiplayer specific modules -->
+  <script src="../shared/SessionCodeGenerator.js"></script>
+  <script src="../shared/TurnValidator.js"></script>
+  <script src="../shared/ConflictResolver.js"></script>
+  <script src="MultiplayerClient.js"></script>
+  <script src="MultiplayerGameAdapter.js"></script>
+  
+  <!-- Multiplayer game initialization -->
+  <script>
+    let multiplayerClient;
+    let gameAdapter;
+    
     async function initializeMultiplayerGame() {
       try {
         updateLoadingMessage('Connecting to server...');
         
+        // Initialize multiplayer client
+        multiplayerClient = new MultiplayerClient();
+        window.multiplayerClient = multiplayerClient;
+        
         // Connect to server
-        await client.connect();
+        await multiplayerClient.connect();
+        window.multiplayerState.isConnected = true;
         
         updateLoadingMessage('Joining session...');
         
         // Join session
-        await client.joinSession(sessionId, playerName);
+        const joinResult = await multiplayerClient.joinSession(
+          window.multiplayerState.sessionId,
+          window.multiplayerState.playerName
+        );
         
-        updateLoadingMessage('Loading game...');
+        console.log('✅ Joined session:', joinResult);
         
-        // Setup frame communication
-        gameFrame = document.getElementById('game-frame');
+        updateLoadingMessage('Loading game state...');
         
-        gameFrame.onload = async () => {
-          try {
-            gameWindow = gameFrame.contentWindow;
-            
-            updateLoadingMessage('Syncing game state...');
-            
-            // Wait for game to initialize
-            await waitForGameReady();
-            
-            updateLoadingMessage('Setting up multiplayer...');
-            
-            // Initialize multiplayer adapter
-            adapter = new gameWindow.MultiplayerGameAdapter(
-              client,
-              gameWindow.gameState,
-              gameWindow.turnManager
-            );
-            
-            // Inject multiplayer UI components
-            injectMultiplayerUI();
-            
-            await adapter.initialize();
-            
-            // Hide loading screen
-            hideLoadingScreen();
-            
-            console.log('✅ Multiplayer game ready!');
-          } catch (error) {
-            console.error('Frame initialization error:', error);
-            showError('Failed to initialize game: ' + error.message);
-          }
-        };
+        // Request game state sync
+        await multiplayerClient.syncGameState();
+        
+        updateLoadingMessage('Initializing game...');
+        
+        // Load game HTML content
+        await loadGameContent();
+        
+        updateLoadingMessage('Setting up multiplayer...');
+        
+        // Initialize game systems (similar to game.html)
+        await initializeGameSystems();
+        
+        updateLoadingMessage('Connecting multiplayer adapter...');
+        
+        // Initialize multiplayer adapter
+        gameAdapter = new MultiplayerGameAdapter(
+          multiplayerClient,
+          window.gameState,
+          window.turnManager
+        );
+        window.gameAdapter = gameAdapter;
+        
+        await gameAdapter.initialize();
+        
+        // Setup multiplayer UI
+        setupMultiplayerUI();
+        
+        // Setup event listeners
+        setupMultiplayerListeners();
+        
+        // Hide loading screen
+        hideLoadingScreen();
+        
+        console.log('✅ Multiplayer game fully initialized!');
         
       } catch (error) {
-        console.error('Initialization error:', error);
-        showError('Failed to connect: ' + error.message);
+        console.error('❌ Multiplayer initialization error:', error);
+        showError('Failed to initialize game: ' + error.message);
       }
     }
-
-    function waitForGameReady() {
-      return new Promise((resolve, reject) => {
-        let attempts = 0;
-        const maxAttempts = 50;
+    
+    async function loadGameContent() {
+      // Load game.html content dynamically
+      const response = await fetch('../../game.html');
+      const html = await response.text();
+      
+      // Extract body content (exclude head and scripts)
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const gameBody = doc.body.innerHTML;
+      
+      // Inject into game-root
+      document.getElementById('game-root').innerHTML = gameBody;
+      
+      console.log('✅ Game content loaded');
+    }
+    
+    async function initializeGameSystems() {
+      // Get player data from session
+      const sessionData = multiplayerClient.sessionData;
+      const players = Object.keys(sessionData.players);
+      const playerColors = Object.values(sessionData.players).map(p => p.color);
+      
+      console.log('🎮 Initializing with players:', players);
+      
+      // Initialize RiskUI
+      const riskUI = new RiskUI();
+      window.riskUI = riskUI;
+      
+      riskUI.initGame(players, playerColors);
+      
+      // Initialize color manager globally
+      window.colorManager = riskUI.colorManager;
+      window.ColorManager = riskUI.colorManager;
+      
+      // Initialize combat system
+      if (typeof initializeCombatSystem !== 'undefined') {
+        initializeCombatSystem();
+      }
+      
+      // Load game state from server if exists
+      if (sessionData.gameState) {
+        GameStateManager.restoreFromPersistence(sessionData.gameState);
+      } else {
+        // First time - distribute territories
+        riskUI.gameState.assignTerritoriesRandomly();
+      }
+      
+      // Sync phases
+      riskUI.phaseManager.syncWithGameState();
+      riskUI.updatePlayerStats();
+      
+      // Initialize map
+      const riskMap = new RiskMap(riskUI);
+      const riskGame = new RiskGame(riskUI, riskMap);
+      
+      window.gameState = riskUI.gameState;
+      window.riskMap = riskMap;
+      window.riskGame = riskGame;
+      window.phaseSynchronizer = riskUI.phaseSynchronizer;
+      window.turnManager = riskUI.turnManager;
+      
+      // Initialize army count manager
+      if (window.ArmyCountManager) {
+        riskUI.armyCountManager = new ArmyCountManager(riskUI.colorManager);
+        riskUI.setupArmyCountMapIntegration();
+        riskUI.initializeVisualsAfterMap();
+      }
+      
+      // Initialize turn management UI
+      if (window.initializeTurnManagement) {
+        window.initializeTurnManagement();
+      }
+      
+      console.log('✅ Game systems initialized');
+    }
+    
+    function setupMultiplayerUI() {
+      // Show multiplayer HUD
+      document.getElementById('multiplayer-hud').style.display = 'flex';
+      document.getElementById('action-log').style.display = 'block';
+      
+      // Set session code
+      const sessionCodeEl = document.getElementById('hud-session-code');
+      sessionCodeEl.textContent = window.multiplayerState.sessionId;
+      
+      // Setup copy to clipboard
+      sessionCodeEl.addEventListener('click', () => {
+        navigator.clipboard.writeText(window.multiplayerState.sessionId);
+        showCopyNotification();
+      });
+      
+      // Update player list
+      updatePlayerList();
+      
+      // Update turn indicator
+      updateTurnIndicator();
+      
+      // Add turn indicator to sidebar
+      addTurnIndicatorToSidebar();
+      
+      console.log('✅ Multiplayer UI ready');
+    }
+    
+    function setupMultiplayerListeners() {
+      // Connection status
+      multiplayerClient.on('onConnect', () => {
+        updateConnectionStatus('connected', 'Connected');
+      });
+      
+      multiplayerClient.on('onDisconnect', () => {
+        updateConnectionStatus('disconnected', 'Disconnected');
+      });
+      
+      multiplayerClient.on('onReconnecting', () => {
+        updateConnectionStatus('connecting', 'Reconnecting...');
+      });
+      
+      // Game state updates
+      multiplayerClient.on('onGameStateUpdate', (state) => {
+        console.log('📥 Game state updated');
+        addActionLog('Game state synchronized', 'system');
+      });
+      
+      // Turn changes
+      multiplayerClient.on('onTurnStart', (data) => {
+        console.log('🔄 Turn started:', data.currentPlayerName);
+        window.multiplayerState.currentPlayerName = data.currentPlayerName;
+        window.multiplayerState.isMyTurn = 
+          data.currentPlayerName === window.multiplayerState.playerName;
         
-        const checkReady = setInterval(() => {
-          attempts++;
-          
-          if (gameWindow.gameState && gameWindow.turnManager) {
-            clearInterval(checkReady);
-            resolve();
-          } else if (attempts >= maxAttempts) {
-            clearInterval(checkReady);
-            reject(new Error('Game initialization timeout'));
-          }
-        }, 200);
+        updateTurnIndicator();
+        updateWaitingOverlay();
+        
+        addActionLog(
+          `${data.currentPlayerName}'s turn started (Turn ${data.turnNumber})`,
+          'system'
+        );
+      });
+      
+      // Player actions
+      multiplayerClient.on('onPlayerAction', (data) => {
+        console.log('👤 Player action:', data);
+        
+        const actionText = formatPlayerAction(data);
+        addActionLog(actionText, data.action.type);
+      });
+      
+      // Player joined
+      multiplayerClient.on('onPlayerJoined', (data) => {
+        console.log('✅ Player joined:', data.playerName);
+        addActionLog(`${data.playerName} joined the game`, 'system');
+        updatePlayerList();
+      });
+      
+      // Player left
+      multiplayerClient.on('onPlayerLeft', (data) => {
+        console.log('👋 Player left:', data.playerName);
+        addActionLog(`${data.playerName} left the game`, 'system');
+        updatePlayerList();
+      });
+      
+      console.log('✅ Multiplayer listeners registered');
+    }
+    
+    function updateConnectionStatus(status, text) {
+      const statusEl = document.getElementById('connection-status');
+      const textEl = document.getElementById('connection-text');
+      
+      statusEl.className = 'connection-status ' + status;
+      textEl.textContent = text;
+      
+      // Update emoji
+      const emoji = status === 'connected' ? '🟢' : 
+                    status === 'connecting' ? '🟡' : '🔴';
+      statusEl.querySelector('span').textContent = emoji;
+    }
+    
+    function updatePlayerList() {
+      const listEl = document.getElementById('online-player-list');
+      const sessionData = multiplayerClient.sessionData;
+      
+      if (!sessionData || !sessionData.players) return;
+      
+      listEl.innerHTML = '';
+      
+      Object.entries(sessionData.players).forEach(([name, data]) => {
+        const dot = document.createElement('div');
+        dot.className = 'player-dot';
+        dot.style.backgroundColor = data.color || '#999';
+        dot.title = name + (data.isOnline ? ' (Online)' : ' (Offline)');
+        
+        if (!data.isOnline) {
+          dot.classList.add('offline');
+        }
+        
+        if (name === window.multiplayerState.currentPlayerName) {
+          dot.classList.add('current-turn');
+        }
+        
+        listEl.appendChild(dot);
       });
     }
-
-    function injectMultiplayerUI() {
-      const gameDoc = gameFrame.contentDocument || gameFrame.contentWindow.document;
+    
+    function updateTurnIndicator() {
+      const playerEl = document.getElementById('hud-current-player');
+      const currentPlayer = window.multiplayerState.currentPlayerName;
       
-      // Inject styles
-      const styleLink = gameDoc.createElement('link');
-      styleLink.rel = 'stylesheet';
-      styleLink.href = '/multiplayer/client/multiplayer-ui.css';
-      gameDoc.head.appendChild(styleLink);
-      
-      // Inject adapter script
-      const adapterScript = gameDoc.createElement('script');
-      adapterScript.src = '/multiplayer/client/MultiplayerGameAdapter.js';
-      gameDoc.body.appendChild(adapterScript);
-      
-      // Make client available in game window
-      gameWindow.multiplayerClient = client;
-      gameWindow.multiplayerAdapter = adapter;
-      
-      console.log('✅ Multiplayer UI injected');
-    }
-
-    function updateLoadingMessage(message) {
-      const elem = document.getElementById('loading-message');
-      if (elem) {
-        elem.textContent = message;
+      if (currentPlayer) {
+        playerEl.textContent = currentPlayer;
+        
+        // Get player color
+        const sessionData = multiplayerClient.sessionData;
+        if (sessionData && sessionData.players[currentPlayer]) {
+          playerEl.style.color = sessionData.players[currentPlayer].color;
+        }
       }
     }
-
+    
+    function updateWaitingOverlay() {
+      const overlay = document.getElementById('waiting-overlay');
+      const playerNameEl = document.getElementById('waiting-player-name');
+      
+      if (window.multiplayerState.isMyTurn) {
+        overlay.classList.remove('active');
+      } else {
+        overlay.classList.add('active');
+        playerNameEl.textContent = 
+          `${window.multiplayerState.currentPlayerName} is playing...`;
+      }
+    }
+    
+    function addTurnIndicatorToSidebar() {
+      const sidebar = document.querySelector('.sidebar');
+      if (!sidebar) return;
+      
+      const indicator = document.createElement('div');
+      indicator.className = 'turn-indicator-mp';
+      indicator.id = 'turn-indicator-mp';
+      indicator.innerHTML = `
+        <div class="turn-label">Current Turn</div>
+        <div class="turn-player" id="sidebar-turn-player">Waiting...</div>
+      `;
+      
+      // Insert at top of sidebar
+      sidebar.insertBefore(indicator, sidebar.firstChild);
+      
+      // Update it
+      updateSidebarTurnIndicator();
+    }
+    
+    function updateSidebarTurnIndicator() {
+      const indicator = document.getElementById('turn-indicator-mp');
+      const playerEl = document.getElementById('sidebar-turn-player');
+      
+      if (!indicator || !playerEl) return;
+      
+      const currentPlayer = window.multiplayerState.currentPlayerName;
+      const isMyTurn = window.multiplayerState.isMyTurn;
+      
+      if (currentPlayer) {
+        playerEl.textContent = currentPlayer;
+        
+        if (isMyTurn) {
+          indicator.classList.add('my-turn');
+          playerEl.textContent += ' (YOU)';
+        } else {
+          indicator.classList.remove('my-turn');
+        }
+        
+        // Color code
+        const sessionData = multiplayerClient.sessionData;
+        if (sessionData && sessionData.players[currentPlayer]) {
+          playerEl.style.color = sessionData.players[currentPlayer].color;
+        }
+      }
+    }
+    
+    function addActionLog(text, type = 'system') {
+      const listEl = document.getElementById('action-list');
+      const li = document.createElement('li');
+      li.className = `action-${type}`;
+      li.textContent = text;
+      
+      // Add timestamp
+      const time = new Date().toLocaleTimeString();
+      li.title = time;
+      
+      listEl.insertBefore(li, listEl.firstChild);
+      
+      // Limit to 20 entries
+      while (listEl.children.length > 20) {
+        listEl.removeChild(listEl.lastChild);
+      }
+    }
+    
+    function formatPlayerAction(data) {
+      const player = data.playerName;
+      const action = data.action;
+      
+      switch (action.type) {
+        case 'reinforcement':
+          return `${player} placed ${action.armies} armies on ${action.territory}`;
+        case 'attack':
+          return `${player} attacked ${action.targetTerritory} from ${action.sourceTerritory}`;
+        case 'fortification':
+          return `${player} moved ${action.armies} armies from ${action.sourceTerritory} to ${action.targetTerritory}`;
+        case 'endTurn':
+          return `${player} ended their turn`;
+        default:
+          return `${player} performed ${action.type}`;
+      }
+    }
+    
+    function showCopyNotification() {
+      const notification = document.getElementById('copy-notification');
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 2000);
+    }
+    
     function hideLoadingScreen() {
       const loadingScreen = document.getElementById('mp-loading-screen');
-      if (loadingScreen) {
-        loadingScreen.style.display = 'none';
-      }
-      gameFrame.style.display = 'block';
+      loadingScreen.style.display = 'none';
     }
-
+    
     function showError(message) {
       const loadingScreen = document.getElementById('mp-loading-screen');
-      if (loadingScreen) {
-        loadingScreen.innerHTML = `
-          <div style="text-align: center; color: #f44336;">
-            <h2 style="font-size: 2em; margin-bottom: 20px;">❌ Error</h2>
-            <p style="font-size: 1.2em; margin-bottom: 30px;">${message}</p>
-            <button onclick="window.location.href='lobby.html'" style="
-              padding: 15px 30px;
-              font-size: 1.2em;
-              background: #ffd700;
-              color: #1a1a2e;
-              border: none;
-              border-radius: 10px;
-              cursor: pointer;
-            ">Back to Lobby</button>
-          </div>
-        `;
-      }
+      loadingScreen.innerHTML = `
+        <div style="text-align: center; color: #f44336;">
+          <h2 style="font-size: 2em; margin-bottom: 20px;">❌ Error</h2>
+          <p style="font-size: 1.2em; margin-bottom: 30px; max-width: 600px;">${message}</p>
+          <button onclick="window.location.href='lobby.html'" style="
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: #ffd700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+          ">Back to Lobby</button>
+          <button onclick="location.reload()" style="
+            padding: 15px 30px;
+            font-size: 1.2em;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 10px;
+          ">Retry</button>
+        </div>
+      `;
     }
-
+    
     // Handle page unload
     window.addEventListener('beforeunload', () => {
-      if (client) {
-        client.leaveSession();
+      if (multiplayerClient) {
+        multiplayerClient.leaveSession();
       }
     });
-
-    // Start initialization
-    initializeMultiplayerGame();
+    
+    // Start initialization when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initializeMultiplayerGame);
+    } else {
+      initializeMultiplayerGame();
+    }
   </script>
 </body>
 </html>

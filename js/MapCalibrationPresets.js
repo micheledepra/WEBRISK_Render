@@ -5,11 +5,11 @@
 const MapCalibrationPresets = {
     // Desktop/Laptop presets (1024px and above)
     desktop: {
-        waterLayer: { offsetX: -133, offsetY: -66, scale: 1.24, opacity: 0.85 },
-        mapLayer: { offsetX: -131, offsetY: -105, scale: 1.25, opacity: 0.85 },
-        territoryLayer: { offsetX: -180, offsetY: -128, scale: 0.5, opacity: 1.0 },
+        waterLayer: { offsetX: -97, offsetY: -66, scale: 1.22, opacity: 0.92 },
+        mapLayer: { offsetX: -131, offsetY: -105, scale: 1.25, opacity: 0.92 },
+        territoryLayer: { offsetX: -180, offsetY: -129, scale: 0.5, opacity: 1.0 },
         solidified: true,
-        unifiedOffset: { offsetX: 92.099, offsetY: 32.58, scale: 0.83 },
+        unifiedOffset: { offsetX: 89, offsetY: 58, scale: 0.81 },
         vignetteCenterX: 50,
         vignetteCenterY: 50,
         vignetteScale: 70

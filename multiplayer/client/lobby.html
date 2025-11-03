@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Risk - Multiplayer Lobby</title>
+  <link rel="icon" type="image/x-icon" href="../../favicon.ico">
   
   <!-- Firebase SDK - Cloud Persistence -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -11,6 +12,7 @@
   <script src="../../js/firebase-config.js"></script>
   
   <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+  <script src="../shared/SessionCodeGenerator.js"></script>
   <script src="MultiplayerClient.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -106,6 +108,16 @@
       letter-spacing: 10px;
       text-align: center;
       margin: 20px 0;
+      cursor: pointer;
+      padding: 15px;
+      background: rgba(0, 255, 0, 0.05);
+      border: 2px dashed #0f3;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+    .session-code:hover {
+      background: rgba(0, 255, 0, 0.1);
+      transform: scale(1.05);
     }
     .error-message {
       background: rgba(255, 0, 0, 0.1);
@@ -116,118 +128,679 @@
       color: #f00;
       text-align: center;
     }
+    .success-message {
+      background: rgba(0, 255, 0, 0.1);
+      border: 2px solid #0f3;
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      color: #0f3;
+      text-align: center;
+    }
+    .player-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .player-item.ready {
+      border-color: #0f3;
+      background: rgba(0, 255, 0, 0.05);
+    }
+    .player-item .player-name {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .player-item .host-badge {
+      background: #ffd700;
+      color: #1a1a2e;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    .player-item .ready-badge {
+      background: #0f3;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+    .color-picker {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .color-btn {
+      width: 100%;
+      height: 60px;
+      border: 3px solid transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .color-btn:hover {
+      transform: scale(1.1);
+      border-color: white;
+    }
+    .color-btn.selected {
+      border-color: #ffd700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+    .color-btn.taken {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(255, 215, 0, 0.1);
+      border-top-color: #ffd700;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .info-box {
+      background: rgba(255, 215, 0, 0.1);
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 20px 0;
+      color: #ffd700;
+      text-align: center;
+      font-size: 0.9em;
+    }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1> RISK MULTIPLAYER</h1>
-    <div id="connectionStatus" class="connection-status connecting"> Connecting...</div>
+    <div class="container">
+    <h1>RISK - Multiplayer Lobby</h1>
     
-    <div id="menuView" class="view active">
-      <button class="btn btn-primary" onclick="showCreateView()"> CREATE NEW GAME</button>
-      <button class="btn btn-secondary" onclick="showJoinView()"> JOIN EXISTING GAME</button>
+    <div class="connection-status" id="connectionStatus">
+      <span class="status-dot"></span>
+      <span>Connecting...</span>
     </div>
-    
+
+    <!-- Main Menu -->
+    <div id="menuView" class="view active">
+      <button class="btn btn-primary" onclick="showCreateView()">Create Game</button>
+      <button class="btn btn-secondary" onclick="showJoinView()">Join Game</button>
+      <a href="../../index.html" class="btn" style="margin-top: 20px;">Back to Main Menu</a>
+    </div>
+
+    <!-- Create Game View -->
     <div id="createView" class="view">
+      <h2>Create New Game</h2>
       <div class="form-group">
-        <label>Your Name:</label>
-        <input type="text" id="hostName" placeholder="Enter your name" maxlength="20">
+        <label for="createName">Your Name</label>
+        <input type="text" id="createName" placeholder="Enter your name (3-20 characters)" maxlength="20">
       </div>
+      
       <div class="form-group">
-        <label>Number of Players:</label>
-        <select id="playerCount">
+        <label>Choose Your Color</label>
+        <div class="color-picker" id="createColorPicker">
+          <button class="color-btn" data-color="red" style="background: #ff0000;" onclick="selectColor('red', 'create')"></button>
+          <button class="color-btn" data-color="blue" style="background: #0000ff;" onclick="selectColor('blue', 'create')"></button>
+          <button class="color-btn" data-color="green" style="background: #00ff00;" onclick="selectColor('green', 'create')"></button>
+          <button class="color-btn" data-color="yellow" style="background: #ffff00;" onclick="selectColor('yellow', 'create')"></button>
+          <button class="color-btn" data-color="purple" style="background: #ff00ff;" onclick="selectColor('purple', 'create')"></button>
+          <button class="color-btn" data-color="orange" style="background: #ff9500;" onclick="selectColor('orange', 'create')"></button>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="createPlayerCount">Maximum Players</label>
+        <select id="createPlayerCount">
           <option value="2">2 Players</option>
           <option value="3">3 Players</option>
-          <option value="4" selected>4 Players</option>
+          <option value="4">4 Players</option>
+          <option value="5">5 Players</option>
+          <option value="6" selected>6 Players</option>
         </select>
       </div>
-      <button class="btn btn-success" onclick="createGame()"> CREATE GAME</button>
-      <button class="btn" onclick="showMenuView()" style="background: #444;"> BACK</button>
+      
       <div id="createError" class="error-message" style="display: none;"></div>
+      
+      <button class="btn btn-success" onclick="createGame()" id="createBtn">Create Game</button>
+      <button class="btn" onclick="showMenu()">Back</button>
     </div>
-    
+
+    <!-- Join Game View -->
     <div id="joinView" class="view">
+      <h2>Join Game</h2>
       <div class="form-group">
-        <label>Your Name:</label>
-        <input type="text" id="joinName" placeholder="Enter your name" maxlength="20">
+        <label for="joinName">Your Name</label>
+        <input type="text" id="joinName" placeholder="Enter your name (3-20 characters)" maxlength="20">
       </div>
+      
       <div class="form-group">
-        <label>Session Code:</label>
-        <input type="text" id="sessionCode" placeholder="Enter code" maxlength="6" style="text-transform: uppercase;">
+        <label>Choose Your Color</label>
+        <div class="color-picker" id="joinColorPicker">
+          <button class="color-btn" data-color="red" style="background: #ff0000;" onclick="selectColor('red', 'join')"></button>
+          <button class="color-btn" data-color="blue" style="background: #0000ff;" onclick="selectColor('blue', 'join')"></button>
+          <button class="color-btn" data-color="green" style="background: #00ff00;" onclick="selectColor('green', 'join')"></button>
+          <button class="color-btn" data-color="yellow" style="background: #ffff00;" onclick="selectColor('yellow', 'join')"></button>
+          <button class="color-btn" data-color="purple" style="background: #ff00ff;" onclick="selectColor('purple', 'join')"></button>
+          <button class="color-btn" data-color="orange" style="background: #ff9500;" onclick="selectColor('orange', 'join')"></button>
+        </div>
       </div>
-      <button class="btn btn-success" onclick="joinGame()"> JOIN GAME</button>
-      <button class="btn" onclick="showMenuView()" style="background: #444;"> BACK</button>
+      
+      <div class="form-group">
+        <label for="joinCode">Session Code</label>
+        <input type="text" id="joinCode" placeholder="Enter 6-character code" maxlength="6" style="text-transform: uppercase;">
+      </div>
+      
       <div id="joinError" class="error-message" style="display: none;"></div>
+      
+      <button class="btn btn-success" onclick="joinGame()" id="joinBtn">Join Game</button>
+      <button class="btn" onclick="showMenu()">Back</button>
     </div>
-    
+
+    <!-- Waiting Room View -->
     <div id="lobbyView" class="view">
-      <div class="session-code" id="displaySessionCode">------</div>
-      <div id="playersList"></div>
-      <button id="readyBtn" class="btn btn-primary" onclick="toggleReady()"> READY UP</button>
-      <button id="startBtn" class="btn btn-success" onclick="startGame()" style="display: none;"> START GAME</button>
-      <button class="btn" onclick="leaveSession()" style="background: #444;"> LEAVE</button>
+      <h2>Waiting Room</h2>
+      
+      <div class="info-box">
+        <strong>Session Code (Click to Copy)</strong>
+      </div>
+      <div class="session-code" id="sessionCodeDisplay" onclick="copySessionCode()">------</div>
+      <div id="copySuccess" class="success-message" style="display: none;">Code copied to clipboard!</div>
+      
+      <h3 style="margin-top: 30px;">Players (<span id="playerCount">0</span>/<span id="maxPlayers">6</span>)</h3>
+      <div id="playerList"></div>
+      
+      <div class="info-box" id="hostInfo" style="display: none;">
+        ⭐ You are the host. All players must be ready to start.
+      </div>
+      
+      <div id="lobbyError" class="error-message" style="display: none;"></div>
+      
+      <button class="btn btn-primary" onclick="toggleReady()" id="readyBtn">Ready</button>
+      <button class="btn btn-success" onclick="startGame()" id="startBtn" style="display: none;" disabled>Start Game</button>
+      <button class="btn" onclick="leaveGame()">Leave Game</button>
     </div>
   </div>
   
   <script>
-    let client, currentSessionId, isHost = false, isReady = false;
-    
-    async function init() {
-      try {
-        client = new MultiplayerClient();
-        await client.connect();
-        document.getElementById('connectionStatus').className = 'connection-status connected';
-        document.getElementById('connectionStatus').textContent = ' Connected';
-      } catch (e) {
-        document.getElementById('connectionStatus').className = 'connection-status';
-        document.getElementById('connectionStatus').textContent = ' Connection failed';
+    let client = null;
+    let currentSession = null;
+    let currentPlayerName = '';
+    let currentPlayerColor = '';
+    let isHost = false;
+    let isReady = false;
+    let sessionPlayers = [];
+
+    function init() {
+      console.log('Initializing lobby...');
+      
+      // Initialize multiplayer client
+      client = new MultiplayerClient();
+      
+      // Setup event listeners
+      setupSocketListeners();
+      
+      // Check connection status
+      updateConnectionStatus();
+    }
+
+    function setupSocketListeners() {
+      if (!client || !client.socket) {
+        console.error('Socket not available');
+        return;
+      }
+
+      // Connection events
+      client.socket.on('connect', () => {
+        console.log('Connected to server');
+        updateConnectionStatus(true);
+      });
+
+      client.socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+        updateConnectionStatus(false);
+      });
+
+      // Session events
+      client.socket.on('sessionCreated', (data) => {
+        console.log('Session created:', data);
+        currentSession = data.sessionCode;
+        isHost = true;
+        joinWaitingRoom(data.sessionCode);
+      });
+
+      client.socket.on('sessionJoined', (data) => {
+        console.log('Session joined:', data);
+        currentSession = data.sessionCode;
+        sessionPlayers = data.players || [];
+        updatePlayerList();
+      });
+
+      client.socket.on('playerJoined', (data) => {
+        console.log('Player joined:', data);
+        if (data.player) {
+          sessionPlayers.push(data.player);
+          updatePlayerList();
+          showSuccessMessage(`${data.player.name} joined the game!`);
+        }
+      });
+
+      client.socket.on('playerLeft', (data) => {
+        console.log('Player left:', data);
+        if (data.playerId) {
+          sessionPlayers = sessionPlayers.filter(p => p.id !== data.playerId);
+          updatePlayerList();
+        }
+      });
+
+      client.socket.on('playerReady', (data) => {
+        console.log('Player ready status:', data);
+        if (data.playerId) {
+          const player = sessionPlayers.find(p => p.id === data.playerId);
+          if (player) {
+            player.ready = data.ready;
+            updatePlayerList();
+            checkStartConditions();
+          }
+        }
+      });
+
+      client.socket.on('gameStarting', (data) => {
+        console.log('Game starting:', data);
+        showSuccessMessage('Game starting in 3 seconds...');
+        setTimeout(() => {
+          window.location.href = `multiplayer-game.html?session=${currentSession}`;
+        }, 3000);
+      });
+
+      // Error events
+      client.socket.on('error', (data) => {
+        console.error('Socket error:', data);
+        showError(data.message || 'An error occurred');
+      });
+
+      client.socket.on('sessionError', (data) => {
+        console.error('Session error:', data);
+        showError(data.message || 'Session error occurred', 'create');
+      });
+
+      client.socket.on('joinError', (data) => {
+        console.error('Join error:', data);
+        showError(data.message || 'Could not join session', 'join');
+      });
+    }
+
+    function updateConnectionStatus(connected) {
+      const statusEl = document.getElementById('connectionStatus');
+      const dot = statusEl.querySelector('.status-dot');
+      const text = statusEl.querySelector('span:last-child');
+      
+      if (connected === undefined) {
+        connected = client && client.socket && client.socket.connected;
+      }
+      
+      if (connected) {
+        dot.classList.remove('offline');
+        dot.classList.add('online');
+        text.textContent = 'Connected';
+      } else {
+        dot.classList.remove('online');
+        dot.classList.add('offline');
+        text.textContent = 'Disconnected';
       }
     }
-    
-    function showView(id) {
-      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-      document.getElementById(id).classList.add('active');
+
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach(view => {
+        view.classList.remove('active');
+      });
+      document.getElementById(viewId).classList.add('active');
     }
-    function showMenuView() { showView('menuView'); }
-    function showCreateView() { showView('createView'); }
-    function showJoinView() { showView('joinView'); }
-    
+
+    function showMenu() {
+      showView('menuView');
+      clearErrors();
+    }
+
+    function showCreateView() {
+      showView('createView');
+      clearErrors();
+      // Pre-select red color
+      selectColor('red', 'create');
+    }
+
+    function showJoinView() {
+      showView('joinView');
+      clearErrors();
+      // Pre-select red color
+      selectColor('red', 'join');
+    }
+
+    function selectColor(color, context) {
+      currentPlayerColor = color;
+      const picker = document.getElementById(`${context}ColorPicker`);
+      const buttons = picker.querySelectorAll('.color-btn');
+      buttons.forEach(btn => {
+        if (btn.dataset.color === color) {
+          btn.classList.add('selected');
+        } else {
+          btn.classList.remove('selected');
+        }
+      });
+    }
+
+    function validateName(name) {
+      if (!name || name.trim().length < 3) {
+        return 'Name must be at least 3 characters';
+      }
+      if (name.trim().length > 20) {
+        return 'Name must be 20 characters or less';
+      }
+      return null;
+    }
+
     function createGame() {
-      const name = document.getElementById('hostName').value.trim();
-      if (!name) return alert('Enter your name');
-      currentSessionId = Math.random().toString(36).substr(2, 6).toUpperCase();
-      isHost = true;
-      document.getElementById('displaySessionCode').textContent = currentSessionId;
-      document.getElementById('startBtn').style.display = 'block';
-      showView('lobbyView');
+      const name = document.getElementById('createName').value.trim();
+      const maxPlayers = parseInt(document.getElementById('createPlayerCount').value);
+      
+      // Validation
+      const nameError = validateName(name);
+      if (nameError) {
+        showError(nameError, 'create');
+        return;
+      }
+      
+      if (!currentPlayerColor) {
+        showError('Please select a color', 'create');
+        return;
+      }
+      
+      if (!client || !client.socket || !client.socket.connected) {
+        showError('Not connected to server', 'create');
+        return;
+      }
+      
+      // Disable button and show loading
+      const btn = document.getElementById('createBtn');
+      btn.disabled = true;
+      btn.textContent = 'Creating...';
+      
+      // Store player info
+      currentPlayerName = name;
+      
+      // Generate session code using SessionCodeGenerator
+      const sessionCode = SessionCodeGenerator.generate();
+      
+      // Create session
+      console.log('Creating session:', sessionCode);
+      client.socket.emit('createSession', {
+        sessionCode: sessionCode,
+        playerName: name,
+        playerColor: currentPlayerColor,
+        maxPlayers: maxPlayers
+      });
+      
+      // Re-enable button after timeout
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = 'Create Game';
+      }, 3000);
     }
-    
+
     function joinGame() {
       const name = document.getElementById('joinName').value.trim();
-      const code = document.getElementById('sessionCode').value.trim();
-      if (!name || !code) return alert('Enter name and code');
-      currentSessionId = code;
-      isHost = false;
-      document.getElementById('displaySessionCode').textContent = currentSessionId;
+      const sessionCode = document.getElementById('joinCode').value.trim().toUpperCase();
+      
+      // Validation
+      const nameError = validateName(name);
+      if (nameError) {
+        showError(nameError, 'join');
+        return;
+      }
+      
+      if (!sessionCode || sessionCode.length !== 6) {
+        showError('Please enter a valid 6-character code', 'join');
+        return;
+      }
+      
+      if (!SessionCodeGenerator.validate(sessionCode)) {
+        showError('Invalid session code format', 'join');
+        return;
+      }
+      
+      if (!currentPlayerColor) {
+        showError('Please select a color', 'join');
+        return;
+      }
+      
+      if (!client || !client.socket || !client.socket.connected) {
+        showError('Not connected to server', 'join');
+        return;
+      }
+      
+      // Disable button and show loading
+      const btn = document.getElementById('joinBtn');
+      btn.disabled = true;
+      btn.textContent = 'Joining...';
+      
+      // Store player info
+      currentPlayerName = name;
+      currentSession = sessionCode;
+      
+      // Join session
+      console.log('Joining session:', sessionCode);
+      client.socket.emit('joinSession', {
+        sessionCode: sessionCode,
+        playerName: name,
+        playerColor: currentPlayerColor
+      });
+      
+      // Re-enable button after timeout
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = 'Join Game';
+      }, 3000);
+    }
+
+    function joinWaitingRoom(sessionCode) {
+      currentSession = sessionCode;
+      document.getElementById('sessionCodeDisplay').textContent = sessionCode;
+      document.getElementById('hostInfo').style.display = isHost ? 'block' : 'none';
+      document.getElementById('startBtn').style.display = isHost ? 'inline-block' : 'none';
+      
+      // Initialize player list
+      sessionPlayers = [{
+        id: client.userId,
+        name: currentPlayerName,
+        color: currentPlayerColor,
+        ready: false,
+        isHost: isHost
+      }];
+      
+      updatePlayerList();
       showView('lobbyView');
     }
-    
+
+    function updatePlayerList() {
+      const listEl = document.getElementById('playerList');
+      const countEl = document.getElementById('playerCount');
+      const maxEl = document.getElementById('maxPlayers');
+      
+      countEl.textContent = sessionPlayers.length;
+      
+      listEl.innerHTML = '';
+      sessionPlayers.forEach(player => {
+        const div = document.createElement('div');
+        div.className = 'player-item' + (player.ready ? ' ready' : '');
+        
+        const nameDiv = document.createElement('div');
+        nameDiv.style.display = 'flex';
+        nameDiv.style.alignItems = 'center';
+        nameDiv.style.gap = '10px';
+        
+        const colorDot = document.createElement('div');
+        colorDot.style.width = '20px';
+        colorDot.style.height = '20px';
+        colorDot.style.borderRadius = '50%';
+        colorDot.style.background = player.color;
+        colorDot.style.border = '2px solid white';
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'player-name';
+        nameSpan.textContent = player.name;
+        
+        nameDiv.appendChild(colorDot);
+        nameDiv.appendChild(nameSpan);
+        
+        const badgeDiv = document.createElement('div');
+        badgeDiv.style.display = 'flex';
+        badgeDiv.style.gap = '10px';
+        
+        if (player.isHost) {
+          const hostBadge = document.createElement('span');
+          hostBadge.className = 'host-badge';
+          hostBadge.textContent = 'HOST';
+          badgeDiv.appendChild(hostBadge);
+        }
+        
+        if (player.ready) {
+          const readyBadge = document.createElement('span');
+          readyBadge.className = 'ready-badge';
+          readyBadge.textContent = '✓ READY';
+          badgeDiv.appendChild(readyBadge);
+        }
+        
+        div.appendChild(nameDiv);
+        div.appendChild(badgeDiv);
+        listEl.appendChild(div);
+      });
+      
+      checkStartConditions();
+    }
+
     function toggleReady() {
+      if (!client || !currentSession) return;
+      
       isReady = !isReady;
-      document.getElementById('readyBtn').textContent = isReady ? ' READY' : ' READY UP';
+      const btn = document.getElementById('readyBtn');
+      btn.textContent = isReady ? 'Not Ready' : 'Ready';
+      btn.className = isReady ? 'btn btn-secondary' : 'btn btn-primary';
+      
+      // Update local player
+      const localPlayer = sessionPlayers.find(p => p.id === client.userId);
+      if (localPlayer) {
+        localPlayer.ready = isReady;
+        updatePlayerList();
+      }
+      
+      // Emit to server
+      client.socket.emit('playerReady', {
+        sessionCode: currentSession,
+        ready: isReady
+      });
     }
-    
+
+    function checkStartConditions() {
+      if (!isHost) return;
+      
+      const startBtn = document.getElementById('startBtn');
+      const allReady = sessionPlayers.every(p => p.ready);
+      const minPlayers = sessionPlayers.length >= 2;
+      
+      startBtn.disabled = !(allReady && minPlayers);
+      
+      if (!minPlayers) {
+        startBtn.title = 'Need at least 2 players';
+      } else if (!allReady) {
+        startBtn.title = 'All players must be ready';
+      } else {
+        startBtn.title = 'Start the game!';
+      }
+    }
+
     function startGame() {
-      window.location.href = '../../game.html?session=' + currentSessionId + '&multiplayer=true';
+      if (!isHost || !client || !currentSession) return;
+      
+      const allReady = sessionPlayers.every(p => p.ready);
+      const minPlayers = sessionPlayers.length >= 2;
+      
+      if (!allReady || !minPlayers) {
+        showError('All players must be ready and minimum 2 players required', 'lobby');
+        return;
+      }
+      
+      console.log('Starting game:', currentSession);
+      client.socket.emit('startGame', {
+        sessionCode: currentSession
+      });
     }
-    
-    function leaveSession() {
-      currentSessionId = null;
+
+    function leaveGame() {
+      if (client && currentSession) {
+        client.socket.emit('leaveSession', {
+          sessionCode: currentSession
+        });
+      }
+      
+      currentSession = null;
+      currentPlayerName = '';
+      currentPlayerColor = '';
       isHost = false;
       isReady = false;
-      showMenuView();
+      sessionPlayers = [];
+      
+      showMenu();
     }
-    
+
+    function copySessionCode() {
+      const code = document.getElementById('sessionCodeDisplay').textContent;
+      navigator.clipboard.writeText(code).then(() => {
+        const success = document.getElementById('copySuccess');
+        success.style.display = 'block';
+        setTimeout(() => {
+          success.style.display = 'none';
+        }, 2000);
+      });
+    }
+
+    function showError(message, context) {
+      const errorId = context ? `${context}Error` : 'lobbyError';
+      const errorEl = document.getElementById(errorId);
+      if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+        setTimeout(() => {
+          errorEl.style.display = 'none';
+        }, 5000);
+      }
+    }
+
+    function showSuccessMessage(message) {
+      const successEl = document.getElementById('copySuccess');
+      if (successEl) {
+        successEl.textContent = message;
+        successEl.style.display = 'block';
+        setTimeout(() => {
+          successEl.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    function clearErrors() {
+      document.querySelectorAll('.error-message').forEach(el => {
+        el.style.display = 'none';
+      });
+    }
+
+    // Initialize on page load
     window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>

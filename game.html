@@ -626,9 +626,10 @@
       
       /* Neighbor desaturation effect - MUST have higher specificity to override other filters */
       .territory.neighbor-desaturated {
-        filter: saturate(0.1) brightness(0.95) !important;
-        stroke: #000000 !important;
-        stroke-width: 2 !important;
+        filter: saturate(0.1) brightness(0.8) !important;
+        stroke: #3c3c3c !important;
+        stroke-width: 3 !important;
+        stroke-opacity: 0.9 !important;
         transition: filter 0.2s ease-out, stroke 0.2s ease-out, stroke-width 0.2s ease-out !important;
       }
       
@@ -693,14 +694,6 @@
         stroke-width: 6px !important;
         filter: drop-shadow(0 0 8px #ffd700);
         animation: pulse-selected 1.5s infinite;
-      }
-
-      .territory.highlight-valid-target {
-        stroke: #ff9800 !important;
-        stroke-width: 5px !important;
-        filter: drop-shadow(0 0 5.33px #ff9800);
-        animation: pulse-target 2s infinite;
-        cursor: pointer;
       }
 
       .territory.highlight-selected-target {
@@ -2127,12 +2120,6 @@
         filter: drop-shadow(0 0 6.67px #ff9800);
       }
 
-      .territory.highlight-valid-target {
-        stroke: #9c27b0 !important;
-        stroke-width: 4px !important;
-        filter: drop-shadow(0 0 6.67px #9c27b0);
-      }
-
       @keyframes pulse-glow {
         0%,
         100% {
@@ -2590,7 +2577,6 @@
       .territory.highlight-attackable,
       .territory.highlight-attacking-from,
       .territory.highlight-selected-attacker,
-      .territory.highlight-valid-target,
       .territory.highlight-selected-target,
       .territory.highlight-valid-source,
       .territory.highlight-selected-source,
@@ -7725,8 +7711,7 @@
           // Remove existing attack highlights
           element.classList.remove(
             "highlight-attackable",
-            "highlight-attacking-from",
-            "highlight-valid-target"
+            "highlight-attacking-from"
           );
 
           if (territory.owner === currentPlayer && territory.armies > 1) {
@@ -7742,7 +7727,6 @@
           element.classList.remove(
             "highlight-attackable",
             "highlight-attacking-from",
-            "highlight-valid-target",
             "highlight-selected-attacker",
             "highlight-selected-target"
           );
@@ -7831,7 +7815,7 @@
           if (neighbor && neighbor.owner !== currentPlayer) {
             const element = document.getElementById(neighborId);
             if (element) {
-              element.classList.add("highlight-valid-target");
+              // Valid target - no additional highlighting needed beyond neighbor-desaturated
             }
           }
         });

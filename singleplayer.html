@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RISK - Game Mode Selection</title>
+    <title>RISK - Player Registration</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
         /* Custom Font - Australian Flying Corps Stencil */
@@ -116,9 +116,9 @@
             }
         }
 
-        .mode-selection-container {
+        .registration-container {
             background-color: rgba(0, 0, 0, 0.29);
-            padding: 2.5rem;
+            padding: 2rem;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.518);
             width: 90%;
@@ -130,75 +130,133 @@
         h1 {
             text-align: center;
             margin-bottom: 1.5rem;
-            color: #fff;
-            font-size: 1.8rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
-            letter-spacing: 2px;
+            color: #333;
         }
 
-        .mode-buttons {
+        .player-inputs {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
-            margin-top: 2rem;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
-        .mode-button {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            padding: 1.5rem 2rem;
-            border: none;
-            border-radius: 8px;
+        .player-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .color-selector {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
             cursor: url('images/cursor1-32x32.png'), pointer;
-            font-size: 1.3rem;
-            font-family: 'Australian Flying Corps Stencil', Arial, sans-serif;
-            font-weight: 300;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            position: relative;
-            overflow: hidden;
+            background-color: #fff;
         }
 
-        .mode-button::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
+        .color-selector.selected {
+            border-color: #4CAF50;
+            border-width: 3px;
+        }
+
+        .color-selection {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            font-size: 1rem;
             width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            transition: left 0.5s ease;
         }
 
-        .mode-button:hover::before {
-            left: 100%;
+        button:hover {
+            background-color: #45a049;
         }
 
-        .mode-button:hover {
-            background: linear-gradient(135deg, #45a049, #3d8b40);
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+        button[type="submit"] {
+            margin-top: 1rem;
         }
 
-        .mode-button:active {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
         }
 
-        .mode-button.multiplayer {
-            background: linear-gradient(135deg, #2196F3, #1976D2);
-        }
-
-        .mode-button.multiplayer:hover {
-            background: linear-gradient(135deg, #1976D2, #1565C0);
-        }
-
-        .mode-description {
-            font-size: 0.85rem;
+        .error {
+            color: red;
             margin-top: 0.5rem;
-            opacity: 0.9;
-            line-height: 1.4;
+            text-align: center;
+        }
+
+        .color-selection {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .color-selector {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            transition: all 0.2s;
+        }
+
+        .color-selector:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+        }
+
+        /* Color picker dropdown */
+        .color-picker-dropdown {
+            display: none;
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 6px;
+            padding: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            gap: 0.25rem;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .color-picker-dropdown.active {
+            display: grid;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            border-color: #333;
+            transform: scale(1.1);
         }
 
         /* Music Manager Modal */
@@ -432,51 +490,6 @@
                 transform: translateX(-30px) scale(2);
             }
         }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .mode-selection-container {
-                width: 95%;
-                padding: 2rem 1.5rem;
-            }
-
-            h1 {
-                font-size: 1.5rem;
-            }
-
-            .mode-button {
-                padding: 1.2rem 1.5rem;
-                font-size: 1.1rem;
-            }
-
-            .mode-description {
-                font-size: 0.8rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .mode-selection-container {
-                padding: 1.5rem 1rem;
-            }
-
-            h1 {
-                font-size: 1.3rem;
-                margin-bottom: 1rem;
-            }
-
-            .mode-buttons {
-                gap: 1rem;
-            }
-
-            .mode-button {
-                padding: 1rem;
-                font-size: 1rem;
-            }
-
-            .mode-description {
-                font-size: 0.75rem;
-            }
-        }
     
     </style>
 </head>
@@ -501,19 +514,24 @@
     <!-- Background slider -->
     <div class="background-slider" id="backgroundSlider"></div>
 
-    <div class="mode-selection-container">
-        <img src="images/RiskLogo.png" alt="RISK - Game Mode Selection" style="display: block; margin: 0 auto 1.5rem auto; max-width: 100%; height: auto;">
-        <h1>SELECT GAME MODE</h1>
-        <div class="mode-buttons">
-            <button class="mode-button" onclick="startSinglePlayer()">
-                SINGLE PLAYER
-                <div class="mode-description">Play locally with friends on the same device</div>
-            </button>
-            <button class="mode-button multiplayer" onclick="startMultiplayer()">
-                MULTIPLAYER
-                <div class="mode-description">Play online with players around the world</div>
-            </button>
-        </div>
+    <div class="registration-container">
+        <img src="images/RiskLogo.png" alt="RISK - Player Registration" style="display: block; margin: 0 auto 1.5rem auto; max-width: 100%; height: auto;">
+        <form id="playerForm">
+            <div class="form-group">
+                <select id="numPlayers" name="numPlayers" required>
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4" selected>4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
+            </div>
+            <div class="player-inputs" id="playerInputs">
+                <!-- Player inputs will be generated dynamically -->
+            </div>
+            <button type="submit">Start Game</button>
+        </form>
+        <p class="error" id="errorText"></p>
     </div>
 
     <!-- Music Manager Modal -->
@@ -593,14 +611,198 @@
         // Start the background cycle
         setInterval(cycleBackground, 15000); // 15 seconds
 
-        // Navigation functions for game mode selection
-        function startSinglePlayer() {
-            window.location.href = 'singleplayer.html';
-        }
+        // Player registration form logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('playerForm');
+            const playerInputs = document.getElementById('playerInputs');
+            const errorText = document.getElementById('errorText');
 
-        function startMultiplayer() {
-            window.location.href = 'multiplayer/client/lobby.html';
-        }
+            let playerCount = 4;
+            const MIN_PLAYERS = 2;
+
+            const availableColors = [
+                { name: 'Red', value: '#ff4444' },
+                { name: 'Blue', value: '#4444ff' },
+                { name: 'Green', value: '#44ff44' },
+                { name: 'Yellow', value: '#ffff44' },
+                { name: 'Orange', value: '#ff8800' },
+                { name: 'Purple', value: '#ff44ff' }
+            ];
+            const usedColors = new Set();
+
+            function generatePlayerInputs(count) {
+                playerInputs.innerHTML = ''; // Clear existing inputs
+                usedColors.clear();
+                
+                for (let i = 0; i < count; i++) {
+                    const playerInput = document.createElement('div');
+                    playerInput.className = 'player-input';
+                    
+                    // Create name input
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.placeholder = `Player ${i + 1} name`;
+                    nameInput.required = true;
+                    nameInput.value = `Player ${i + 1}`;
+                    playerInput.appendChild(nameInput);
+                    
+                    // Create color selection container
+                    const colorSelection = document.createElement('div');
+                    colorSelection.className = 'color-selection';
+                    colorSelection.dataset.player = i;
+                    
+                    // Select default color for this player
+                    const defaultColor = availableColors[i % availableColors.length];
+                    
+                    // Create single color selector square
+                    const colorBtn = document.createElement('div');
+                    colorBtn.className = 'color-selector';
+                    colorBtn.style.backgroundColor = defaultColor.value;
+                    colorBtn.dataset.color = defaultColor.value;
+                    colorBtn.title = `Click to change ${defaultColor.name}`;
+                    
+                    // Create dropdown for color selection
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'color-picker-dropdown';
+                    
+                    // Add all color options to dropdown
+                    availableColors.forEach(color => {
+                        const option = document.createElement('div');
+                        option.className = 'color-option';
+                        option.style.backgroundColor = color.value;
+                        option.dataset.color = color.value;
+                        option.title = color.name;
+                        dropdown.appendChild(option);
+                    });
+                    
+                    colorSelection.appendChild(colorBtn);
+                    colorSelection.appendChild(dropdown);
+                    playerInput.appendChild(colorSelection);
+                    playerInputs.appendChild(playerInput);
+                }
+                
+                setupColorSelection();
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inputs = form.querySelectorAll('input[type="text"]');
+                const players = Array.from(inputs).map(input => input.value.trim());
+                const numPlayers = parseInt(document.getElementById('numPlayers').value);
+                
+                // Check for empty names
+                if (players.some(name => name === '')) {
+                    errorText.textContent = 'All player names are required';
+                    return;
+                }
+
+                // Check for duplicate names
+                if (new Set(players).size !== players.length) {
+                    errorText.textContent = 'All player names must be unique';
+                    return;
+                }
+                
+                // Check for color conflicts
+                if (!checkColorConflicts()) {
+                    return;
+                }
+
+                // Collect colors for each player
+                const colors = [];
+                document.querySelectorAll('.color-selector').forEach(colorBtn => {
+                    colors.push(colorBtn.dataset.color);
+                });
+                
+                // Store players, colors, and number of players in sessionStorage
+                sessionStorage.setItem('riskPlayers', JSON.stringify(players));
+                sessionStorage.setItem('riskPlayerColors', JSON.stringify(colors));
+                sessionStorage.setItem('numPlayers', numPlayers);
+                
+                // ALSO store in localStorage for cross-tab access (dashboard)
+                localStorage.setItem('riskPlayers', JSON.stringify(players));
+                localStorage.setItem('riskPlayerColors', JSON.stringify(colors));
+                
+                // Redirect to the game page (update the path if needed)
+                window.location.href = 'game.html';
+            });
+
+            document.getElementById('numPlayers').addEventListener('change', (e) => {
+                const count = parseInt(e.target.value);
+                generatePlayerInputs(count);
+            });
+
+            function setupColorSelection() {
+                // Add click event to color selector squares
+                document.querySelectorAll('.color-selector').forEach(colorBtn => {
+                    colorBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const dropdown = e.target.nextElementSibling;
+                        
+                        // Close all other dropdowns
+                        document.querySelectorAll('.color-picker-dropdown').forEach(d => {
+                            if (d !== dropdown) d.classList.remove('active');
+                        });
+                        
+                        // Toggle current dropdown
+                        dropdown.classList.toggle('active');
+                    });
+                });
+                
+                // Add click events to color options in dropdowns
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const selectedColor = e.target.dataset.color;
+                        const dropdown = e.target.closest('.color-picker-dropdown');
+                        const colorSelector = dropdown.previousElementSibling;
+                        
+                        // Update the color selector
+                        colorSelector.style.backgroundColor = selectedColor;
+                        colorSelector.dataset.color = selectedColor;
+                        
+                        // Close dropdown
+                        dropdown.classList.remove('active');
+                        
+                        // Check for color conflicts
+                        checkColorConflicts();
+                    });
+                });
+                
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', () => {
+                    document.querySelectorAll('.color-picker-dropdown').forEach(d => {
+                        d.classList.remove('active');
+                    });
+                });
+                
+                // Initial color conflict check
+                checkColorConflicts();
+            }
+            
+            function checkColorConflicts() {
+                const selectedColors = new Map();
+                let hasConflict = false;
+                
+                document.querySelectorAll('.color-selector').forEach((colorBtn, playerIndex) => {
+                    const color = colorBtn.dataset.color;
+                    if (selectedColors.has(color)) {
+                        hasConflict = true;
+                        errorText.textContent = `Players ${selectedColors.get(color) + 1} and ${playerIndex + 1} have the same color!`;
+                    } else {
+                        selectedColors.set(color, playerIndex);
+                    }
+                });
+                
+                if (!hasConflict) {
+                    errorText.textContent = '';
+                }
+                
+                return !hasConflict;
+            }
+
+            // Generate initial player inputs
+            generatePlayerInputs(4); // Default to 4 players
+        });
 
         // Initialize music player
         let musicPlayer;

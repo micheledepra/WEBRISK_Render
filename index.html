@@ -1,0 +1,886 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RISK - Player Registration</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <style>
+        /* Custom Font - Australian Flying Corps Stencil */
+        @font-face {
+            font-family: 'Australian Flying Corps Stencil';
+            src: url('res/Font/Australianflyingcorpsstencil-gpR1.ttf') format('truetype');
+            font-weight: 300;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: url('images/cursor1-32x32.png'), auto;
+        }
+
+        /* Custom cursor container for click animation */
+        .custom-cursor {
+            position: fixed;
+            width: 32px;
+            height: 32px;
+            pointer-events: none;
+            z-index: 99999;
+            transition: transform 0.1s ease;
+            filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.5));
+        }
+
+        .custom-cursor img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .custom-cursor.clicking {
+            transform: rotate(-15deg) scale(0.9);
+            filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.7));
+        }
+
+        body.custom-cursor-active * {
+            cursor: none !important;
+        }
+
+        body {
+            font-family: 'Australian Flying Corps Stencil', Arial, sans-serif;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            height: 100vh;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding-right: 2rem;
+        }
+
+        .background-slider {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -3;
+        }
+
+        .background-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0;
+            transition: opacity 2s ease-in-out;
+        }
+
+        .background-image.active {
+            opacity: 1;
+        }
+
+        /* Dynamic Vignette Effect */
+        .vignette-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            pointer-events: none;
+            background: radial-gradient(
+                ellipse at center,
+                rgba(0, 0, 0, 0) 0%,
+                rgba(0, 0, 0, 0.3) 60%,
+                rgba(0, 0, 0, 0.7) 100%
+            );
+            animation: vignettePulse 8s ease-in-out infinite;
+        }
+
+        @keyframes vignettePulse {
+            0%, 100% {
+                opacity: 0.8;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        .registration-container {
+            background-color: rgba(0, 0, 0, 0.29);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.518);
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            color: #333;
+        }
+
+        .player-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .player-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .color-selector {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            background-color: #fff;
+        }
+
+        .color-selector.selected {
+            border-color: #4CAF50;
+            border-width: 3px;
+        }
+
+        .color-selection {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button[type="submit"] {
+            margin-top: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .error {
+            color: red;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .color-selection {
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .color-selector {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #333;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            transition: all 0.2s;
+        }
+
+        .color-selector:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+        }
+
+        /* Color picker dropdown */
+        .color-picker-dropdown {
+            display: none;
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background: white;
+            border: 2px solid #333;
+            border-radius: 6px;
+            padding: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            gap: 0.25rem;
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .color-picker-dropdown.active {
+            display: grid;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            transition: all 0.2s;
+        }
+
+        .color-option:hover {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        /* Music Manager Modal */
+        #musicManagerModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .music-manager-container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .music-manager-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .music-manager-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            width: auto;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            background: none;
+            color: #ffcccc;
+        }
+
+        .music-manager-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .music-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .music-section h3 {
+            color: #333;
+            margin-bottom: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        .music-folders {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .music-folder-btn {
+            padding: 0.5rem 1rem;
+            background-color: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .music-folder-btn:hover {
+            background-color: #e0e0e0;
+            border-color: #4CAF50;
+        }
+
+        .music-folder-btn.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #45a049;
+        }
+
+        .music-tracks {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background-color: white;
+        }
+
+        .track-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #eee;
+            cursor: url('images/cursor1-32x32.png'), pointer;
+            transition: background-color 0.2s;
+        }
+
+        .track-item:last-child {
+            border-bottom: none;
+        }
+
+        .track-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .track-folder-header {
+            padding: 0.5rem 1rem;
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-bottom: 2px solid #45a049;
+        }
+
+        .now-playing {
+            background-color: #e8f5e9;
+            padding: 0.75rem;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 1rem;
+            font-weight: 500;
+            color: #2e7d32;
+        }
+
+        .music-shortcuts {
+            background-color: #fff3cd;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #856404;
+            margin-top: 1rem;
+        }
+
+        .music-shortcuts strong {
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Smoke effect */
+        .smoke-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            /* raise the smoke above the background images but below main UI */
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .smoke {
+            position: absolute;
+            bottom: -150px;
+            width: 420px;
+            height: 420px;
+            /* stronger, slightly less-blurred smoke so it shows up on light backgrounds */
+            background: radial-gradient(circle, rgba(255,255,255,0.45) 0%, rgba(200,200,200,0.25) 40%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(30px);
+            opacity: 0;
+            animation: smoke-rise 15s infinite ease-in-out;
+        }
+
+        .smoke:nth-child(1) {
+            left: 10%;
+            animation-delay: 0s;
+            animation-duration: 12s;
+        }
+
+        .smoke:nth-child(2) {
+            left: 30%;
+            animation-delay: 3s;
+            animation-duration: 14s;
+        }
+
+        .smoke:nth-child(3) {
+            left: 50%;
+            animation-delay: 6s;
+            animation-duration: 16s;
+        }
+
+        .smoke:nth-child(4) {
+            left: 70%;
+            animation-delay: 9s;
+            animation-duration: 13s;
+        }
+
+        .smoke:nth-child(5) {
+            left: 85%;
+            animation-delay: 2s;
+            animation-duration: 15s;
+        }
+
+        @keyframes smoke-rise {
+            0% {
+                bottom: -150px;
+                opacity: 0;
+                transform: translateX(0) scale(1);
+            }
+            10% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 0.95;
+                transform: translateX(30px) scale(1.5);
+            }
+            100% {
+                bottom: 110%;
+                opacity: 0;
+                transform: translateX(-30px) scale(2);
+            }
+        }
+    
+    </style>
+</head>
+<body>
+    <!-- Background intro video -->
+    <video id="index-intro-video" autoplay muted loop playsinline
+        style="
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            object-fit: cover;
+            z-index: -4;
+            opacity: 0.65;
+            pointer-events: none;
+        ">
+        <source src="res/Music/Classic/index_intro.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Custom Cursor -->
+    <div class="custom-cursor">
+        <img src="images/cursor1-32x32.png" alt="cursor">
+    </div>
+
+    <!-- Smoke effect -->
+    <div class="smoke-container">
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+        <div class="smoke"></div>
+    </div>
+
+    <!-- Dynamic Vignette Effect -->
+    <div class="vignette-overlay"></div>
+
+    <!-- Background slider -->
+    <div class="background-slider" id="backgroundSlider"></div>
+
+    <div class="registration-container">
+        <img src="images/RiskLogo.png" alt="RISK - Player Registration" style="display: block; margin: 0 auto 1.5rem auto; max-width: 100%; height: auto;">
+        <form id="playerForm">
+            <div class="form-group">
+                <select id="numPlayers" name="numPlayers" required>
+                    <option value="2">2 Players</option>
+                    <option value="3">3 Players</option>
+                    <option value="4" selected>4 Players</option>
+                    <option value="5">5 Players</option>
+                    <option value="6">6 Players</option>
+                </select>
+            </div>
+            <div class="player-inputs" id="playerInputs">
+                <!-- Player inputs will be generated dynamically -->
+            </div>
+            <button type="submit">Start Game</button>
+        </form>
+        <p class="error" id="errorText"></p>
+    </div>
+
+    <!-- Music Manager Modal -->
+    <div id="musicManagerModal">
+        <div class="music-manager-container">
+            <div class="music-manager-header">
+                <h2>🎵 Music Manager</h2>
+                <button class="close-btn" onclick="musicPlayer.closeMusicManager()">&times;</button>
+            </div>
+            <div class="music-manager-body">
+                <div class="now-playing" id="nowPlayingInfo">
+                    Now Playing: Select a track or folder
+                </div>
+                
+                <div class="music-section">
+                    <h3>Select Music Folder</h3>
+                    <div class="music-folders" id="musicFolders">
+                        <!-- Folder buttons will be dynamically added -->
+                    </div>
+                </div>
+                
+                <div class="music-section">
+                    <h3>Available Tracks</h3>
+                    <div class="music-tracks" id="musicTracks">
+                        <!-- Track list will be dynamically added -->
+                    </div>
+                </div>
+                
+                <div class="music-shortcuts">
+                    <strong>Keyboard Shortcuts:</strong>
+                    M - Mute/Unmute | + - Next Track | - - Previous Track | N - Music Manager
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Music Player -->
+    <script src="js/MusicPlayer.js"></script>
+    <script>
+        // Background image slider
+        const backgroundImages = [
+            'images/Index_military_background_modern.PNG',
+            'images/Index_1.png',
+            'images/Index_2.png',
+            'images/iNDEX_3.png',
+            'images/Index_4.png'
+        ];
+
+        let currentImageIndex = 0;
+        const backgroundSlider = document.getElementById('backgroundSlider');
+
+        // Create background image divs
+        backgroundImages.forEach((imagePath, index) => {
+            const bgDiv = document.createElement('div');
+            bgDiv.className = 'background-image';
+            bgDiv.style.backgroundImage = `url('${imagePath}')`;
+            if (index === 0) {
+                bgDiv.classList.add('active');
+            }
+            backgroundSlider.appendChild(bgDiv);
+        });
+
+        // Cycle through backgrounds every 15 seconds
+        function cycleBackground() {
+            const backgrounds = document.querySelectorAll('.background-image');
+            
+            // Remove active class from current image
+            backgrounds[currentImageIndex].classList.remove('active');
+            
+            // Move to next image
+            currentImageIndex = (currentImageIndex + 1) % backgroundImages.length;
+            
+            // Add active class to new image
+            backgrounds[currentImageIndex].classList.add('active');
+        }
+
+        // Start the background cycle
+        setInterval(cycleBackground, 15000); // 15 seconds
+
+        // Player registration form logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('playerForm');
+            const playerInputs = document.getElementById('playerInputs');
+            const errorText = document.getElementById('errorText');
+
+            let playerCount = 4;
+            const MIN_PLAYERS = 2;
+
+            const availableColors = [
+                { name: 'Red', value: '#ff4444' },
+                { name: 'Blue', value: '#4444ff' },
+                { name: 'Green', value: '#44ff44' },
+                { name: 'Yellow', value: '#ffff44' },
+                { name: 'Orange', value: '#ff8800' },
+                { name: 'Purple', value: '#ff44ff' }
+            ];
+            const usedColors = new Set();
+
+            function generatePlayerInputs(count) {
+                playerInputs.innerHTML = ''; // Clear existing inputs
+                usedColors.clear();
+                
+                for (let i = 0; i < count; i++) {
+                    const playerInput = document.createElement('div');
+                    playerInput.className = 'player-input';
+                    
+                    // Create name input
+                    const nameInput = document.createElement('input');
+                    nameInput.type = 'text';
+                    nameInput.placeholder = `Player ${i + 1} name`;
+                    nameInput.required = true;
+                    nameInput.value = `Player ${i + 1}`;
+                    playerInput.appendChild(nameInput);
+                    
+                    // Create color selection container
+                    const colorSelection = document.createElement('div');
+                    colorSelection.className = 'color-selection';
+                    colorSelection.dataset.player = i;
+                    
+                    // Select default color for this player
+                    const defaultColor = availableColors[i % availableColors.length];
+                    
+                    // Create single color selector square
+                    const colorBtn = document.createElement('div');
+                    colorBtn.className = 'color-selector';
+                    colorBtn.style.backgroundColor = defaultColor.value;
+                    colorBtn.dataset.color = defaultColor.value;
+                    colorBtn.title = `Click to change ${defaultColor.name}`;
+                    
+                    // Create dropdown for color selection
+                    const dropdown = document.createElement('div');
+                    dropdown.className = 'color-picker-dropdown';
+                    
+                    // Add all color options to dropdown
+                    availableColors.forEach(color => {
+                        const option = document.createElement('div');
+                        option.className = 'color-option';
+                        option.style.backgroundColor = color.value;
+                        option.dataset.color = color.value;
+                        option.title = color.name;
+                        dropdown.appendChild(option);
+                    });
+                    
+                    colorSelection.appendChild(colorBtn);
+                    colorSelection.appendChild(dropdown);
+                    playerInput.appendChild(colorSelection);
+                    playerInputs.appendChild(playerInput);
+                }
+                
+                setupColorSelection();
+            }
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const inputs = form.querySelectorAll('input[type="text"]');
+                const players = Array.from(inputs).map(input => input.value.trim());
+                const numPlayers = parseInt(document.getElementById('numPlayers').value);
+                
+                // Check for empty names
+                if (players.some(name => name === '')) {
+                    errorText.textContent = 'All player names are required';
+                    return;
+                }
+
+                // Check for duplicate names
+                if (new Set(players).size !== players.length) {
+                    errorText.textContent = 'All player names must be unique';
+                    return;
+                }
+                
+                // Check for color conflicts
+                if (!checkColorConflicts()) {
+                    return;
+                }
+
+                // Collect colors for each player
+                const colors = [];
+                document.querySelectorAll('.color-selector').forEach(colorBtn => {
+                    colors.push(colorBtn.dataset.color);
+                });
+                
+                // Store players, colors, and number of players in sessionStorage
+                sessionStorage.setItem('riskPlayers', JSON.stringify(players));
+                sessionStorage.setItem('riskPlayerColors', JSON.stringify(colors));
+                sessionStorage.setItem('numPlayers', numPlayers);
+                
+                // ALSO store in localStorage for cross-tab access (dashboard)
+                localStorage.setItem('riskPlayers', JSON.stringify(players));
+                localStorage.setItem('riskPlayerColors', JSON.stringify(colors));
+                
+                // Redirect to the game page (update the path if needed)
+                window.location.href = 'game.html';
+            });
+
+            document.getElementById('numPlayers').addEventListener('change', (e) => {
+                const count = parseInt(e.target.value);
+                generatePlayerInputs(count);
+            });
+
+            function setupColorSelection() {
+                // Add click event to color selector squares
+                document.querySelectorAll('.color-selector').forEach(colorBtn => {
+                    colorBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const dropdown = e.target.nextElementSibling;
+                        
+                        // Close all other dropdowns
+                        document.querySelectorAll('.color-picker-dropdown').forEach(d => {
+                            if (d !== dropdown) d.classList.remove('active');
+                        });
+                        
+                        // Toggle current dropdown
+                        dropdown.classList.toggle('active');
+                    });
+                });
+                
+                // Add click events to color options in dropdowns
+                document.querySelectorAll('.color-option').forEach(option => {
+                    option.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const selectedColor = e.target.dataset.color;
+                        const dropdown = e.target.closest('.color-picker-dropdown');
+                        const colorSelector = dropdown.previousElementSibling;
+                        
+                        // Update the color selector
+                        colorSelector.style.backgroundColor = selectedColor;
+                        colorSelector.dataset.color = selectedColor;
+                        
+                        // Close dropdown
+                        dropdown.classList.remove('active');
+                        
+                        // Check for color conflicts
+                        checkColorConflicts();
+                    });
+                });
+                
+                // Close dropdowns when clicking outside
+                document.addEventListener('click', () => {
+                    document.querySelectorAll('.color-picker-dropdown').forEach(d => {
+                        d.classList.remove('active');
+                    });
+                });
+                
+                // Initial color conflict check
+                checkColorConflicts();
+            }
+            
+            function checkColorConflicts() {
+                const selectedColors = new Map();
+                let hasConflict = false;
+                
+                document.querySelectorAll('.color-selector').forEach((colorBtn, playerIndex) => {
+                    const color = colorBtn.dataset.color;
+                    if (selectedColors.has(color)) {
+                        hasConflict = true;
+                        errorText.textContent = `Players ${selectedColors.get(color) + 1} and ${playerIndex + 1} have the same color!`;
+                    } else {
+                        selectedColors.set(color, playerIndex);
+                    }
+                });
+                
+                if (!hasConflict) {
+                    errorText.textContent = '';
+                }
+                
+                return !hasConflict;
+            }
+
+            // Generate initial player inputs
+            generatePlayerInputs(4); // Default to 4 players
+        });
+
+        // Initialize music player
+        let musicPlayer;
+        document.addEventListener('DOMContentLoaded', () => {
+            musicPlayer = new MusicPlayer('res/Music/Classic/');
+            
+            // Try to start music immediately
+            musicPlayer.start();
+            
+            // Also try to start on first user interaction (for browsers that block autoplay)
+            const startMusicOnInteraction = () => {
+                if (!musicPlayer.isPlaying) {
+                    musicPlayer.start();
+                }
+                // Remove listeners after first interaction
+                document.removeEventListener('click', startMusicOnInteraction);
+                document.removeEventListener('keydown', startMusicOnInteraction);
+            };
+            
+            document.addEventListener('click', startMusicOnInteraction);
+            document.addEventListener('keydown', startMusicOnInteraction);
+            
+            // Close music manager modal when clicking outside
+            const musicModal = document.getElementById('musicManagerModal');
+            musicModal.addEventListener('click', (e) => {
+                if (e.target === musicModal) {
+                    musicPlayer.closeMusicManager();
+                }
+            });
+        });
+
+        // Custom cursor with click animation
+        const customCursor = document.querySelector('.custom-cursor');
+        let mouseX = 0;
+        let mouseY = 0;
+
+        // Update cursor position
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            customCursor.style.left = mouseX + 'px';
+            customCursor.style.top = mouseY + 'px';
+        });
+
+        // Click animation
+        document.addEventListener('mousedown', () => {
+            customCursor.classList.add('clicking');
+        });
+
+        document.addEventListener('mouseup', () => {
+            customCursor.classList.remove('clicking');
+        });
+
+        // Activate custom cursor
+        document.body.classList.add('custom-cursor-active');
+
+        // Hide cursor when it leaves the window
+        document.addEventListener('mouseleave', () => {
+            customCursor.style.opacity = '0';
+        });
+
+        document.addEventListener('mouseenter', () => {
+            customCursor.style.opacity = '1';
+        });
+    </script>
+</body>
+</html>

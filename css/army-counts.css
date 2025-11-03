@@ -1,0 +1,127 @@
+/* Army Count Display Styles */
+.persistent-army-count {
+    /* Ensure army counts stay in SVG coordinate system */
+    vector-effect: non-scaling-stroke; /* Keep stroke width consistent during zoom */
+    pointer-events: none; /* Don't interfere with territory clicks */
+    position: relative; /* For proper layering */
+    z-index: 10; /* Above territories but below UI elements */
+}
+
+.army-count-bg {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+    transition: all 0.3s ease;
+    /* Ensure the circle scales properly with the SVG */
+    transform-origin: center;
+    r: 32 !important; /* 4x larger radius for background circle */
+    fill: rgba(0, 0, 0, 0.6) !important;
+    stroke: rgba(255, 255, 255, 0.8) !important;
+    stroke-width: 2px !important;
+}
+
+.army-count-text {
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    user-select: none;
+    transition: all 0.3s ease;
+    /* Ensure text scales properly with the SVG */
+    transform-origin: center;
+    /* Prevent text from becoming blurry during transforms */
+    shape-rendering: geometricPrecision;
+    text-rendering: geometricPrecision;
+    font-size: 48px !important; /* 4x larger than typical 12px */
+    color: white !important;
+    text-anchor: middle !important;
+    dominant-baseline: central !important;
+}
+
+/* Ensure army counts move with territories during pan/zoom */
+svg .army-count-bg,
+svg .army-count-text {
+    /* These elements should inherit the same transform as their parent SVG group */
+    transform-box: fill-box;
+}
+
+/* Hover effects for parent territory */
+.territory:hover + .army-count-bg,
+.territory:hover ~ .army-count-bg {
+    stroke: #ffd700;
+    stroke-width: 3;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
+}
+
+.territory:hover + .army-count-text,
+.territory:hover ~ .army-count-text {
+    fill: #ffd700;
+    font-size: 14px;
+}
+
+/* Alternative hover targeting using data attributes */
+[data-territory-hover] .army-count-bg {
+    stroke: #ffd700;
+    stroke-width: 3;
+    filter: drop-shadow(0 3px 6px rgba(0,0,0,0.6));
+}
+
+[data-territory-hover] .army-count-text {
+    fill: #ffd700;
+    font-size: 14px;
+}
+
+/* Animation for army count changes */
+@keyframes army-count-pulse {
+    0% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.2); 
+        opacity: 0.8; 
+    }
+    100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+}
+
+/* Phase-specific styling */
+.highlight-selected + .army-count-bg,
+.highlight-selected ~ .army-count-bg {
+    stroke: #ffd700;
+    stroke-width: 3;
+    fill: rgba(255, 215, 0, 0.3);
+}
+
+.highlight-attackable + .army-count-bg,
+.highlight-attackable ~ .army-count-bg {
+    stroke: #4caf50;
+    stroke-width: 2;
+}
+
+.highlight-valid-target + .army-count-bg,
+.highlight-valid-target ~ .army-count-bg {
+    stroke: #f44336;
+    stroke-width: 2;
+}
+
+/* Responsive sizing for different zoom levels */
+@media (max-width: 768px) {
+    .army-count-bg {
+        r: 12;
+    }
+    
+    .army-count-text {
+        font-size: 11px;
+    }
+}
+
+/* Fix for transform issues during zoom/pan */
+.army-count-text {
+    /* Prevent text from becoming unreadable during scaling */
+    font-size-adjust: none;
+}
+
+/* Ensure army counts are always visible above territories */
+svg .persistent-army-count {
+    z-index: 100;
+}

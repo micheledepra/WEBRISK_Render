@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+multiplayer/node_modules/
+package-lock.json
+multiplayer/package-lock.json
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Build files (if you add build process later)
+dist/
+build/
+.cache/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Render deployment files (optional)
+.render/
+
+# Large media files (too big for GitHub)
+res/Music/Classic/Index_Intro.mp4
+res/Music/**/*.mp4
+res/Music/**/*.mp3

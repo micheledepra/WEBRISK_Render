@@ -1,0 +1,40 @@
+{
+  "name": "risk-multiplayer-game",
+  "version": "1.0.0",
+  "description": "Multiplayer Risk board game - digital edition",
+  "main": "multiplayer/server/server.js",
+  "scripts": {
+    "start": "node multiplayer/server/server.js",
+    "dev": "node multiplayer/server/server.js",
+    "test": "playwright test",
+    "install-server": "cd multiplayer && npm install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starstirs-coder/mvp-stars2.git"
+  },
+  "keywords": [
+    "risk",
+    "board-game",
+    "multiplayer",
+    "strategy",
+    "socket.io"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/starstirs-coder/mvp-stars2/issues"
+  },
+  "homepage": "https://github.com/starstirs-coder/mvp-stars2#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "playwright": "^1.0.0"
+  }
+}

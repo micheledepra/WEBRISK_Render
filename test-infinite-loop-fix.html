@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Infinite Loop Fix</title>
+</head>
+<body>
+    <h1>Testing Infinite Loop Fix</h1>
+    <div id="status">Loading...</div>
+    
+    <script>
+        // Simulate the problematic setupOpacityIntegration function
+        function setupOpacityIntegration(retryCount = 0) {
+          const maxRetries = 20; // Maximum 10 seconds of retries
+          
+          const statusDiv = document.getElementById('status');
+          
+          if (retryCount >= maxRetries) {
+            console.error('❌ Failed to setup opacity integration after 20 retries. Components not available:', {
+              riskUI: !!window.riskUI,
+              colorManager: !!(window.riskUI && window.riskUI.colorManager),
+              gameState: !!(window.gameState && window.gameState.territories)
+            });
+            statusDiv.innerHTML = `<span style="color: red;">❌ Failed after ${maxRetries} retries - STOPPED infinite loop!</span>`;
+            return;
+          }
+          
+          // Check for all required components (they don't exist in this test)
+          if (!window.riskUI) {
+            console.warn(`⚠️ RiskUI not available, retrying in 500ms... (${retryCount + 1}/${maxRetries})`);
+            statusDiv.innerHTML = `<span style="color: orange;">⚠️ Retry ${retryCount + 1}/${maxRetries} - RiskUI not available</span>`;
+            setTimeout(() => setupOpacityIntegration(retryCount + 1), 500);
+            return;
+          }
+          
+          // This should never be reached in this test
+          statusDiv.innerHTML = `<span style="color: green;">✅ Setup successful!</span>`;
+          console.log('✅ All components available, setting up opacity integration');
+        }
+        
+        // Start the test
+        console.log('🧪 Starting infinite loop prevention test...');
+        setupOpacityIntegration();
+        
+        // After 12 seconds, show final status
+        setTimeout(() => {
+          console.log('🧪 Test completed - infinite loop should have been prevented!');
+        }, 12000);
+    </script>
+</body>
+</html>

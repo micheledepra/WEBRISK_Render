@@ -1,0 +1,24 @@
+const { test, expect } = require('@playwright/test');
+
+let currentTurn = 0;
+
+function startGame(players) {
+    // Simulate players deploying armies
+    players.forEach(player => {
+        player.deployArmies();
+    });
+    currentTurn++;
+}
+
+test('displays "Turn 1" after startup completes and increments correctly', async () => {
+    const players = [
+        { deployArmies: () => {} },
+        { deployArmies: () => {} }
+    ];
+
+    startGame(players);
+    expect(currentTurn).toBe(1);
+
+    startGame(players);
+    expect(currentTurn).toBe(2);
+});

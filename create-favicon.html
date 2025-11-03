@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Favicon</title>
+</head>
+<body>
+    <canvas id="canvas" width="32" height="32"></canvas>
+    <script>
+        // Create a simple "R" favicon for RISK game
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Red background
+        ctx.fillStyle = '#cc0000';
+        ctx.fillRect(0, 0, 32, 32);
+        
+        // White "R" letter
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('R', 16, 17);
+        
+        // Convert to ICO and download
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'favicon.ico';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            document.body.innerHTML = '<h1>Favicon generated! Check your downloads folder and move it to the project root.</h1>';
+        }, 'image/x-icon');
+    </script>
+</body>
+</html>

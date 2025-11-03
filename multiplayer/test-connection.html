@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multiplayer Connection Test</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background: #1a1a2e;
+      color: #0f0;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    h1 { color: #ffd700; }
+    .test-result {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 3px solid;
+    }
+    .pass { 
+      border-color: #0f0; 
+      background: rgba(0, 255, 0, 0.1);
+    }
+    .fail { 
+      border-color: #f00; 
+      background: rgba(255, 0, 0, 0.1);
+      color: #f00;
+    }
+    .pending { 
+      border-color: #ff0; 
+      background: rgba(255, 255, 0, 0.1);
+      color: #ff0;
+    }
+    #log {
+      background: #000;
+      border: 1px solid #0f0;
+      padding: 10px;
+      height: 300px;
+      overflow-y: auto;
+      margin-top: 20px;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin: 2px 0;
+    }
+    .log-info { color: #0ff; }
+    .log-success { color: #0f0; }
+    .log-error { color: #f00; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Multiplayer System Test</h1>
+  
+  <div id="test-results">
+    <div id="test-socket-io" class="test-result pending">⏳ Loading Socket.IO library...</div>
+    <div id="test-connection" class="test-result pending">⏳ Connecting to server...</div>
+    <div id="test-health" class="test-result pending">⏳ Testing API health endpoint...</div>
+    <div id="test-session" class="test-result pending">⏳ Testing session creation...</div>
+  </div>
+
+  <h2>📋 Console Log</h2>
+  <div id="log"></div>
+
+  <script src="http://localhost:3000/socket.io/socket.io.js"></script>
+  <script>
+    const logDiv = document.getElementById('log');
+    
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function updateTest(id, status, message) {
+      const el = document.getElementById(id);
+      el.className = `test-result ${status}`;
+      const icon = status === 'pass' ? '✅' : status === 'fail' ? '❌' : '⏳';
+      el.textContent = `${icon} ${message}`;
+    }
+
+    async function runTests() {
+      try {
+        // Test 1: Socket.IO Library
+        log('Checking Socket.IO library...', 'info');
+        if (typeof io !== 'undefined') {
+          updateTest('test-socket-io', 'pass', 'Socket.IO library loaded successfully');
+          log('✓ Socket.IO library available', 'success');
+        } else {
+          updateTest('test-socket-io', 'fail', 'Socket.IO library not loaded');
+          log('✗ Socket.IO library missing!', 'error');
+          return;
+        }
+
+        // Test 2: Server Connection
+        log('Attempting to connect to server...', 'info');
+        const socket = io('http://localhost:3000', {
+          transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+          updateTest('test-connection', 'pass', `Connected to server (ID: ${socket.id})`);
+          log(`✓ Connected! Socket ID: ${socket.id}`, 'success');
+        });
+
+        socket.on('connect_error', (error) => {
+          updateTest('test-connection', 'fail', `Connection failed: ${error.message}`);
+          log(`✗ Connection error: ${error.message}`, 'error');
+        });
+
+        socket.on('disconnect', () => {
+          log('Disconnected from server', 'info');
+        });
+
+        // Wait for connection
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Connection timeout')), 5000);
+          socket.on('connect', () => {
+            clearTimeout(timeout);
+            resolve();
+          });
+          socket.on('connect_error', () => {
+            clearTimeout(timeout);
+            reject(new Error('Connection failed'));
+          });
+        });
+
+        // Test 3: API Health Check
+        log('Testing API health endpoint...', 'info');
+        const healthResponse = await fetch('http://localhost:3000/api/health');
+        const healthData = await healthResponse.json();
+        
+        if (healthData.status === 'ok') {
+          updateTest('test-health', 'pass', `API healthy (${healthData.sessions} active sessions)`);
+          log(`✓ API Health: ${JSON.stringify(healthData)}`, 'success');
+        } else {
+          updateTest('test-health', 'fail', 'API health check failed');
+          log('✗ API health check returned non-OK status', 'error');
+        }
+
+        // Test 4: Session Creation
+        log('Testing session creation...', 'info');
+        const testUserId = 'test-' + Date.now();
+        const sessionResponse = await fetch('http://localhost:3000/api/sessions/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            hostUserId: testUserId,
+            hostPlayerName: 'Test Player',
+            playerCount: 2
+          })
+        });
+
+        const sessionData = await sessionResponse.json();
+        
+        if (sessionData.sessionId) {
+          updateTest('test-session', 'pass', `Session created: ${sessionData.sessionId}`);
+          log(`✓ Session created successfully: ${sessionData.sessionId}`, 'success');
+          log(`  Host: ${sessionData.hostPlayerName}`, 'info');
+          log(`  Players: ${sessionData.playerCount}`, 'info');
+          
+          // Clean up - leave session
+          socket.emit('session:leave', { sessionId: sessionData.sessionId, userId: testUserId });
+          log('Test session cleaned up', 'info');
+        } else {
+          updateTest('test-session', 'fail', 'Session creation failed');
+          log(`✗ Session creation failed: ${JSON.stringify(sessionData)}`, 'error');
+        }
+
+        log('All tests completed!', 'success');
+
+      } catch (error) {
+        log(`✗ Test failed: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Run tests on page load
+    window.addEventListener('load', () => {
+      log('Starting multiplayer system tests...', 'info');
+      runTests();
+    });
+  </script>
+</body>
+</html>

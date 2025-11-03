@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Neighbor Desaturation Effect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .test-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .test-box {
+            width: 150px;
+            height: 150px;
+            border: 2px solid #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .test-box.main {
+            background: #ffd700;
+            color: #000;
+        }
+        
+        .test-box.neighbor {
+            background: #ff4444;
+        }
+        
+        /* The desaturation effect we're testing */
+        .test-box.neighbor-desaturated {
+            filter: saturate(0.1) brightness(0.95);
+            transition: filter 0.2s ease-out;
+        }
+        
+        .console-output {
+            margin-top: 20px;
+            padding: 15px;
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px;
+        }
+        
+        .log-entry.success {
+            color: #4caf50;
+        }
+        
+        .log-entry.error {
+            color: #f44336;
+        }
+        
+        .log-entry.info {
+            color: #2196f3;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        .clear-btn {
+            background: #f44336;
+        }
+        
+        .clear-btn:hover {
+            background: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Neighbor Desaturation Test</h1>
+    <p>Hover over the <strong>MAIN</strong> box to desaturate the neighbors.</p>
+    
+    <button onclick="testManualDesaturation()">Manual Test (Add Class)</button>
+    <button onclick="testRemoveDesaturation()">Remove Desaturation</button>
+    <button onclick="clearConsole()" class="clear-btn">Clear Console</button>
+    
+    <div class="test-container">
+        <div class="test-box neighbor" id="neighbor-1">Neighbor 1</div>
+        <div class="test-box neighbor" id="neighbor-2">Neighbor 2</div>
+        <div class="test-box main" id="main-territory">MAIN<br>(Hover Me)</div>
+        <div class="test-box neighbor" id="neighbor-3">Neighbor 3</div>
+        <div class="test-box neighbor" id="neighbor-4">Neighbor 4</div>
+    </div>
+    
+    <div class="console-output" id="console"></div>
+    
+    <script>
+        const consoleDiv = document.getElementById('console');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+        
+        function clearConsole() {
+            consoleDiv.innerHTML = '';
+            log('Console cleared', 'info');
+        }
+        
+        // Main territory hover event
+        const mainTerritory = document.getElementById('main-territory');
+        const neighbors = document.querySelectorAll('.neighbor');
+        
+        mainTerritory.addEventListener('mouseenter', () => {
+            log('🎯 Hovering over main territory', 'info');
+            
+            neighbors.forEach(neighbor => {
+                neighbor.classList.add('neighbor-desaturated');
+                log(`✅ Added 'neighbor-desaturated' to ${neighbor.id}`, 'success');
+            });
+            
+            // Check computed styles
+            setTimeout(() => {
+                const firstNeighbor = neighbors[0];
+                const styles = window.getComputedStyle(firstNeighbor);
+                const filter = styles.getPropertyValue('filter');
+                log(`Computed filter on ${firstNeighbor.id}: ${filter}`, 'info');
+            }, 100);
+        });
+        
+        mainTerritory.addEventListener('mouseleave', () => {
+            log('🔄 Mouse left main territory', 'info');
+            
+            neighbors.forEach(neighbor => {
+                neighbor.classList.remove('neighbor-desaturated');
+                log(`♻️ Removed 'neighbor-desaturated' from ${neighbor.id}`, 'info');
+            });
+        });
+        
+        function testManualDesaturation() {
+            log('🧪 Running manual desaturation test...', 'info');
+            
+            neighbors.forEach(neighbor => {
+                const hadClass = neighbor.classList.contains('neighbor-desaturated');
+                neighbor.classList.add('neighbor-desaturated');
+                
+                if (!hadClass && neighbor.classList.contains('neighbor-desaturated')) {
+                    log(`✅ Successfully added class to ${neighbor.id}`, 'success');
+                } else if (hadClass) {
+                    log(`ℹ️ ${neighbor.id} already had the class`, 'info');
+                }
+            });
+            
+            // Check CSS application
+            const testNeighbor = neighbors[0];
+            const computedStyle = window.getComputedStyle(testNeighbor);
+            const filter = computedStyle.getPropertyValue('filter');
+            
+            if (filter !== 'none') {
+                log(`✅ Filter is applied: ${filter}`, 'success');
+            } else {
+                log(`❌ Filter is NOT applied! Check CSS`, 'error');
+            }
+        }
+        
+        function testRemoveDesaturation() {
+            log('♻️ Removing all desaturation...', 'info');
+            
+            neighbors.forEach(neighbor => {
+                neighbor.classList.remove('neighbor-desaturated');
+                log(`Removed class from ${neighbor.id}`, 'info');
+            });
+        }
+        
+        // Initial log
+        log('🚀 Test page loaded. Hover over the MAIN box to test.', 'success');
+        log(`Found ${neighbors.length} neighbor elements`, 'info');
+    </script>
+</body>
+</html>

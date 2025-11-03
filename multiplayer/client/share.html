@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Join Risk Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      padding: 40px;
+      border-radius: 20px;
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+      color: #ffd700;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .subtitle {
+      color: #aaa;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+
+    .code-container {
+      background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+      color: #1a1a2e;
+      padding: 30px;
+      border-radius: 15px;
+      margin: 30px 0;
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+    }
+
+    .code-label {
+      font-size: 0.9em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .code {
+      font-size: 3em;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 8px;
+      margin: 10px 0;
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.2em;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .secondary-btn {
+      background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+      box-shadow: 0 4px 15px rgba(15, 52, 96, 0.3);
+    }
+
+    .secondary-btn:hover {
+      box-shadow: 0 6px 20px rgba(15, 52, 96, 0.4);
+    }
+
+    .info {
+      margin-top: 30px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      border-left: 4px solid #4CAF50;
+    }
+
+    .info-title {
+      color: #4CAF50;
+      font-weight: bold;
+      margin-bottom: 10px;
+      font-size: 1.1em;
+    }
+
+    .info-text {
+      color: #ccc;
+      line-height: 1.6;
+      font-size: 0.95em;
+    }
+
+    .loading {
+      color: #ffd700;
+      font-size: 1.2em;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 2em;
+      }
+
+      .code {
+        font-size: 2em;
+        letter-spacing: 4px;
+      }
+
+      button {
+        padding: 12px 20px;
+        font-size: 1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎲 Risk Game</h1>
+    <p class="subtitle">You've been invited to play!</p>
+
+    <div class="code-container">
+      <div class="code-label">Session Code</div>
+      <div class="code" id="sessionCode">
+        <span class="loading">●●●●●●</span>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="joinBtn" onclick="joinGame()" disabled>
+        🎮 Join Game
+      </button>
+      <button class="secondary-btn" onclick="createNewGame()">
+        ✨ Create New Game Instead
+      </button>
+    </div>
+
+    <div class="info">
+      <div class="info-title">How to Play</div>
+      <div class="info-text">
+        1. Click "Join Game" above<br>
+        2. Enter your name<br>
+        3. Wait for the host to start<br>
+        4. Conquer the world! 🌍
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Get session code from URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionCode = urlParams.get('code') || urlParams.get('session');
+    
+    const codeElement = document.getElementById('sessionCode');
+    const joinBtn = document.getElementById('joinBtn');
+
+    if (sessionCode) {
+      // Display the session code
+      codeElement.textContent = sessionCode.toUpperCase();
+      joinBtn.disabled = false;
+    } else {
+      // No code provided
+      codeElement.innerHTML = '<span style="font-size: 0.4em;">NO CODE</span>';
+      codeElement.style.color = '#e94560';
+    }
+
+    function joinGame() {
+      if (!sessionCode) {
+        alert('No session code provided in URL');
+        return;
+      }
+
+      const playerName = prompt('Enter your name:', '');
+      
+      if (!playerName || playerName.trim() === '') {
+        return;
+      }
+
+      // Redirect to lobby with join parameters
+      const lobbyUrl = `lobby.html?action=join&session=${encodeURIComponent(sessionCode)}&name=${encodeURIComponent(playerName)}`;
+      window.location.href = lobbyUrl;
+    }
+
+    function createNewGame() {
+      window.location.href = 'lobby.html';
+    }
+
+    // Allow pressing Enter to join
+    document.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !joinBtn.disabled) {
+        joinGame();
+      }
+    });
+  </script>
+</body>
+</html>

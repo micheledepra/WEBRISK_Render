@@ -1,0 +1,1794 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Game - Strategic Dashboard</title>
+    <style>
+        @font-face {
+            font-family: 'Mechfire';
+            src: url('../res/Font/Second font/Mechfire-jq3v.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            overflow-x: hidden;
+            --scroll-y: 0px;
+        }
+
+        body {
+            font-family: 'Mechfire', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Parallax Background Layer */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 120vh;
+            background-image: url('../images/nasa-houston-control-center-2on3jl7x17hhsq7g.jpg');
+            background-size: 100%;
+            background-position-x: -10;
+            background-repeat: no-repeat;
+            z-index: -2;
+            transform: translateY(calc(var(--scroll-y) * -0.5));
+            will-change: transform;
+        }
+
+        /* Dark overlay for better text readability */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 26, 46, 0.85) 0%, rgba(22, 33, 62, 0.90) 100%);
+            z-index: -1;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2.5em;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            margin-bottom: 10px;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .game-info-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+
+        .game-info-item strong {
+            color: #ffd700;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+            gap: 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-group label {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        select, button {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:hover, button:hover {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        button {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border-color: #4CAF50;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+            transform: translateY(-2px);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: rgba(0, 0, 0, 0.25);
+            backdrop-filter: blur(35px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        .stat-card h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #b0b0b0;
+        }
+
+        .stat-value {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(35px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+        }
+
+        .tab:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: rgba(255, 215, 0, 0.3);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #1a1a2e;
+            border-color: #ffd700;
+            font-weight: bold;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+
+        .connection-status.connected {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        .player-comparison {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(35px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .player-comparison h3 {
+            color: #ffd700;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            text-align: center;
+        }
+
+        .chart-bars-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 380px;
+            padding: 20px 10px 10px 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            gap: 20px;
+        }
+
+        .player-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            min-width: 50px;
+            max-width: 70px;
+            width: fit-content;
+        }
+
+        .player-bar-fill {
+            width: 100%;
+            border-radius: 6px 6px 0 0;
+            /* background removed - set dynamically per player */
+            transition: height 0.5s ease, transform 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 10px 5px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.9em;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .player-bar-fill:hover {
+            transform: scale(1.05);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .player-bar-label {
+            margin-top: 10px;
+            text-align: center;
+            width: 100%;
+        }
+
+        .player-bar-label strong {
+            display: block;
+            color: #ffd700;
+            margin-bottom: 5px;
+            font-size: 1em;
+        }
+
+        .player-bar-label .player-stats {
+            font-size: 0.75em;
+            color: #b0b0b0;
+            line-height: 1.3;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .updating {
+            animation: pulse 1s infinite;
+        }
+
+        .no-data-message {
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(35px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .no-data-message h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+
+        .no-data-message p {
+            color: #b0b0b0;
+        }
+
+        /* Historical Chart Styles */
+        .historical-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1;
+        }
+
+        .historical-selector label {
+            color: #ffd700;
+            font-weight: bold;
+        }
+
+        .chart-container {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(35px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            margin-bottom: 25px;
+            min-height: 300px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chart-container h3 {
+            color: #ffd700;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 250px;
+            position: relative;
+        }
+
+        .chart-line {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+        }
+
+        .chart-svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .chart-axes {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #b0b0b0;
+        }
+
+        .no-history-message {
+            text-align: center;
+            padding: 60px 20px;
+            color: #b0b0b0;
+        }
+
+        /* Back to Game Button */
+        .back-to-game-button {
+            position: fixed;
+            left: 30px;
+            top: 10%;
+            transform: translateY(-50%);
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            border: 3px solid rgba(76, 175, 80, 0.5);
+            font-size: 2.5em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+            text-decoration: none;
+        }
+
+        .back-to-game-button:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+        }
+
+        .back-to-game-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .stats-grid > *,
+        .player-comparison,
+        .chart-container,
+        .no-data-message {
+            background: rgba(0, 0, 0, 0.5) !important;  /* Adjust 0.3 as needed */
+            backdrop-filter: opacity(1) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Back to Game Button -->
+    <a href="../game.html" class="back-to-game-button" title="Back to Game" target="_blank" rel="noopener">🗺️</a>
+
+    <div class="connection-status disconnected" id="connectionStatus">
+        ⚠️ Disconnected
+    </div>
+
+    <div class="dashboard-header">
+        <h1>Risk Game Strategic Dashboard</h1>
+        <div class="game-info">
+            <div class="game-info-item">
+                <span>🎮 Turn:</span>
+                <strong id="currentTurn">-</strong>
+            </div>
+            <div class="game-info-item">
+                <span>📍 Phase:</span>
+                <strong id="currentPhase">-</strong>
+            </div>
+            <div class="game-info-item">
+                <span>👤 Player:</span>
+                <strong id="currentPlayer">-</strong>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="filter-group">
+            <label for="viewMode">View Mode:</label>
+            <select id="viewMode">
+                <option value="total">Game Overview</option>
+                <option value="player">Single Player</option>
+            </select>
+        </div>
+
+        <div class="filter-group" id="playerSelectGroup" style="display: none;">
+            <label for="playerSelect">Select Player:</label>
+            <select id="playerSelect">
+                <!-- Populated dynamically -->
+            </select>
+        </div>
+
+        <button onclick="refreshDashboard()">🔄 Refresh</button>
+    </div>
+
+    <!-- Historical Data Selector -->
+    <div class="historical-selector">
+        <label>
+            <input type="checkbox" id="showHistorical" onchange="toggleHistoricalView()">
+            Show Historical Trajectory
+        </label>
+        <div class="filter-group" id="historicalMetricGroup" style="display: none;">
+            <label for="historicalMetric">Metric:</label>
+            <select id="historicalMetric" onchange="renderHistoricalChart()">
+                <option value="territories">Territory Control</option>
+                <option value="armies">Military Power</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Historical Chart Container -->
+    <div id="historicalChartContainer" style="display: none;">
+        <!-- Charts will be rendered here -->
+    </div>
+
+    <div class="category-tabs">
+        <div class="tab active" data-category="all">📊 All Stats</div>
+        <div class="tab" data-category="territory">🗺️ Territory Control</div>
+        <div class="tab" data-category="military">⚔️ Military Power</div>
+        <div class="tab" data-category="economy">💰 Economy</div>
+        <div class="tab" data-category="combat">🎯 Combat</div>
+    </div>
+
+    <div id="statsContainer">
+        <!-- Stats will be populated here -->
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // DASHBOARD DATA STRUCTURE
+        // ═══════════════════════════════════════════════════════════════
+
+        const REFRESH_INTERVAL = 1000; // 1 second
+        let currentCategory = 'all';
+        let currentViewMode = 'total';
+        let selectedPlayer = null;
+        let updateInterval = null;
+
+        // Continent definitions matching mapData.js
+        const CONTINENTS = {
+            'north-america': {
+                name: 'North America',
+                territories: ['alaska', 'northwest territory', 'greenland', 'alberta', 'ontario', 'quebec', 'western united states', 'eastern united states', 'central america']
+            },
+            'south-america': {
+                name: 'South America', 
+                territories: ['venezuela', 'brazil', 'peru', 'argentina']
+            },
+            'europe': {
+                name: 'Europe',
+                territories: ['iceland', 'scandinavia', 'ukraine', 'great britain', 'northern europe', 'southern europe', 'western europe']
+            },
+            'africa': {
+                name: 'Africa',
+                territories: ['north africa', 'egypt', 'east africa', 'congo', 'south africa', 'madagascar']
+            },
+            'asia': {
+                name: 'Asia',
+                territories: ['ural', 'siberia', 'yakutsk', 'kamchatka', 'irkutsk', 'afghanistan', 'china', 'mongolia', 'japan', 'middle east', 'india', 'siam']
+            },
+            'australia': {
+                name: 'Australia',
+                territories: ['indonesia', 'new guinea', 'western australia', 'eastern australia']
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // INITIALIZE DASHBOARD
+        // ═══════════════════════════════════════════════════════════════
+
+        function initDashboard() {
+            // Setup tab listeners
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentCategory = tab.dataset.category;
+                    renderStats();
+                });
+            });
+
+            // Setup view mode change
+            document.getElementById('viewMode').addEventListener('change', (e) => {
+                currentViewMode = e.target.value;
+                const playerGroup = document.getElementById('playerSelectGroup');
+                playerGroup.style.display = currentViewMode === 'player' ? 'flex' : 'none';
+                renderStats();
+            });
+
+            // Setup player select change
+            document.getElementById('playerSelect').addEventListener('change', (e) => {
+                selectedPlayer = e.target.value;
+                renderStats();
+            });
+
+            // Start auto-refresh
+            startAutoRefresh();
+            
+            // Initial load
+            refreshDashboard();
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // DATA FETCHING (LocalStorage Communication)
+        // ═══════════════════════════════════════════════════════════════
+
+        function fetchGameData() {
+            try {
+                console.log('📊 Attempting to load game data...');
+                
+                // Check multiple possible localStorage keys
+                const possibleKeys = ['riskGameData', 'riskDashboardData', 'risk_game_data'];
+                let gameData = null;
+                let foundKey = null;
+                
+                for (const key of possibleKeys) {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        console.log(`✅ Found data in localStorage key: ${key}`);
+                        try {
+                            gameData = JSON.parse(data);
+                            foundKey = key;
+                            break;
+                        } catch (e) {
+                            console.warn(`⚠️ Invalid JSON in ${key}:`, e);
+                        }
+                    }
+                }
+                
+                if (!gameData) {
+                    console.warn('❌ No game data found in localStorage');
+                    console.log('🔍 Available localStorage keys:', Object.keys(localStorage));
+                    
+                    // Show connection help
+                    showConnectionHelp();
+                    updateConnectionStatus(false);
+                    return null;
+                }
+                
+                console.log('✅ Game data loaded successfully from:', foundKey);
+                console.log('📊 Data structure:', {
+                    timestamp: gameData.timestamp,
+                    phase: gameData.phase,
+                    currentPlayer: gameData.currentPlayer,
+                    turnNumber: gameData.turnNumber,
+                    playerCount: Object.keys(gameData.players || {}).length,
+                    territoryCount: Object.keys(gameData.territories || {}).length
+                });
+                
+                // Validate data structure
+                if (!gameData.players || !gameData.territories) {
+                    console.error('❌ Invalid game data structure');
+                    updateConnectionStatus(false);
+                    return null;
+                }
+                
+                // Check if data is recent (within 10 seconds, more lenient)
+                const dataAge = Date.now() - (gameData.timestamp || gameData.lastUpdate || 0);
+                const isStale = dataAge > 10000;
+                
+                updateConnectionStatus(true, gameData, isStale);
+                return gameData;
+                
+            } catch (error) {
+                console.error('❌ Error loading game data:', error);
+                updateConnectionStatus(false);
+                return null;
+            }
+        }
+
+        function fetchHistoricalData() {
+            try {
+                const historyStr = localStorage.getItem('riskGameHistory');
+                if (!historyStr) return [];
+                
+                return JSON.parse(historyStr);
+            } catch (error) {
+                console.error('Error fetching historical data:', error);
+                return [];
+            }
+        }
+
+        function fetchAdvancedStats() {
+            try {
+                const statsStr = localStorage.getItem('riskGameStats');
+                if (!statsStr) return null;
+                
+                return JSON.parse(statsStr);
+            } catch (error) {
+                console.error('Error fetching advanced stats:', error);
+                return null;
+            }
+        }
+
+        function updateConnectionStatus(connected, gameData = null, isStale = false) {
+            const status = document.getElementById('connectionStatus');
+            let statusElement = document.getElementById('connection-status-enhanced');
+            
+            if (!statusElement) {
+                statusElement = createConnectionStatus();
+            }
+            
+            if (connected && gameData) {
+                const timeSinceUpdate = Date.now() - (gameData.timestamp || gameData.lastUpdate || 0);
+                
+                // Update original status
+                status.className = isStale ? 'connection-status stale' : 'connection-status connected';
+                status.textContent = isStale ? '⚠️ Connection Stale' : '✅ Connected';
+                
+                // Update enhanced status
+                statusElement.innerHTML = `
+                    <div style="color: ${isStale ? '#ffa500' : '#00ff00'}; font-weight: bold;">
+                        ${isStale ? '⚠️ Connection Stale' : '✅ Connected'} 
+                        ${gameData.phase ? `- ${gameData.phase}` : ''}
+                        ${gameData.turnNumber ? ` Turn ${gameData.turnNumber}` : ''}
+                    </div>
+                    <div style="font-size: 0.8em; opacity: 0.7;">
+                        Last update: ${timeSinceUpdate < 1000 ? 'Just now' : Math.round(timeSinceUpdate/1000) + 's ago'}
+                    </div>
+                `;
+            } else {
+                // Update original status
+                status.className = 'connection-status disconnected';
+                status.textContent = '⚠️ Disconnected';
+                
+                // Update enhanced status
+                statusElement.innerHTML = `
+                    <div style="color: #ff4444; font-weight: bold;">
+                        ❌ No Game Data
+                    </div>
+                    <div style="font-size: 0.8em; opacity: 0.7;">
+                        Start the game to see data
+                    </div>
+                `;
+            }
+        }
+
+        function createConnectionStatus() {
+            const statusDiv = document.createElement('div');
+            statusDiv.id = 'connection-status-enhanced';
+            statusDiv.style.cssText = `
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                padding: 10px 15px;
+                border-radius: 5px;
+                border: 2px solid #333;
+                z-index: 9999;
+                font-family: monospace;
+                backdrop-filter: blur(10px);
+            `;
+            document.body.appendChild(statusDiv);
+            return statusDiv;
+        }
+
+        function showConnectionHelp() {
+            const helpDiv = document.getElementById('connection-help') || createConnectionHelp();
+            helpDiv.style.display = 'block';
+        }
+
+        function createConnectionHelp() {
+            const helpDiv = document.createElement('div');
+            helpDiv.id = 'connection-help';
+            helpDiv.innerHTML = `
+                <div style="
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0,0,0,0.9);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 10px;
+                    border: 2px solid #ff4444;
+                    max-width: 500px;
+                    z-index: 10000;
+                    text-align: center;
+                    backdrop-filter: blur(15px);
+                ">
+                    <h3>🔌 Dashboard Not Connected</h3>
+                    <p>The dashboard cannot find game data. Please:</p>
+                    <ol style="text-align: left; margin: 15px 0;">
+                        <li>Make sure the game is running in another tab</li>
+                        <li>Start a game (complete player setup)</li>
+                        <li>Check that both tabs are from the same domain</li>
+                        <li>Refresh this dashboard page</li>
+                    </ol>
+                    <button onclick="this.parentElement.parentElement.style.display='none'; location.reload();" 
+                            style="background: #ff4444; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">
+                        Retry Connection
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(helpDiv);
+            return helpDiv;
+        }
+
+        /**
+         * Get player colors from gameData or directly from localStorage
+         * This ensures we always have colors even if gameData doesn't include them
+         */
+        function getPlayerColors(gameData) {
+            // First try to get colors from gameData
+            if (gameData && gameData.playerColors && Object.keys(gameData.playerColors).length > 0) {
+                console.log('📊 Using player colors from gameData:', gameData.playerColors);
+                return gameData.playerColors;
+            }
+            
+            // Fallback: read directly from localStorage (shared across tabs)
+            try {
+                const storedPlayers = localStorage.getItem('riskPlayers');
+                const storedColors = localStorage.getItem('riskPlayerColors');
+                
+                console.log('🔍 Checking localStorage...');
+                console.log('   riskPlayers:', storedPlayers);
+                console.log('   riskPlayerColors:', storedColors);
+                
+                if (storedPlayers && storedColors) {
+                    const players = JSON.parse(storedPlayers);
+                    const colors = JSON.parse(storedColors);
+                    const playerColors = {};
+                    
+                    players.forEach((player, index) => {
+                        playerColors[player] = colors[index];
+                    });
+                    
+                    console.log('📊 Using player colors from localStorage:', playerColors);
+                    return playerColors;
+                }
+            } catch (error) {
+                console.error('❌ Failed to load colors from localStorage:', error);
+            }
+            
+            // Last resort: return empty object
+            console.warn('⚠️ No player colors available - bars will use fallback green');
+            return {};
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // HISTORICAL DATA VISUALIZATION
+        // ═══════════════════════════════════════════════════════════════
+
+        function toggleHistoricalView() {
+            const checkbox = document.getElementById('showHistorical');
+            const chartContainer = document.getElementById('historicalChartContainer');
+            const metricGroup = document.getElementById('historicalMetricGroup');
+            
+            if (checkbox.checked) {
+                chartContainer.style.display = 'block';
+                metricGroup.style.display = 'flex';
+                renderHistoricalChart();
+            } else {
+                chartContainer.style.display = 'none';
+                metricGroup.style.display = 'none';
+            }
+        }
+
+        function renderHistoricalChart() {
+            const history = fetchHistoricalData();
+            const container = document.getElementById('historicalChartContainer');
+            const metric = document.getElementById('historicalMetric').value;
+            
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="chart-container">
+                        <div class="no-history-message">
+                            <h3>📈 No Historical Data Yet</h3>
+                            <p>Historical data will be collected as the game progresses.</p>
+                            <p style="margin-top: 10px;">Complete at least one turn to see the trajectory.</p>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const gameData = fetchGameData();
+            if (!gameData || !gameData.players) return;
+
+            // Get all player names
+            const playerNames = gameData.players.map(p => p.name);
+            
+            // Get player colors from game data or use fallback colors
+            const playerColors = gameData.playerColors || {};
+            const fallbackColors = [
+                '#4CAF50', '#2196F3', '#FF9800', '#E91E63', 
+                '#9C27B0', '#00BCD4', '#FFEB3B', '#795548'
+            ];
+
+            const metricLabel = metric === 'territories' ? 'Territory Control' : 'Military Power';
+            
+            container.innerHTML = `
+                <div class="chart-container">
+                    <h3>📈 ${metricLabel} Over Time</h3>
+                    <div class="chart-canvas">
+                        <svg class="chart-svg" id="chartSvg" viewBox="0 0 800 200" preserveAspectRatio="none">
+                            <!-- Chart lines will be drawn here -->
+                        </svg>
+                    </div>
+                    <div class="chart-axes">
+                        <span>Turn ${history[0].turn}</span>
+                        <span>Turn ${history[history.length - 1].turn}</span>
+                    </div>
+                    <div class="chart-legend" id="chartLegend">
+                        <!-- Legend will be populated here -->
+                    </div>
+                </div>
+            `;
+
+            const svg = document.getElementById('chartSvg');
+            const legend = document.getElementById('chartLegend');
+
+            // Calculate max value for scaling
+            let maxValue = 0;
+            history.forEach(snapshot => {
+                snapshot.players.forEach(player => {
+                    const value = metric === 'territories' ? player.territories : player.armies;
+                    if (value > maxValue) maxValue = value;
+                });
+            });
+
+            // Draw lines for each player
+            playerNames.forEach((playerName, playerIndex) => {
+                // Use actual player color from game or fallback to indexed color
+                const color = playerColors[playerName] || fallbackColors[playerIndex % fallbackColors.length];
+                const points = [];
+
+                history.forEach((snapshot, turnIndex) => {
+                    const player = snapshot.players.find(p => p.name === playerName);
+                    if (player) {
+                        const value = metric === 'territories' ? player.territories : player.armies;
+                        const x = (turnIndex / (history.length - 1)) * 800;
+                        const y = 200 - ((value / maxValue) * 180);
+                        points.push(`${x},${y}`);
+                    }
+                });
+
+                if (points.length > 0) {
+                    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+                    polyline.setAttribute('points', points.join(' '));
+                    polyline.setAttribute('fill', 'none');
+                    polyline.setAttribute('stroke', color);
+                    polyline.setAttribute('stroke-width', '3');
+                    polyline.setAttribute('stroke-linecap', 'round');
+                    polyline.setAttribute('stroke-linejoin', 'round');
+                    svg.appendChild(polyline);
+
+                    // Add dots at each data point
+                    points.forEach(point => {
+                        const [x, y] = point.split(',');
+                        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                        circle.setAttribute('cx', x);
+                        circle.setAttribute('cy', y);
+                        circle.setAttribute('r', '4');
+                        circle.setAttribute('fill', color);
+                        svg.appendChild(circle);
+                    });
+
+                    // Add to legend
+                    legend.innerHTML += `
+                        <div class="legend-item">
+                            <div class="legend-color" style="background: ${color};"></div>
+                            <span>${playerName}</span>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // STATS CALCULATION
+        // ═══════════════════════════════════════════════════════════════
+
+        /**
+         * Calculate continent dominance for all players
+         * Returns object with continent leaders and their territory counts
+         */
+        function calculateContinentDominance(gameData) {
+            const continentStats = {};
+            
+            if (!gameData || !gameData.territories) {
+                return continentStats;
+            }
+
+            // Initialize continent stats
+            Object.keys(CONTINENTS).forEach(continentId => {
+                const continent = CONTINENTS[continentId];
+                continentStats[continentId] = {
+                    name: continent.name,
+                    totalTerritories: continent.territories.length,
+                    playerCounts: {}
+                };
+            });
+
+            // Count territories per player per continent
+            Object.entries(CONTINENTS).forEach(([continentId, continent]) => {
+                continent.territories.forEach(territoryName => {
+                    const territory = gameData.territories?.[territoryName];
+                    if (territory && territory.owner) {
+                        const owner = territory.owner;
+                        if (!continentStats[continentId].playerCounts[owner]) {
+                            continentStats[continentId].playerCounts[owner] = 0;
+                        }
+                        continentStats[continentId].playerCounts[owner]++;
+                    }
+                });
+
+                // Find the leader for this continent
+                const counts = continentStats[continentId].playerCounts;
+                if (Object.keys(counts).length > 0) {
+                    const leader = Object.entries(counts).reduce((max, [player, count]) => 
+                        count > max.count ? { player, count } : max
+                    , { player: null, count: 0 });
+                    
+                    continentStats[continentId].leader = leader.player;
+                    continentStats[continentId].leaderCount = leader.count;
+                    continentStats[continentId].leaderRatio = `${leader.count}/${continentStats[continentId].totalTerritories}`;
+                }
+            });
+
+            return continentStats;
+        }
+
+        function calculateStats(gameData) {
+            if (!gameData) return null;
+
+            // Handle both object and array formats for players
+            let playersArray = [];
+            let totalPlayers = 0;
+            
+            if (gameData.players) {
+                if (Array.isArray(gameData.players)) {
+                    // Players is already an array
+                    playersArray = gameData.players;
+                    totalPlayers = playersArray.length;
+                } else if (typeof gameData.players === 'object') {
+                    // Players is an object with player names as keys
+                    playersArray = Object.entries(gameData.players).map(([playerName, playerData]) => ({
+                        name: playerName,
+                        ...playerData
+                    }));
+                    totalPlayers = Object.keys(gameData.players).length;
+                }
+            }
+
+            const stats = {
+                game: {
+                    turnNumber: gameData.turnNumber || 1,
+                    phase: gameData.phase || 'unknown',
+                    currentPlayer: gameData.currentPlayer || 'Unknown',
+                    totalPlayers: totalPlayers
+                },
+                players: {}
+            };
+
+            // Calculate per-player stats
+            if (playersArray.length > 0) {
+                playersArray.forEach(playerData => {
+                    const player = playerData.name || playerData;
+
+                    stats.players[player] = {
+                        // Territory Control
+                        territories: playerData.territories || 0,
+                        territoryPercentage: ((playerData.territories || 0) / 42 * 100).toFixed(1),
+                        
+                        // Military Power
+                        totalArmies: playerData.armies || 0,
+                        remainingArmies: playerData.remainingArmies || 0,
+                        avgArmiesPerTerritory: playerData.territories > 0 
+                            ? (playerData.armies / playerData.territories).toFixed(1)
+                            : 0,
+                        
+                        // Economy - use calculated values from game
+                        reinforcementsThisTurn: playerData.remainingArmies || 0,
+                        continentBonuses: playerData.continentBonus || 0,
+                        // Risk rules: 1 army per 3 territories (minimum 1, not 3)
+                        nextTurnReinforcements: playerData.nextTurnReinforcements || 
+                            Math.max(1, Math.floor((playerData.territories || 0) / 3)),
+                        
+                        // Combat (to be tracked)
+                        attacksLaunched: playerData.attacksLaunched || 0,
+                        territoriesConquered: playerData.territoriesConquered || 0,
+                        battlesWon: playerData.battlesWon || 0,
+                        battlesLost: playerData.battlesLost || 0
+                    };
+                });
+            }
+
+            return stats;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // RENDERING
+        // ═══════════════════════════════════════════════════════════════
+
+        function renderStats() {
+            const gameData = fetchGameData();
+            if (!gameData) {
+                // Hide connection help if visible
+                const helpDiv = document.getElementById('connection-help');
+                if (helpDiv) {
+                    helpDiv.style.display = 'none';
+                }
+                
+                document.getElementById('statsContainer').innerHTML = `
+                    <div class="no-data-message">
+                        <h3>⚠️ No Data Available</h3>
+                        <p>Waiting for game data... Make sure the game is running in another tab/window.</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">The dashboard will automatically connect when data is available.</p>
+                        <button onclick="location.reload()" style="
+                            background: #ff4444;
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 5px;
+                            cursor: pointer;
+                            margin-top: 15px;
+                        ">🔄 Refresh Dashboard</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Hide connection help if visible and we have data
+            const helpDiv = document.getElementById('connection-help');
+            if (helpDiv) {
+                helpDiv.style.display = 'none';
+            }
+            
+            console.log('✅ Dashboard updated successfully with data from:', gameData.phase, 'Turn', gameData.turnNumber);
+
+            const stats = calculateStats(gameData);
+            
+            // Update header info
+            document.getElementById('currentTurn').textContent = stats.game.turnNumber;
+            document.getElementById('currentPhase').textContent = stats.game.phase.toUpperCase();
+            document.getElementById('currentPlayer').textContent = stats.game.currentPlayer;
+
+            // Update player select options
+            const playerSelect = document.getElementById('playerSelect');
+            if (gameData.players && gameData.players.length > 0) {
+                playerSelect.innerHTML = gameData.players.map(p => {
+                    const playerName = p.name || p;
+                    return `<option value="${playerName}">${playerName}</option>`;
+                }).join('');
+                
+                if (!selectedPlayer && gameData.players.length > 0) {
+                    selectedPlayer = gameData.players[0].name || gameData.players[0];
+                }
+            }
+
+            // Render based on view mode and category
+            const container = document.getElementById('statsContainer');
+            container.innerHTML = '';
+
+            if (currentViewMode === 'total') {
+                renderGameOverview(container, stats, gameData);
+            } else {
+                renderPlayerStats(container, stats, selectedPlayer, gameData);
+            }
+
+            // Update historical chart if visible
+            const showHistorical = document.getElementById('showHistorical');
+            if (showHistorical && showHistorical.checked) {
+                renderHistoricalChart();
+            }
+        }
+
+        function renderGameOverview(container, stats, gameData) {
+            // Get player colors using helper function
+            const playerColors = getPlayerColors(gameData);
+            
+            // DEBUG: Log what colors we have
+            console.log('🎨 Player colors loaded:', playerColors);
+            console.log('👥 Players in stats:', Object.keys(stats.players));
+            
+            // Player Comparison Bars
+            const playerKeys = Object.keys(stats.players);
+            if (playerKeys.length === 0) {
+                container.innerHTML = '<div class="no-data-message"><h3>No player data available</h3></div>';
+                return;
+            }
+
+            const comparisonHtml = `
+                <div class="player-comparison">
+                    <h3>🏆 Player Power Comparison</h3>
+                    <div class="chart-bars-container">
+                        ${playerKeys.map(player => {
+                            const data = stats.players[player];
+                            const maxArmies = Math.max(...Object.values(stats.players).map(p => p.totalArmies), 1);
+                            const percentage = (data.totalArmies / maxArmies * 100);
+                            
+                            // Get player's actual color from playerColors helper
+                            const playerColor = playerColors[player] || '#4CAF50'; // Fallback to green
+                            
+                            // DEBUG: Log each player's color assignment
+                            console.log(`🎨 ${player} -> ${playerColor}`);
+                            
+                            // Create gradient using player's color (vertical gradient for vertical bars)
+                            const gradientStyle = `background: linear-gradient(180deg, ${playerColor} 0%, ${playerColor}dd 100%) !important;`;
+                            
+                            // Calculate height as percentage of container height (240px usable - leaves room for percentage label)
+                            // The max bar will be 240px, others scale proportionally
+                            const maxBarHeight = 240;
+                            const barHeight = (data.totalArmies / maxArmies) * maxBarHeight;
+                            
+                            return `
+                                <div class="player-bar">
+                                    <div class="player-bar-fill" style="height: ${barHeight}px; ${gradientStyle}">
+                                        ${percentage.toFixed(0)}%
+                                    </div>
+                                    <div class="player-bar-label">
+                                        <strong>${player}</strong>
+                                        <div class="player-stats">
+                                            Territories = ${data.territories} Armies = ${data.totalArmies}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+            container.innerHTML += comparisonHtml;
+
+            // Create stats grid
+            const statsGrid = document.createElement('div');
+            statsGrid.className = 'stats-grid';
+
+            // Territory Control Stats
+            if (currentCategory === 'all' || currentCategory === 'territory') {
+                const territoryCard = createStatCard('🗺️ Territory Control', 
+                    playerKeys.map(player => ({
+                        label: player,
+                        value: `${stats.players[player].territories} (${stats.players[player].territoryPercentage}%)`,
+                        playerColor: playerColors[player] || null
+                    }))
+                );
+                statsGrid.appendChild(territoryCard);
+
+                // Continent Dominance Card
+                const continentDominance = calculateContinentDominance(gameData);
+                const continentItems = Object.entries(continentDominance).map(([continentId, data]) => {
+                    if (data.leader) {
+                        return {
+                            label: data.name,
+                            value: `${data.leader} (${data.leaderRatio})`
+                        };
+                    } else {
+                        return {
+                            label: data.name,
+                            value: 'No territories claimed'
+                        };
+                    }
+                });
+
+                const continentCard = createStatCard('🌍 Continent Leaders', continentItems);
+                statsGrid.appendChild(continentCard);
+            }
+
+            // Military Power Stats
+            if (currentCategory === 'all' || currentCategory === 'military') {
+                const militaryCard = createStatCard('⚔️ Military Power', 
+                    playerKeys.map(player => ({
+                        label: `${player} Total Armies`,
+                        value: stats.players[player].totalArmies,
+                        playerColor: playerColors[player] || null
+                    }))
+                );
+                statsGrid.appendChild(militaryCard);
+
+                const avgCard = createStatCard('📊 Average Army Strength', 
+                    playerKeys.map(player => ({
+                        label: player,
+                        value: `${stats.players[player].avgArmiesPerTerritory} per territory`,
+                        playerColor: playerColors[player] || null
+                    }))
+                );
+                statsGrid.appendChild(avgCard);
+            }
+
+            // Economy Stats
+            if (currentCategory === 'all' || currentCategory === 'economy') {
+                const economyCard = createStatCard('💰 Next Turn Income Projection', 
+                    playerKeys.map(player => {
+                        const data = stats.players[player];
+                        // Risk rules: 1 army per 3 territories (minimum 1, not 3)
+                        const territoryIncome = Math.max(1, Math.floor(data.territories / 3));
+                        const continentBonus = data.continentBonuses;
+                        const total = territoryIncome + continentBonus;
+                        return {
+                            label: player,
+                            value: `${total} armies (${territoryIncome} + ${continentBonus} bonus)`,
+                            playerColor: playerColors[player] || null
+                        };
+                    })
+                );
+                statsGrid.appendChild(economyCard);
+
+                const reinforcementCard = createStatCard('🎖️ Current Deployment Status', 
+                    playerKeys.map(player => ({
+                        label: player,
+                        value: `${stats.players[player].reinforcementsThisTurn} remaining`,
+                        playerColor: playerColors[player] || null
+                    }))
+                );
+                statsGrid.appendChild(reinforcementCard);
+            }
+
+            // Combat Stats (if available)
+            if (currentCategory === 'all' || currentCategory === 'combat') {
+                const combatCard = createStatCard('🎯 Combat Statistics', 
+                    playerKeys.map(player => ({
+                        label: `${player} Conquests`,
+                        value: stats.players[player].terroriesConquered || 0,
+                        playerColor: playerColors[player] || null
+                    }))
+                );
+                statsGrid.appendChild(combatCard);
+
+                // Advanced Battle Statistics from StatisticsManager
+                const advancedStats = fetchAdvancedStats();
+                if (advancedStats && advancedStats.players) {
+                    const battleStatsCard = createStatCard('⚔️ Battle Performance', 
+                        playerKeys.map(player => {
+                            const playerStats = advancedStats.players[player];
+                            if (playerStats) {
+                                const winRate = playerStats.battlesInitiated > 0 ? 
+                                    ((playerStats.battlesWon / playerStats.battlesInitiated) * 100).toFixed(1) : '0.0';
+                                return {
+                                    label: player,
+                                    value: `${playerStats.battlesWon}W/${playerStats.battlesLost}L (${winRate}% win rate)`,
+                                    playerColor: playerColors[player] || null
+                                };
+                            }
+                            return { 
+                                label: player, 
+                                value: 'No battles',
+                                playerColor: playerColors[player] || null
+                            };
+                        })
+                    );
+                    statsGrid.appendChild(battleStatsCard);
+
+                    const casualtiesCard = createStatCard('💀 Casualties Report', 
+                        playerKeys.map(player => {
+                            const playerStats = advancedStats.players[player];
+                            if (playerStats) {
+                                const kdr = playerStats.armiesLost > 0 ? 
+                                    (playerStats.armiesKilled / playerStats.armiesLost).toFixed(2) : 
+                                    playerStats.armiesKilled.toString();
+                                return {
+                                    label: player,
+                                    value: `${playerStats.armiesKilled} killed / ${playerStats.armiesLost} lost (KDR: ${kdr})`,
+                                    playerColor: playerColors[player] || null
+                                };
+                            }
+                            return { 
+                                label: player, 
+                                value: 'No data',
+                                playerColor: playerColors[player] || null
+                            };
+                        })
+                    );
+                    statsGrid.appendChild(casualtiesCard);
+                }
+            }
+
+            container.appendChild(statsGrid);
+
+            // Add Battle History Section if advanced stats available
+            const advancedStats = fetchAdvancedStats();
+            if (advancedStats && advancedStats.battles && advancedStats.battles.length > 0) {
+                const battleHistoryHtml = `
+                    <div class="stat-card" style="margin-top: 20px; grid-column: 1 / -1;">
+                        <h3>📜 Recent Battle History</h3>
+                        <div style="max-height: 300px; overflow-y: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid rgba(255,255,255,0.2);">
+                                        <th style="padding: 8px; text-align: left;">Turn</th>
+                                        <th style="padding: 8px; text-align: left;">Attacker</th>
+                                        <th style="padding: 8px; text-align: left;">Defender</th>
+                                        <th style="padding: 8px; text-align: left;">Casualties</th>
+                                        <th style="padding: 8px; text-align: left;">Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${advancedStats.battles.slice(-15).reverse().map(battle => `
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                            <td style="padding: 8px;">${battle.turn}</td>
+                                            <td style="padding: 8px; color: #4CAF50;">${battle.attacker}</td>
+                                            <td style="padding: 8px; color: #f44336;">${battle.defender}</td>
+                                            <td style="padding: 8px;">${battle.attackerLosses} / ${battle.defenderLosses}</td>
+                                            <td style="padding: 8px;">
+                                                ${battle.conquered ? 
+                                                    '<span style="color: #ffd700;">✓ CONQUERED</span>' : 
+                                                    '<span style="color: #888;">Defended</span>'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += battleHistoryHtml;
+            }
+        }
+
+        function renderPlayerStats(container, stats, player, gameData) {
+            if (!stats.players[player]) {
+                container.innerHTML = '<div class="no-data-message"><h3>Player not found</h3></div>';
+                return;
+            }
+
+            const data = stats.players[player];
+            const statsGrid = document.createElement('div');
+            statsGrid.className = 'stats-grid';
+
+            // Territory Stats
+            if (currentCategory === 'all' || currentCategory === 'territory') {
+                const territoryCard = createStatCard(`🗺️ ${player} - Territory Control`, [
+                    { label: 'Territories Owned', value: data.territories },
+                    { label: 'Map Control', value: `${data.territoryPercentage}%` },
+                    { label: 'Ranking', value: calculateRanking(stats, player, 'territories') }
+                ]);
+                statsGrid.appendChild(territoryCard);
+
+                // Player's continent control
+                const continentDominance = calculateContinentDominance(gameData);
+                const playerContinents = [];
+                
+                Object.entries(continentDominance).forEach(([continentId, cData]) => {
+                    const playerCount = cData.playerCounts[player] || 0;
+                    if (playerCount > 0) {
+                        const isLeader = cData.leader === player;
+                        playerContinents.push({
+                            label: cData.name + (isLeader ? ' 🏆' : ''),
+                            value: `${playerCount}/${cData.totalTerritories}`
+                        });
+                    }
+                });
+
+                if (playerContinents.length > 0) {
+                    const continentCard = createStatCard(`🌍 ${player} - Continent Presence`, playerContinents);
+                    statsGrid.appendChild(continentCard);
+                }
+            }
+
+            // Military Stats
+            if (currentCategory === 'all' || currentCategory === 'military') {
+                const militaryCard = createStatCard(`⚔️ ${player} - Military Power`, [
+                    { label: 'Total Armies', value: data.totalArmies },
+                    { label: 'Armies to Deploy', value: data.remainingArmies },
+                    { label: 'Avg per Territory', value: data.avgArmiesPerTerritory },
+                    { label: 'Power Ranking', value: calculateRanking(stats, player, 'armies') }
+                ]);
+                statsGrid.appendChild(militaryCard);
+            }
+
+            // Economy Stats
+            if (currentCategory === 'all' || currentCategory === 'economy') {
+                // Risk rules: 1 army per 3 territories (minimum 1, not 3)
+                const territoryIncome = Math.max(1, Math.floor(data.territories / 3));
+                const continentBonus = data.continentBonuses;
+                const nextTurnTotal = territoryIncome + continentBonus;
+                
+                const economyCard = createStatCard(`💰 ${player} - Economy`, [
+                    { label: 'Armies to Deploy Now', value: data.reinforcementsThisTurn },
+                    { label: 'Next Turn Territory Income', value: territoryIncome },
+                    { label: 'Next Turn Continent Bonuses', value: continentBonus },
+                    { label: 'Next Turn Total Income', value: `${nextTurnTotal} armies` }
+                ]);
+                statsGrid.appendChild(economyCard);
+            }
+
+            // Combat Stats
+            if (currentCategory === 'all' || currentCategory === 'combat') {
+                const combatCard = createStatCard(`🎯 ${player} - Combat Record`, [
+                    { label: 'Attacks Launched', value: data.attacksLaunched },
+                    { label: 'Territories Conquered', value: data.territoriesConquered },
+                    { label: 'Battles Won', value: data.battlesWon },
+                    { label: 'Battles Lost', value: data.battlesLost }
+                ]);
+                statsGrid.appendChild(combatCard);
+
+                // Advanced combat statistics from StatisticsManager
+                const advancedStats = fetchAdvancedStats();
+                if (advancedStats && advancedStats.players && advancedStats.players[player]) {
+                    const playerAdvStats = advancedStats.players[player];
+                    
+                    const detailedCombatCard = createStatCard(`⚔️ ${player} - Detailed Combat Stats`, [
+                        { label: 'Battles Initiated', value: playerAdvStats.battlesInitiated || 0 },
+                        { label: 'Win Rate', value: playerAdvStats.battlesInitiated > 0 ? 
+                            `${((playerAdvStats.battlesWon / playerAdvStats.battlesInitiated) * 100).toFixed(1)}%` : 'N/A' },
+                        { label: 'Armies Deployed', value: playerAdvStats.armiesDeployed || 0 },
+                        { label: 'Fortifications Made', value: playerAdvStats.fortificationsMade || 0 }
+                    ]);
+                    statsGrid.appendChild(detailedCombatCard);
+
+                    const casualtiesCard = createStatCard(`💀 ${player} - Casualties`, [
+                        { label: 'Enemy Armies Eliminated', value: playerAdvStats.armiesKilled || 0 },
+                        { label: 'Own Armies Lost', value: playerAdvStats.armiesLost || 0 },
+                        { label: 'Kill/Death Ratio', value: playerAdvStats.armiesLost > 0 ? 
+                            (playerAdvStats.armiesKilled / playerAdvStats.armiesLost).toFixed(2) : 
+                            (playerAdvStats.armiesKilled || 0).toString() },
+                        { label: 'Net Army Advantage', value: (playerAdvStats.armiesKilled || 0) - (playerAdvStats.armiesLost || 0) }
+                    ]);
+                    statsGrid.appendChild(casualtiesCard);
+
+                    // Player's recent battles
+                    if (advancedStats.battles && advancedStats.battles.length > 0) {
+                        const playerBattles = advancedStats.battles
+                            .filter(b => b.attacker === player || b.defender === player)
+                            .slice(-10)
+                            .reverse();
+
+                        if (playerBattles.length > 0) {
+                            const battleHistoryCard = document.createElement('div');
+                            battleHistoryCard.className = 'stat-card';
+                            battleHistoryCard.style.gridColumn = '1 / -1';
+                            battleHistoryCard.innerHTML = `
+                                <h3>📜 ${player}'s Recent Battles</h3>
+                                <div style="max-height: 250px; overflow-y: auto;">
+                                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;">
+                                        <thead>
+                                            <tr style="border-bottom: 2px solid rgba(255,255,255,0.2);">
+                                                <th style="padding: 6px; text-align: left;">Turn</th>
+                                                <th style="padding: 6px; text-align: left;">Role</th>
+                                                <th style="padding: 6px; text-align: left;">Opponent</th>
+                                                <th style="padding: 6px; text-align: left;">Territory</th>
+                                                <th style="padding: 6px; text-align: left;">Losses</th>
+                                                <th style="padding: 6px; text-align: left;">Outcome</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${playerBattles.map(battle => {
+                                                const isAttacker = battle.attacker === player;
+                                                const opponent = isAttacker ? battle.defender : battle.attacker;
+                                                const losses = isAttacker ? battle.attackerLosses : battle.defenderLosses;
+                                                const won = isAttacker ? battle.conquered : !battle.conquered;
+                                                return `
+                                                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                                        <td style="padding: 6px;">${battle.turn}</td>
+                                                        <td style="padding: 6px; color: ${isAttacker ? '#4CAF50' : '#2196F3'};">
+                                                            ${isAttacker ? '⚔️ Attacker' : '🛡️ Defender'}
+                                                        </td>
+                                                        <td style="padding: 6px;">${opponent}</td>
+                                                        <td style="padding: 6px; font-size: 0.85em;">
+                                                            ${isAttacker ? battle.defendingTerritory : battle.attackingTerritory}
+                                                        </td>
+                                                        <td style="padding: 6px;">${losses}</td>
+                                                        <td style="padding: 6px;">
+                                                            ${won ? 
+                                                                '<span style="color: #4CAF50;">✓ Victory</span>' : 
+                                                                '<span style="color: #f44336;">✗ Defeat</span>'}
+                                                        </td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                            container.appendChild(battleHistoryCard);
+                        }
+                    }
+                }
+            }
+
+            container.appendChild(statsGrid);
+        }
+
+        function createStatCard(title, stats) {
+            const card = document.createElement('div');
+            card.className = 'stat-card';
+            
+            card.innerHTML = `
+                <h3>${title}</h3>
+                ${stats.map(stat => {
+                    // Add color dot if stat has playerColor property
+                    const colorDot = stat.playerColor 
+                        ? `<span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: ${stat.playerColor}; margin-right: 8px; vertical-align: middle;"></span>` 
+                        : '';
+                    return `
+                        <div class="stat-row">
+                            <span class="stat-label">${colorDot}${stat.label}</span>
+                            <span class="stat-value">${stat.value}</span>
+                        </div>
+                    `;
+                }).join('')}
+            `;
+            
+            return card;
+        }
+
+        function calculateRanking(stats, player, metric) {
+            const players = Object.keys(stats.players);
+            const sorted = players.sort((a, b) => {
+                const aValue = metric === 'territories' 
+                    ? stats.players[a].territories 
+                    : stats.players[a].totalArmies;
+                const bValue = metric === 'territories' 
+                    ? stats.players[b].territories 
+                    : stats.players[b].totalArmies;
+                return bValue - aValue;
+            });
+            
+            const rank = sorted.indexOf(player) + 1;
+            return `#${rank} of ${players.length}`;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // AUTO-REFRESH
+        // ═══════════════════════════════════════════════════════════════
+
+        function startAutoRefresh() {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            
+            updateInterval = setInterval(() => {
+                renderStats();
+            }, REFRESH_INTERVAL);
+        }
+
+        function refreshDashboard() {
+            const container = document.getElementById('statsContainer');
+            container.classList.add('updating');
+            
+            renderStats();
+            
+            setTimeout(() => {
+                container.classList.remove('updating');
+            }, 500);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // START DASHBOARD
+        // ═══════════════════════════════════════════════════════════════
+
+        // Parallax scrolling effect for depth
+        function initParallaxEffect() {
+            let ticking = false;
+            
+            window.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        const scrolled = window.pageYOffset;
+                        const parallaxSpeed = 0.5; // Adjust for more/less depth
+                        
+                        // Apply transform to background
+                        document.body.style.setProperty('--scroll-y', scrolled * parallaxSpeed + 'px');
+                        
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        }
+
+        // Enhanced cross-tab communication
+        function initializeCrossTabCommunication() {
+            console.log('🔄 Initializing cross-tab communication...');
+            
+            // Listen for storage changes (when game updates data)
+            window.addEventListener('storage', (event) => {
+                if (event.key === 'riskGameData' || event.key === 'riskDashboardData') {
+                    console.log('📊 Game data updated in another tab');
+                    renderStats();
+                }
+            });
+            
+            // Listen for custom events from game tab
+            window.addEventListener('riskGameDataUpdated', (event) => {
+                console.log('📊 Received direct game data update');
+                renderStats();
+            });
+            
+            // Add message listener for cross-tab communication
+            window.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'riskGameUpdate') {
+                    console.log('📊 Received game update message');
+                    renderStats();
+                }
+            });
+            
+            console.log('✅ Cross-tab communication initialized');
+        }
+
+        // Add manual refresh button
+        function addManualRefreshButton() {
+            const refreshButton = document.createElement('button');
+            refreshButton.innerHTML = '🔄 Refresh Data';
+            refreshButton.style.cssText = `
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                background: #ff4444;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 5px;
+                cursor: pointer;
+                z-index: 9999;
+                font-family: monospace;
+                backdrop-filter: blur(10px);
+            `;
+            refreshButton.onclick = () => {
+                console.log('🔄 Manual refresh triggered');
+                renderStats();
+            };
+            document.body.appendChild(refreshButton);
+        }
+
+        // Enhanced initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            initDashboard();
+            initParallaxEffect();
+            initializeCrossTabCommunication();
+            addManualRefreshButton();
+            
+            // Initial load
+            renderStats();
+            
+            // Reduce polling interval since we have event-driven updates
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+            updateInterval = setInterval(renderStats, 2000); // Every 2 seconds instead of 1
+        });
+
+        console.log('📊 Risk Game Dashboard initialized');
+        console.log('🔄 Auto-refresh enabled - polling every 2000ms');
+        console.log('🌌 Parallax background effect active');
+        
+        // Add window focus event to refresh when tab becomes active
+        window.addEventListener('focus', () => {
+            console.log('📊 Dashboard tab focused - refreshing data');
+            renderStats();
+        });
+    </script>
+</body>
+</html>

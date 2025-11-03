@@ -12,7 +12,7 @@ const { EVENTS, ACTION_TYPES } = require('../shared/constants');
 
 // Configuration
 const PORT = process.env.PORT || 3000;
-const CLIENT_PATH = path.join(__dirname, '../../');
+const ROOT_DIR = path.join(__dirname, '../..');
 
 // Initialize Express and Socket.IO
 const app = express();
@@ -27,9 +27,20 @@ const io = socketIO(server, {
 // Initialize Session Manager
 const sessionManager = new SessionManager();
 
-// Serve static files (game assets)
-app.use(express.static(CLIENT_PATH));
+// Serve static files from the root directory (all game assets)
+console.log('📁 Serving static files from:', ROOT_DIR);
+app.use(express.static(ROOT_DIR));
 app.use(express.json());
+
+// Explicit route for game.html
+app.get('/game.html', (req, res) => {
+  res.sendFile(path.join(ROOT_DIR, 'game.html'));
+});
+
+// Explicit route for index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(ROOT_DIR, 'index.html'));
+});
 
 // API Routes
 app.get('/api/health', (req, res) => {
@@ -636,8 +647,10 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('╚════════════════════════════════════════════════╝');
   console.log(`\n🌐 Environment: ${env}`);
   console.log(`🌐 Public URL: ${publicUrl}`);
-  console.log(`📁 Serving files from: ${CLIENT_PATH}`);
-  console.log(`\n💡 Admin Panel: ${publicUrl}/admin`);
+  console.log(`📁 Serving files from: ${ROOT_DIR}`);
+  console.log(`\n💡 Main Menu: ${publicUrl}/`);
+  console.log(`💡 Single Player: ${publicUrl}/game.html`);
+  console.log(`💡 Admin Panel: ${publicUrl}/admin`);
   console.log(`💡 Game Lobby: ${publicUrl}/multiplayer/client/lobby.html`);
   console.log(`💡 Health Check: ${publicUrl}/api/health`);
   console.log(`\n⏳ Waiting for connections...\n`);

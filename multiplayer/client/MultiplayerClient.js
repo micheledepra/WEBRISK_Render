@@ -5,52 +5,37 @@
 
 class MultiplayerClient {
   constructor(serverUrl = null) {
-    // Auto-detect server URL based on environment
+    // FORCE PRODUCTION MODE - ALWAYS USE CURRENT HOST
     if (!serverUrl) {
-      const hostname = window.location.hostname;
-      const isLocalhost = hostname === 'localhost' || 
-                          hostname === '127.0.0.1' ||
-                          hostname === '';
+      // Check if we're on Render
+      const isRender = window.location.hostname.includes('onrender.com');
+      const isProduction = window.location.protocol === 'https:';
       
-      // Check if on Render.com
-      const isRender = hostname.includes('onrender.com');
-      
-      if (isRender || (!isLocalhost && hostname !== '')) {
-        // Production: use current domain
-        this.serverUrl = window.location.origin;
-        console.log('🌐 Production mode detected');
+      if (isRender || isProduction) {
+        // Production: use the same origin as the page
+        serverUrl = window.location.origin;
+        console.log('🌐 Production mode detected - Render server');
+      } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        // Local development
+        serverUrl = 'http://localhost:3000';
+        console.log('🌐 Development mode - localhost');
       } else {
-        // Development: use localhost
-        this.serverUrl = 'http://localhost:3000';
-        console.log('🔧 Development mode detected');
+        // Fallback: use current origin
+        serverUrl = window.location.origin;
+        console.log('🌐 Using current origin:', serverUrl);
       }
-    } else {
-      this.serverUrl = serverUrl;
     }
     
+    this.serverUrl = serverUrl;
     this.socket = null;
     this.sessionId = null;
     this.userId = this.generateUserId();
-    this.playerName = null;
     this.isConnected = false;
-    this.isMyTurn = false;
-    this.currentPlayerName = null;
     
-    // Event callbacks
-    this.callbacks = {
-      onConnect: [],
-      onDisconnect: [],
-      onSessionUpdate: [],
-      onPlayersUpdate: [],
-      onGameStateUpdate: [],
-      onTurnStart: [],
-      onError: [],
-      onSessionError: [],
-      onTurnValidationError: []
-    };
-
     console.log('🎮 MultiplayerClient initialized');
     console.log('🌐 Server URL:', this.serverUrl);
+    console.log('🌐 Hostname:', window.location.hostname);
+    console.log('🌐 Protocol:', window.location.protocol);
   }
 
   generateUserId() {

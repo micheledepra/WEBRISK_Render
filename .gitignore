@@ -45,7 +45,6 @@ coverage/
 # Render deployment files (optional)
 .render/
 
-# Large media files (too big for GitHub)
+# Large video files only (mp3 files are now allowed)
 res/Music/Classic/Index_Intro.mp4
 res/Music/**/*.mp4
-res/Music/**/*.mp3

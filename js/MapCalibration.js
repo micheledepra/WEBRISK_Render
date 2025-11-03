@@ -141,10 +141,9 @@ class MapCalibration {
         
         const { offsetX, offsetY, scale, opacity } = this.calibrationData.waterLayer;
         
-        waterRect.setAttribute('x', offsetX);
-        waterRect.setAttribute('y', offsetY);
-        waterRect.setAttribute('width', 1920 * scale);
-        waterRect.setAttribute('height', 1080 * scale);
+        // Use transform instead of manipulating x/y/width/height
+        const transform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
+        waterRect.setAttribute('transform', transform);
         waterRect.setAttribute('opacity', opacity);
     }
     
@@ -157,10 +156,9 @@ class MapCalibration {
         
         const { offsetX, offsetY, scale, opacity } = this.calibrationData.mapLayer;
         
-        mapRect.setAttribute('x', offsetX);
-        mapRect.setAttribute('y', offsetY);
-        mapRect.setAttribute('width', 1920 * scale);
-        mapRect.setAttribute('height', 1080 * scale);
+        // Use transform instead of manipulating x/y/width/height
+        const transform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
+        mapRect.setAttribute('transform', transform);
         mapRect.setAttribute('opacity', opacity);
     }
     

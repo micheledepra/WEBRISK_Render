@@ -109,6 +109,14 @@ class MapCalibration {
     
     /**
      * Apply current calibration to all three layers
+     * 
+     * THREE-LAYER SYSTEM:
+     * 1. Water Layer Container (water-layer-container) - Contains water texture + vignette
+     * 2. Map Layer Container (map-layer-container) - Contains world map background + overlay
+     * 3. Territory Layer Container (territory-layer-container) - Contains SVG territories (fixed/centered inside)
+     * 
+     * Transforms are applied to the CONTAINERS, not the content inside.
+     * This keeps territories centered while allowing independent layer movement/scaling.
      */
     applyCalibration() {
         // Apply to each layer independently
@@ -136,43 +144,81 @@ class MapCalibration {
      * Apply water texture layer settings
      */
     applyWaterLayer() {
-        const waterRect = document.querySelector('rect[fill*="ocean-water-texture"]');
-        if (!waterRect) return;
+        const waterContainer = document.getElementById('water-layer-container');
+        if (!waterContainer) {
+            console.warn('⚠️ Water layer container not found');
+            return;
+        }
         
         const { offsetX, offsetY, scale, opacity } = this.calibrationData.waterLayer;
         
-        // Use transform instead of manipulating x/y/width/height
+        // Apply transform to the container group
         const transform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
-        waterRect.setAttribute('transform', transform);
-        waterRect.setAttribute('opacity', opacity);
+        waterContainer.setAttribute('transform', transform);
+        
+        // Apply opacity to all rects inside the container
+        const rects = waterContainer.querySelectorAll('rect');
+        rects.forEach(rect => {
+            const currentOpacity = rect.getAttribute('opacity');
+            if (currentOpacity) {
+                rect.setAttribute('opacity', opacity);
+            }
+        });
+        
+        console.log(`✅ Water layer transform applied: ${transform}`);
     }
     
     /**
      * Apply world map layer settings
      */
     applyMapLayer() {
-        const mapRect = document.querySelector('rect[fill*="world-map-bg"]');
-        if (!mapRect) return;
+        const mapContainer = document.getElementById('map-layer-container');
+        if (!mapContainer) {
+            console.warn('⚠️ Map layer container not found');
+            return;
+        }
         
         const { offsetX, offsetY, scale, opacity } = this.calibrationData.mapLayer;
         
-        // Use transform instead of manipulating x/y/width/height
+        // Apply transform to the container group
         const transform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
-        mapRect.setAttribute('transform', transform);
-        mapRect.setAttribute('opacity', opacity);
+        mapContainer.setAttribute('transform', transform);
+        
+        // Apply opacity to all rects inside the container
+        const rects = mapContainer.querySelectorAll('rect');
+        rects.forEach(rect => {
+            const currentOpacity = rect.getAttribute('opacity');
+            if (currentOpacity) {
+                rect.setAttribute('opacity', opacity);
+            }
+        });
+        
+        console.log(`✅ Map layer transform applied: ${transform}`);
     }
     
     /**
      * Apply territory layer settings
      */
     applyTerritoryLayer() {
-        const territoryLayer = document.getElementById('territory-layer');
-        if (!territoryLayer) return;
+        const territoryContainer = document.getElementById('territory-layer-container');
+        if (!territoryContainer) {
+            console.warn('⚠️ Territory layer container not found - SVG territories cannot be positioned');
+            return;
+        }
         
-        const { offsetX, offsetY, scale } = this.calibrationData.territoryLayer;
+        const { offsetX, offsetY, scale, opacity } = this.calibrationData.territoryLayer;
         
+        // Apply transform to the container group (territories stay centered inside)
         const transform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
-        territoryLayer.setAttribute('transform', transform);
+        territoryContainer.setAttribute('transform', transform);
+        
+        // Apply opacity to the inner content group if needed
+        const territoryContent = document.getElementById('territory-content');
+        if (territoryContent && opacity !== undefined) {
+            territoryContent.setAttribute('opacity', opacity);
+        }
+        
+        console.log(`✅ Territory layer transform applied: ${transform}`);
     }
     
     /**
@@ -319,7 +365,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>X Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="water-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.waterLayer.offsetX}">
+                        <input type="range" id="water-offset-x" min="-500" max="500" step="1" value="${this.calibrationData.waterLayer.offsetX}">
                         <span class="value-display" id="water-offset-x-value">${this.calibrationData.waterLayer.offsetX}px</span>
                     </div>
                 </div>
@@ -327,7 +373,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Y Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="water-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.waterLayer.offsetY}">
+                        <input type="range" id="water-offset-y" min="-500" max="500" step="1" value="${this.calibrationData.waterLayer.offsetY}">
                         <span class="value-display" id="water-offset-y-value">${this.calibrationData.waterLayer.offsetY}px</span>
                     </div>
                 </div>
@@ -335,7 +381,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Scale</label>
                     <div class="slider-row">
-                        <input type="range" id="water-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.waterLayer.scale}">
+                        <input type="range" id="water-scale" min="0.5" max="2" step="0.01" value="${this.calibrationData.waterLayer.scale}">
                         <span class="value-display" id="water-scale-value">${this.calibrationData.waterLayer.scale.toFixed(2)}x</span>
                     </div>
                 </div>
@@ -343,7 +389,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Opacity</label>
                     <div class="slider-row">
-                        <input type="range" id="water-opacity" min="0" max="1" step="0.05" value="${this.calibrationData.waterLayer.opacity}">
+                        <input type="range" id="water-opacity" min="0" max="1" step="0.01" value="${this.calibrationData.waterLayer.opacity}">
                         <span class="value-display" id="water-opacity-value">${Math.round(this.calibrationData.waterLayer.opacity * 100)}%</span>
                     </div>
                 </div>
@@ -356,7 +402,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>X Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="map-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.mapLayer.offsetX}">
+                        <input type="range" id="map-offset-x" min="-500" max="500" step="1" value="${this.calibrationData.mapLayer.offsetX}">
                         <span class="value-display" id="map-offset-x-value">${this.calibrationData.mapLayer.offsetX}px</span>
                     </div>
                 </div>
@@ -364,7 +410,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Y Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="map-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.mapLayer.offsetY}">
+                        <input type="range" id="map-offset-y" min="-500" max="500" step="1" value="${this.calibrationData.mapLayer.offsetY}">
                         <span class="value-display" id="map-offset-y-value">${this.calibrationData.mapLayer.offsetY}px</span>
                     </div>
                 </div>
@@ -372,7 +418,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Scale</label>
                     <div class="slider-row">
-                        <input type="range" id="map-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.mapLayer.scale}">
+                        <input type="range" id="map-scale" min="0.5" max="2" step="0.01" value="${this.calibrationData.mapLayer.scale}">
                         <span class="value-display" id="map-scale-value">${this.calibrationData.mapLayer.scale.toFixed(2)}x</span>
                     </div>
                 </div>
@@ -380,7 +426,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Opacity</label>
                     <div class="slider-row">
-                        <input type="range" id="map-opacity" min="0" max="1" step="0.05" value="${this.calibrationData.mapLayer.opacity}">
+                        <input type="range" id="map-opacity" min="0" max="1" step="0.01" value="${this.calibrationData.mapLayer.opacity}">
                         <span class="value-display" id="map-opacity-value">${Math.round(this.calibrationData.mapLayer.opacity * 100)}%</span>
                     </div>
                 </div>
@@ -393,7 +439,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>X Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="territory-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.territoryLayer.offsetX}">
+                        <input type="range" id="territory-offset-x" min="-500" max="500" step="1" value="${this.calibrationData.territoryLayer.offsetX}">
                         <span class="value-display" id="territory-offset-x-value">${this.calibrationData.territoryLayer.offsetX}px</span>
                     </div>
                 </div>
@@ -401,7 +447,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Y Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="territory-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.territoryLayer.offsetY}">
+                        <input type="range" id="territory-offset-y" min="-500" max="500" step="1" value="${this.calibrationData.territoryLayer.offsetY}">
                         <span class="value-display" id="territory-offset-y-value">${this.calibrationData.territoryLayer.offsetY}px</span>
                     </div>
                 </div>
@@ -409,7 +455,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Scale</label>
                     <div class="slider-row">
-                        <input type="range" id="territory-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.territoryLayer.scale}">
+                        <input type="range" id="territory-scale" min="0.5" max="2" step="0.01" value="${this.calibrationData.territoryLayer.scale}">
                         <span class="value-display" id="territory-scale-value">${this.calibrationData.territoryLayer.scale.toFixed(2)}x</span>
                     </div>
                 </div>
@@ -422,7 +468,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Global X Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="unified-offset-x" min="-500" max="500" step="5" value="${this.calibrationData.unifiedOffset.offsetX}">
+                        <input type="range" id="unified-offset-x" min="-500" max="500" step="1" value="${this.calibrationData.unifiedOffset.offsetX}">
                         <span class="value-display" id="unified-offset-x-value">${this.calibrationData.unifiedOffset.offsetX}px</span>
                     </div>
                 </div>
@@ -430,7 +476,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Global Y Offset</label>
                     <div class="slider-row">
-                        <input type="range" id="unified-offset-y" min="-500" max="500" step="5" value="${this.calibrationData.unifiedOffset.offsetY}">
+                        <input type="range" id="unified-offset-y" min="-500" max="500" step="1" value="${this.calibrationData.unifiedOffset.offsetY}">
                         <span class="value-display" id="unified-offset-y-value">${this.calibrationData.unifiedOffset.offsetY}px</span>
                     </div>
                 </div>
@@ -438,7 +484,7 @@ class MapCalibration {
                 <div class="control-group">
                     <label>Global Scale</label>
                     <div class="slider-row">
-                        <input type="range" id="unified-scale" min="0.5" max="2" step="0.05" value="${this.calibrationData.unifiedOffset.scale}">
+                        <input type="range" id="unified-scale" min="0.5" max="2" step="0.01" value="${this.calibrationData.unifiedOffset.scale}">
                         <span class="value-display" id="unified-scale-value">${this.calibrationData.unifiedOffset.scale.toFixed(2)}x</span>
                     </div>
                 </div>
@@ -766,9 +812,17 @@ class MapCalibration {
      * Initialize calibration system
      */
     init() {
+        // Ensure layers are solidified by default for proper multi-layer zoom
+        if (!this.calibrationData.solidified) {
+            console.log('🔒 Auto-solidifying layers for unified zoom/pan');
+            this.calibrationData.solidified = true;
+            this.saveCalibration();
+        }
+        
         this.applyCalibration();
         this.setupKeyboardShortcut();
         console.log('MapCalibration initialized. Press "C" to toggle calibration mode.');
+        console.log(`📊 Layers solidified: ${this.calibrationData.solidified}`);
     }
 }
 

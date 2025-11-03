@@ -469,37 +469,49 @@ class RiskMap {
     }
 
     updateTransform() {
-        const transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+        // **USE MAPCALIBRATION VIEWBOX SYSTEM FOR SOLIDIFIED LAYERS**
+        // When layers are solidified, we need to manipulate the SVG viewBox
+        // to zoom/pan all layers (water, map, territories) together
         
-        // **CRITICAL: Apply to ALL layers synchronously**
-        if (this.mapGroup) {
-            this.mapGroup.style.transform = transform;
-        }
-        
-        // Sync water layer
-        const waterLayer = document.getElementById('water-layer-container');
-        if (waterLayer) {
-            waterLayer.style.transform = transform;
-        }
-        
-        // Sync map background layer
-        const mapLayer = document.getElementById('map-layer-container');
-        if (mapLayer) {
-            mapLayer.style.transform = transform;
-        }
-        
-        // Sync territory layer container
-        const territoryLayer = document.getElementById('territory-layer-container');
-        if (territoryLayer) {
-            territoryLayer.style.transform = transform;
-        }
-        
-        // Sync map-container background for parallax effect (optional - subtle movement)
-        const mapContainer = document.querySelector('.map-container');
-        if (mapContainer) {
-            // Apply subtle parallax (0.05x movement) for depth without breaking alignment
-            const bgTransform = `translate(${this.translateX * 0.05}px, ${this.translateY * 0.05}px) scale(${this.scale})`;
-            mapContainer.style.transformOrigin = 'center';
+        if (window.mapCalibration && window.mapCalibration.calibrationData.solidified) {
+            // The MapCalibration system uses viewBox manipulation for unified transforms
+            // viewBox format: "minX minY width height"
+            // To zoom: decrease width/height (zoom in) or increase (zoom out)
+            // To pan: adjust minX/minY
+            
+            const baseWidth = 1920;  // Base SVG coordinate system width
+            const baseHeight = 1080; // Base SVG coordinate system height
+            
+            // Convert our pixel-based scale to viewBox scale (inverted relationship)
+            const viewBoxWidth = baseWidth / this.scale;
+            const viewBoxHeight = baseHeight / this.scale;
+            
+            // Convert pixel-based translation to SVG coordinates
+            // The translation affects the viewBox origin (top-left corner)
+            const viewBoxX = -this.translateX / this.scale;
+            const viewBoxY = -this.translateY / this.scale;
+            
+            // Update the unified offset in MapCalibration
+            window.mapCalibration.calibrationData.unifiedOffset = {
+                offsetX: this.translateX,
+                offsetY: this.translateY,
+                scale: this.scale
+            };
+            
+            // Apply the viewBox directly (this transforms all layers simultaneously)
+            this.svg.setAttribute('viewBox', `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`);
+            
+            // Save the calibration
+            window.mapCalibration.saveCalibration();
+            
+            console.log(`🔄 ViewBox updated: (${viewBoxX.toFixed(2)}, ${viewBoxY.toFixed(2)}) ${viewBoxWidth.toFixed(2)}x${viewBoxHeight.toFixed(2)} [scale: ${this.scale.toFixed(3)}]`);
+        } else {
+            // Fallback: If MapCalibration not available or not solidified,
+            // apply basic transform to map group only (legacy behavior)
+            console.warn('⚠️ MapCalibration not solidified - using fallback transform');
+            if (this.mapGroup) {
+                this.mapGroup.style.transform = `translate(${this.translateX}px, ${this.translateY}px) scale(${this.scale})`;
+            }
         }
     }
 

@@ -2773,36 +2773,89 @@
         filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.2));
       }
 
-      /* Dashboard Navigation Button */
-      .dashboard-nav-button {
+      /* Mobile Navigation Buttons */
+      .mobile-nav-buttons {
         position: fixed;
         right: 10px;
         top: 50%;
         transform: translateY(-50%);
-        width: 40px;
-        height: 40px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 1000;
+      }
+
+      .mobile-nav-button {
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
         background: linear-gradient(270deg, #f4d0049d 0%, #ffed4e 100%);
         border: 3px solid rgba(255, 215, 0, 0.5);
-        font-size: 1.8em;
+        font-size: 1.5em;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         transition: all 0.3s ease;
-        z-index: 1000;
         text-decoration: none;
+        color: #333;
       }
 
-      .dashboard-nav-button:hover {
-        transform: translateY(-50%) scale(1.1);
+      .mobile-nav-button:hover {
+        transform: scale(1.1);
         box-shadow: 0 6px 20px rgba(255, 215, 0, 0.5);
         background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
       }
 
-      .dashboard-nav-button:active {
-        transform: translateY(-50%) scale(0.95);
+      .mobile-nav-button:active {
+        transform: scale(0.95);
+      }
+
+      .mobile-nav-button.music-button {
+        background: linear-gradient(270deg, #4CAF50 0%, #66BB6A 100%);
+        border-color: rgba(76, 175, 80, 0.5);
+      }
+
+      .mobile-nav-button.music-button:hover {
+        background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+      }
+
+      .mobile-nav-button.sizing-button {
+        background: linear-gradient(270deg, #2196F3 0%, #42A5F5 100%);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .mobile-nav-button.sizing-button:hover {
+        background: linear-gradient(135deg, #42A5F5 0%, #2196F3 100%);
+        box-shadow: 0 6px 20px rgba(33, 150, 243, 0.5);
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .mobile-nav-buttons {
+          right: 5px;
+          gap: 8px;
+        }
+
+        .mobile-nav-button {
+          width: 45px;
+          height: 45px;
+          font-size: 1.3em;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .mobile-nav-buttons {
+          gap: 6px;
+        }
+
+        .mobile-nav-button {
+          width: 40px;
+          height: 40px;
+          font-size: 1.2em;
+        }
       }
 
       /* Music Manager Modal */
@@ -2968,8 +3021,12 @@
         <img src="images/cursor1-32x32.png" alt="cursor">
     </div>
 
-    <!-- Dashboard Navigation Button -->
-    <a href="Stats/dashboard.html" class="dashboard-nav-button" title="Open Dashboard" target="_blank" rel="noopener">📊</a>
+    <!-- Mobile Navigation Buttons -->
+    <div class="mobile-nav-buttons">
+      <a href="Stats/dashboard.html" class="mobile-nav-button dashboard-nav-button" title="Open Dashboard" target="_blank" rel="noopener">📊</a>
+      <button class="mobile-nav-button music-button" id="mobile-music-button" title="Open Music Manager (N)">🎵</button>
+      <button class="mobile-nav-button sizing-button" id="mobile-sizing-button" title="Open Map Calibration (C)">🔧</button>
+    </div>
 
     <div class="game-container">
       <div class="sidebar">
@@ -9108,6 +9165,45 @@
       });
       
       console.log('⌨️ Spacebar shortcut initialized - Press SPACE to end turn/phase');
+    })();
+    </script>
+
+    <!-- Mobile Navigation Button Handlers -->
+    <script>
+    (function() {
+      // Mobile Navigation Button Handlers
+      document.addEventListener('DOMContentLoaded', function() {
+        // Music button handler
+        const musicButton = document.getElementById('mobile-music-button');
+        if (musicButton) {
+          musicButton.addEventListener('click', function() {
+            if (window.musicPlayer && typeof window.musicPlayer.openMusicManager === 'function') {
+              window.musicPlayer.openMusicManager();
+            } else {
+              // Fallback: trigger 'n' key event
+              const event = new KeyboardEvent('keydown', { key: 'n', code: 'KeyN' });
+              document.dispatchEvent(event);
+            }
+          });
+        }
+
+        // Sizing/Calibration button handler
+        const sizingButton = document.getElementById('mobile-sizing-button');
+        if (sizingButton) {
+          sizingButton.addEventListener('click', function() {
+            // Toggle the existing MapCalibration system
+            if (window.mapCalibration) {
+              if (window.mapCalibration.isDevelopmentMode) {
+                window.mapCalibration.disableDevelopmentMode();
+              } else {
+                window.mapCalibration.enableDevelopmentMode();
+              }
+            }
+          });
+        }
+      });
+
+      console.log('📱 Mobile navigation buttons initialized');
     })();
     </script>
 

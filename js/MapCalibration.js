@@ -10,93 +10,96 @@
 
 class MapCalibration {
     constructor() {
-        this.calibrationData = {
-            // Layer 1: Water Texture Background
-            waterLayer: {
-                offsetX: 0,
-                offsetY: 0,
-                scale: 1.0,
-                opacity: 0.85
-            },
-            
-            // Layer 2: World Map Preview
-            mapLayer: {
-                offsetX: 4,
-                offsetY: -24,
-                scale: 0.8,
-                opacity: 0.85
-            },
-            
-            // Layer 3: SVG Territories
-            territoryLayer: {
-                offsetX: 0,
-                offsetY: 0,
-                scale: 1.0,
-                opacity: 1.0
-            },
-            
-            // Unified controls (after solidification)
-            solidified: false,
-            unifiedOffset: {
-                offsetX: 0,
-                offsetY: 0,
-                scale: 1.0
-            },
-            
-            // Vignette
-            vignetteCenterX: 50,
-            vignetteCenterY: 50,
-            vignetteScale: 70
-        };
-        
         this.isDevelopmentMode = false;
         this.calibrationPoints = [];
+        
+        // Load calibration (from preset or localStorage)
         this.loadCalibration();
     }
     
     /**
-     * Load calibration settings from localStorage
+     * Load calibration from localStorage or device preset
      */
     loadCalibration() {
-        const saved = localStorage.getItem('mapCalibration');
-        if (saved) {
+        const savedData = localStorage.getItem('mapCalibration');
+        
+        if (savedData) {
             try {
-                const parsed = JSON.parse(saved);
-                // Merge with defaults to ensure all properties exist
-                this.calibrationData = {
-                    waterLayer: { 
-                        offsetX: parsed.waterLayer?.offsetX ?? 0,
-                        offsetY: parsed.waterLayer?.offsetY ?? 0,
-                        scale: parsed.waterLayer?.scale ?? 1.0,
-                        opacity: parsed.waterLayer?.opacity ?? 0.85
-                    },
-                    mapLayer: {
-                        offsetX: parsed.mapLayer?.offsetX ?? 4,
-                        offsetY: parsed.mapLayer?.offsetY ?? -24,
-                        scale: parsed.mapLayer?.scale ?? 0.8,
-                        opacity: parsed.mapLayer?.opacity ?? 0.85
-                    },
-                    territoryLayer: {
-                        offsetX: parsed.territoryLayer?.offsetX ?? 0,
-                        offsetY: parsed.territoryLayer?.offsetY ?? 0,
-                        scale: parsed.territoryLayer?.scale ?? 1.0,
-                        opacity: parsed.territoryLayer?.opacity ?? 1.0
-                    },
-                    solidified: parsed.solidified ?? false,
-                    unifiedOffset: {
-                        offsetX: parsed.unifiedOffset?.offsetX ?? 0,
-                        offsetY: parsed.unifiedOffset?.offsetY ?? 0,
-                        scale: parsed.unifiedOffset?.scale ?? 1.0
-                    },
-                    vignetteCenterX: parsed.vignetteCenterX ?? 50,
-                    vignetteCenterY: parsed.vignetteCenterY ?? 50,
-                    vignetteScale: parsed.vignetteScale ?? 70
-                };
-                console.log('Loaded map calibration:', this.calibrationData);
+                const parsed = JSON.parse(savedData);
+                
+                // Check if user has customized the calibration
+                if (parsed.userCustomized === true) {
+                    // User has manually calibrated - use their settings
+                    this.calibrationData = parsed;
+                    console.log('🎨 Loaded user custom calibration');
+                    return;
+                }
+                
+                // Check if saved preset matches current device
+                if (window.MapCalibrationPresets) {
+                    const savedCategory = parsed.deviceCategory;
+                    const currentCategory = window.MapCalibrationPresets.detectDeviceCategory();
+                    
+                    if (savedCategory === currentCategory) {
+                        // Saved preset matches current device - use it
+                        this.calibrationData = parsed;
+                        console.log(`📱 Loaded saved ${currentCategory} preset`);
+                        return;
+                    }
+                    
+                    // Device category changed - load new preset
+                    console.log(`🔄 Device changed from ${savedCategory} to ${currentCategory} - loading new preset`);
+                }
             } catch (e) {
-                console.error('Failed to load calibration data:', e);
+                console.error('Error parsing saved calibration:', e);
             }
         }
+        
+        // No saved data or device changed - load device-specific preset
+        this.loadDevicePreset();
+    }
+    
+    /**
+     * Load calibration preset for current device
+     */
+    loadDevicePreset() {
+        if (!window.MapCalibrationPresets) {
+            console.error('❌ MapCalibrationPresets not loaded - using defaults');
+            this.loadDefaultCalibration();
+            return;
+        }
+        
+        const deviceCategory = window.MapCalibrationPresets.detectDeviceCategory();
+        const preset = window.MapCalibrationPresets.getCurrentPreset();
+        
+        this.calibrationData = {
+            ...preset,
+            userCustomized: false,
+            deviceCategory: deviceCategory
+        };
+        
+        console.log(`📱 Loaded ${deviceCategory} calibration preset:`, this.calibrationData);
+        
+        // Save to localStorage so it persists
+        this.saveCalibration();
+    }
+    
+    /**
+     * Fallback default calibration (neutral positioning)
+     */
+    loadDefaultCalibration() {
+        this.calibrationData = {
+            waterLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 0.85 },
+            mapLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 0.85 },
+            territoryLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 1.0 },
+            solidified: true,
+            unifiedOffset: { offsetX: 0, offsetY: 0, scale: 1.0 },
+            vignetteCenterX: 50,
+            vignetteCenterY: 50,
+            vignetteScale: 70,
+            userCustomized: false,
+            deviceCategory: 'desktop'
+        };
     }
     
     /**
@@ -104,7 +107,34 @@ class MapCalibration {
      */
     saveCalibration() {
         localStorage.setItem('mapCalibration', JSON.stringify(this.calibrationData));
-        console.log('Saved map calibration:', this.calibrationData);
+        const status = this.calibrationData.userCustomized ? 'Custom' : 'Preset';
+        console.log(`💾 Calibration saved (${status}, ${this.calibrationData.deviceCategory})`);
+    }
+    
+    /**
+     * Mark calibration as user-customized when manually adjusted
+     */
+    markAsCustomized() {
+        if (!this.calibrationData.userCustomized) {
+            this.calibrationData.userCustomized = true;
+            console.log('🎨 Calibration marked as user-customized');
+        }
+    }
+    
+    /**
+     * Reset to device preset calibration
+     */
+    resetToDevicePreset() {
+        console.log('🔄 Resetting to device preset calibration...');
+        localStorage.removeItem('mapCalibration');
+        this.loadDevicePreset();
+        
+        // Re-apply and update UI
+        this.applyCalibration();
+        if (this.isDevelopmentMode) {
+            this.disableDevelopmentMode();
+            this.enableDevelopmentMode();
+        }
     }
     
     /**

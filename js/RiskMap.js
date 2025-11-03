@@ -35,9 +35,9 @@ class RiskMap {
         this.setupEventListeners();
         this.setupKeyboardShortcuts();
         
-        // **DO NOT APPLY DEFAULT TRANSFORM**
-        // Let MapCalibration handle initial layer positioning
-        console.log('🗺️ RiskMap initialized - layers positioned by MapCalibration');
+        // **LOG DEVICE CATEGORY AND PRESET STATUS**
+        const deviceCat = window.MapCalibrationPresets?.detectDeviceCategory() || 'unknown';
+        console.log(`🗺️ RiskMap initialized - using ${deviceCat} calibration preset`);
     }
 
     setupViewBox() {

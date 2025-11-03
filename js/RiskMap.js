@@ -29,6 +29,14 @@ class RiskMap {
     }
 
     init() {
+        // **CRITICAL: Apply MapCalibration BEFORE setting up viewBox**
+        if (window.mapCalibration) {
+            window.mapCalibration.applyCalibration();
+            console.log('✅ Applied MapCalibration before RiskMap setup');
+        } else {
+            console.warn('⚠️ MapCalibration not available - using default viewBox');
+        }
+        
         this.setupViewBox();
         this.createTerritoryPaths();
         this.populateContinentList();
@@ -41,7 +49,19 @@ class RiskMap {
     }
 
     setupViewBox() {
-        // Set viewBox dimensions to match MapCalibration system
+        // **Check if MapCalibration has already set a viewBox (solidified layers)**
+        if (window.mapCalibration?.calibrationData?.solidified) {
+            const svg = document.getElementById('risk-map');
+            const currentViewBox = svg?.getAttribute('viewBox');
+            
+            if (currentViewBox && currentViewBox !== '0 0 1920 1080') {
+                console.log(`📐 Using MapCalibration viewBox (solidified): ${currentViewBox}`);
+                // Don't override - MapCalibration already set it
+                return;
+            }
+        }
+        
+        // Fallback: Set default viewBox to match MapCalibration system
         const viewBoxWidth = 1920;
         const viewBoxHeight = 1080;
         

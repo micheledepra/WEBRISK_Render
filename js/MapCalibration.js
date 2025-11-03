@@ -78,7 +78,12 @@ class MapCalibration {
             deviceCategory: deviceCategory
         };
         
-        console.log(`📱 Loaded ${deviceCategory} calibration preset:`, this.calibrationData);
+        console.log(`📱 Loaded ${deviceCategory} calibration preset:`);
+        console.log('   Water:', this.calibrationData.waterLayer);
+        console.log('   Map:', this.calibrationData.mapLayer);
+        console.log('   Territory:', this.calibrationData.territoryLayer);
+        console.log('   Solidified:', this.calibrationData.solidified);
+        console.log('   Unified Offset:', this.calibrationData.unifiedOffset);
         
         // Save to localStorage so it persists
         this.saveCalibration();
@@ -268,7 +273,10 @@ class MapCalibration {
      */
     applyUnifiedOffset() {
         const svg = document.getElementById('risk-map');
-        if (!svg) return;
+        if (!svg) {
+            console.warn('⚠️ Cannot apply unified offset - SVG not found');
+            return;
+        }
         
         const { offsetX, offsetY, scale } = this.calibrationData.unifiedOffset;
         
@@ -279,6 +287,8 @@ class MapCalibration {
         const newH = 1080 / scale;
         
         svg.setAttribute('viewBox', `${newX} ${newY} ${newW} ${newH}`);
+        
+        console.log(`🔒 Unified offset applied: viewBox(${newX.toFixed(2)}, ${newY.toFixed(2)}, ${newW.toFixed(2)}, ${newH.toFixed(2)}) | scale=${scale}`);
     }
     
     /**

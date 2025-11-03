@@ -1,0 +1,63 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    
+    "sessions": {
+      "$sessionId": {
+        ".read": "data.child('players').hasChild(auth.uid) || !data.exists()",
+        ".write": "!data.exists() || data.child('players').hasChild(auth.uid)",
+        
+        ".validate": "newData.hasChildren(['sessionCode', 'createdAt', 'players', 'gameState'])",
+        
+        "sessionCode": {
+          ".validate": "newData.isString() && newData.val().length == 6"
+        },
+        
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        
+        "lastActivity": {
+          ".validate": "newData.isNumber()"
+        },
+        
+        "players": {
+          "$playerId": {
+            ".validate": "newData.hasChildren(['name', 'joinedAt'])"
+          }
+        },
+        
+        "gameState": {
+          ".validate": "newData.hasChildren(['phase', 'currentPlayer', 'territories'])",
+          
+          "phase": {
+            ".validate": "newData.isString() && (newData.val() == 'startup' || newData.val() == 'reinforcement' || newData.val() == 'attack' || newData.val() == 'fortification')"
+          },
+          
+          "currentPlayer": {
+            ".validate": "newData.isString()"
+          },
+          
+          "turnNumber": {
+            ".validate": "newData.isNumber() && newData.val() >= 1"
+          },
+          
+          "territories": {
+            "$territoryId": {
+              ".validate": "newData.hasChildren(['owner', 'armies'])",
+              
+              "owner": {
+                ".validate": "newData.isString()"
+              },
+              
+              "armies": {
+                ".validate": "newData.isNumber() && newData.val() >= 0"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

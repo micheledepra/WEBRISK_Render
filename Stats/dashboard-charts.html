@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Game - Analytics Dashboard</title>
+    <!-- Add Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'Mechfire';
+            src: url('../res/Font/Second font/Mechfire-jq3v.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Mechfire', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin: 0;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .connection-status {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .connection-status.connected {
+            background: #4caf50;
+            color: white;
+        }
+
+        .connection-status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+
+        /* Grid Layout for Charts */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .chart-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 10px;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Player Stats Section */
+        .player-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .player-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .player-card h4 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .player-color-indicator {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        /* Continent Charts Grid */
+        .continents-section {
+            margin-bottom: 30px;
+        }
+
+        .continents-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        /* Refresh Button */
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Loading Spinner */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-container {
+                height: 250px;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>📊 Risk Game Analytics Dashboard</h1>
+            <div class="header-controls">
+                <span id="connection-status" class="connection-status disconnected">Not Connected</span>
+                <button class="refresh-btn" onclick="loadDashboardData()">🔄 Refresh</button>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">Loading game data...</div>
+        <div id="dashboard-content" style="display: none;">
+            <!-- Overall Territory Distribution -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3>🗺️ Global Territory Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="globalTerritoryChart"></canvas>
+                    </div>
+                    <div id="globalLegend" class="chart-legend"></div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>⚔️ Army Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="armyDistributionChart"></canvas>
+                    </div>
+                    <div id="armyLegend" class="chart-legend"></div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>🏆 Continent Control</h3>
+                    <div class="chart-container">
+                        <canvas id="continentControlChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Player Stats Cards -->
+            <div id="player-stats" class="player-stats"></div>
+
+            <!-- Continent Breakdown -->
+            <div class="continents-section">
+                <h2>🌍 Continent Territory Breakdown</h2>
+                <div id="continents-grid" class="charts-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartInstances = {};
+
+        // Destroy existing chart if it exists
+        function destroyChart(chartId) {
+            if (chartInstances[chartId]) {
+                chartInstances[chartId].destroy();
+                delete chartInstances[chartId];
+            }
+        }
+
+        // Create pie chart for territory distribution
+        function createPieChart(canvasId, data, title) {
+            destroyChart(canvasId);
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.values,
+                        backgroundColor: data.colors,
+                        borderColor: '#fff',
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create bar chart for continent control
+        function createBarChart(canvasId, data, title) {
+            destroyChart(canvasId);
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            chartInstances[canvasId] = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: data.datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Create custom legend
+        function createCustomLegend(containerId, data) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            data.labels.forEach((label, index) => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                
+                const colorBox = document.createElement('div');
+                colorBox.className = 'legend-color';
+                colorBox.style.backgroundColor = data.colors[index];
+                
+                const text = document.createElement('span');
+                text.textContent = `${label}: ${data.values[index]}`;
+                
+                item.appendChild(colorBox);
+                item.appendChild(text);
+                container.appendChild(item);
+            });
+        }
+
+        // Load and visualize dashboard data
+        function loadDashboardData() {
+            console.log('🔄 Loading dashboard data...');
+            
+            try {
+                const rawData = localStorage.getItem('riskGameData');
+                
+                if (!rawData) {
+                    console.warn('⚠️ No game data found');
+                    document.getElementById('connection-status').textContent = 'No Data';
+                    document.getElementById('connection-status').className = 'connection-status disconnected';
+                    return;
+                }
+                
+                const gameData = JSON.parse(rawData);
+                console.log('✅ Game data loaded:', gameData);
+                
+                // Update connection status
+                document.getElementById('connection-status').textContent = '✓ Connected';
+                document.getElementById('connection-status').className = 'connection-status connected';
+                
+                // Show dashboard content
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('dashboard-content').style.display = 'block';
+                
+                // Visualize data
+                visualizeGlobalTerritories(gameData);
+                visualizeArmyDistribution(gameData);
+                visualizeContinentControl(gameData);
+                displayPlayerStats(gameData);
+                visualizeContinentBreakdown(gameData);
+                
+            } catch (error) {
+                console.error('❌ Error loading dashboard data:', error);
+                document.getElementById('connection-status').textContent = 'Error';
+                document.getElementById('connection-status').className = 'connection-status disconnected';
+            }
+        }
+
+        // Visualize global territory distribution
+        function visualizeGlobalTerritories(gameData) {
+            const territoryCounts = {};
+            const playerColors = {};
+            
+            // Count territories per player
+            Object.entries(gameData.territories).forEach(([territoryId, territory]) => {
+                const owner = territory.owner;
+                territoryCounts[owner] = (territoryCounts[owner] || 0) + 1;
+                
+                // Store player color
+                if (gameData.playerColors && gameData.playerColors[owner]) {
+                    playerColors[owner] = gameData.playerColors[owner];
+                }
+            });
+            
+            const chartData = {
+                labels: Object.keys(territoryCounts),
+                values: Object.values(territoryCounts),
+                colors: Object.keys(territoryCounts).map(player => 
+                    playerColors[player] || `hsl(${Math.random() * 360}, 70%, 60%)`
+                )
+            };
+            
+            createPieChart('globalTerritoryChart', chartData, 'Global Territory Distribution');
+            createCustomLegend('globalLegend', chartData);
+        }
+
+        // Visualize army distribution
+        function visualizeArmyDistribution(gameData) {
+            const armyCounts = {};
+            const playerColors = {};
+            
+            // Count total armies per player
+            Object.entries(gameData.territories).forEach(([territoryId, territory]) => {
+                const owner = territory.owner;
+                armyCounts[owner] = (armyCounts[owner] || 0) + territory.armies;
+                
+                if (gameData.playerColors && gameData.playerColors[owner]) {
+                    playerColors[owner] = gameData.playerColors[owner];
+                }
+            });
+            
+            const chartData = {
+                labels: Object.keys(armyCounts),
+                values: Object.values(armyCounts),
+                colors: Object.keys(armyCounts).map(player => 
+                    playerColors[player] || `hsl(${Math.random() * 360}, 70%, 60%)`
+                )
+            };
+            
+            createPieChart('armyDistributionChart', chartData, 'Army Distribution');
+            createCustomLegend('armyLegend', chartData);
+        }
+
+        // Visualize continent control
+        function visualizeContinentControl(gameData) {
+            const continents = {
+                'North America': ['alaska', 'northwest-territory', 'greenland', 'alberta', 'ontario', 'quebec', 'western-united-states', 'eastern-united-states', 'central-america'],
+                'South America': ['venezuela', 'peru', 'brazil', 'argentina'],
+                'Europe': ['iceland', 'scandinavia', 'ukraine', 'great-britain', 'northern-europe', 'western-europe', 'southern-europe'],
+                'Africa': ['north-africa', 'egypt', 'east-africa', 'congo', 'south-africa', 'madagascar'],
+                'Asia': ['ural', 'siberia', 'yakutsk', 'kamchatka', 'irkutsk', 'mongolia', 'japan', 'afghanistan', 'china', 'middle-east', 'india', 'siam'],
+                'Australia': ['indonesia', 'new-guinea', 'western-australia', 'eastern-australia']
+            };
+            
+            const continentOwnership = {};
+            
+            // Calculate who owns territories in each continent
+            Object.entries(continents).forEach(([continentName, territories]) => {
+                const owners = {};
+                
+                territories.forEach(territoryId => {
+                    if (gameData.territories[territoryId]) {
+                        const owner = gameData.territories[territoryId].owner;
+                        owners[owner] = (owners[owner] || 0) + 1;
+                    }
+                });
+                
+                continentOwnership[continentName] = owners;
+            });
+            
+            // Prepare data for stacked bar chart
+            const players = [...new Set(Object.values(gameData.territories).map(t => t.owner))];
+            const datasets = players.map(player => ({
+                label: player,
+                data: Object.keys(continentOwnership).map(continent => 
+                    continentOwnership[continent][player] || 0
+                ),
+                backgroundColor: gameData.playerColors?.[player] || `hsl(${Math.random() * 360}, 70%, 60%)`
+            }));
+            
+            createBarChart('continentControlChart', {
+                labels: Object.keys(continentOwnership),
+                datasets: datasets
+            }, 'Continent Control');
+        }
+
+        // Display player stats cards
+        function displayPlayerStats(gameData) {
+            const container = document.getElementById('player-stats');
+            container.innerHTML = '';
+            
+            const playerStats = {};
+            
+            // Calculate stats for each player
+            Object.entries(gameData.territories).forEach(([territoryId, territory]) => {
+                const owner = territory.owner;
+                if (!playerStats[owner]) {
+                    playerStats[owner] = {
+                        territories: 0,
+                        armies: 0,
+                        color: gameData.playerColors?.[owner] || '#888'
+                    };
+                }
+                playerStats[owner].territories++;
+                playerStats[owner].armies += territory.armies;
+            });
+            
+            // Create player cards
+            Object.entries(playerStats).forEach(([player, stats]) => {
+                const card = document.createElement('div');
+                card.className = 'player-card';
+                card.innerHTML = `
+                    <h4>
+                        <div class="player-color-indicator" style="background-color: ${stats.color}"></div>
+                        ${player}
+                    </h4>
+                    <div class="stat-item">
+                        <span>Territories:</span>
+                        <span class="stat-value">${stats.territories}/42</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Total Armies:</span>
+                        <span class="stat-value">${stats.armies}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Avg Armies/Territory:</span>
+                        <span class="stat-value">${(stats.armies / stats.territories).toFixed(1)}</span>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Visualize continent territory breakdown
+        function visualizeContinentBreakdown(gameData) {
+            const container = document.getElementById('continents-grid');
+            container.innerHTML = '';
+            
+            const continents = {
+                'North America': ['alaska', 'northwest-territory', 'greenland', 'alberta', 'ontario', 'quebec', 'western-united-states', 'eastern-united-states', 'central-america'],
+                'South America': ['venezuela', 'peru', 'brazil', 'argentina'],
+                'Europe': ['iceland', 'scandinavia', 'ukraine', 'great-britain', 'northern-europe', 'western-europe', 'southern-europe'],
+                'Africa': ['north-africa', 'egypt', 'east-africa', 'congo', 'south-africa', 'madagascar'],
+                'Asia': ['ural', 'siberia', 'yakutsk', 'kamchatka', 'irkutsk', 'mongolia', 'japan', 'afghanistan', 'china', 'middle-east', 'india', 'siam'],
+                'Australia': ['indonesia', 'new-guinea', 'western-australia', 'eastern-australia']
+            };
+            
+            Object.entries(continents).forEach(([continentName, territories]) => {
+                const owners = {};
+                const playerColors = {};
+                
+                territories.forEach(territoryId => {
+                    if (gameData.territories[territoryId]) {
+                        const owner = gameData.territories[territoryId].owner;
+                        owners[owner] = (owners[owner] || 0) + 1;
+                        
+                        if (gameData.playerColors?.[owner]) {
+                            playerColors[owner] = gameData.playerColors[owner];
+                        }
+                    }
+                });
+                
+                const chartCard = document.createElement('div');
+                chartCard.className = 'chart-card';
+                
+                const chartId = `continent-${continentName.replace(/\s+/g, '-').toLowerCase()}`;
+                const legendId = `legend-${continentName.replace(/\s+/g, '-').toLowerCase()}`;
+                
+                chartCard.innerHTML = `
+                    <h3>${continentName} (${territories.length} territories)</h3>
+                    <div class="chart-container">
+                        <canvas id="${chartId}"></canvas>
+                    </div>
+                    <div id="${legendId}" class="chart-legend"></div>
+                `;
+                
+                container.appendChild(chartCard);
+                
+                // Create chart after DOM element is added
+                setTimeout(() => {
+                    const chartData = {
+                        labels: Object.keys(owners),
+                        values: Object.values(owners),
+                        colors: Object.keys(owners).map(player => 
+                            playerColors[player] || `hsl(${Math.random() * 360}, 70%, 60%)`
+                        )
+                    };
+                    
+                    createPieChart(chartId, chartData, continentName);
+                    createCustomLegend(legendId, chartData);
+                }, 0);
+            });
+        }
+
+        // Auto-refresh every 2 seconds
+        setInterval(loadDashboardData, 2000);
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', loadDashboardData);
+    </script>
+</body>
+</html>

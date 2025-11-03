@@ -8,6 +8,7 @@ const http = require('http');
 const socketIO = require('socket.io');
 const path = require('path');
 const SessionManager = require('./SessionManager');
+const SessionPersistence = require('./SessionPersistence');
 const { EVENTS, ACTION_TYPES } = require('../shared/constants');
 
 // Configuration
@@ -24,8 +25,11 @@ const io = socketIO(server, {
   }
 });
 
-// Initialize Session Manager
-const sessionManager = new SessionManager();
+// Initialize Session Persistence
+const sessionPersistence = new SessionPersistence();
+
+// Initialize Session Manager with Persistence
+const sessionManager = new SessionManager(sessionPersistence);
 
 // Serve static files from the root directory (all game assets)
 console.log('📁 Serving static files from:', ROOT_DIR);

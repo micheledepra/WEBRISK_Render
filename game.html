@@ -11,6 +11,12 @@
     <meta http-equiv="Expires" content="0" />
     <title>Risk Game</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- Firebase SDK - Cloud Persistence -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="js/firebase-config.js"></script>
+    
     <link rel="stylesheet" href="css/combat-system.css" />
     <link rel="stylesheet" href="css/combat-animations.css" />
     <link rel="stylesheet" href="css/combat-testing.css" />
@@ -2232,18 +2238,18 @@
       /* Turn Header Panel (Now outside sidebar, below reinforcement panel) */
       .turn-header-panel {
         position: fixed;
-        left: 330px;
-        top: 10px;
+        left: 340px;
+        top: 19px;
         z-index: 1000;
         background: linear-gradient(135deg, #667eea37 0%, #764ba24c 100%);
         color: white;
         padding: 5px 15px;
         border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
         transition: background 0.3s ease, box-shadow 0.3s ease;
         min-width: 50px;
         width: 150;
-        filter: opacity(95%);
+        filter: opacity(99%);
       }
 
       .current-player-display {
@@ -2565,6 +2571,19 @@
                 brightness(1.2);
         transition: stroke 0.3s ease, stroke-width 0.3s ease;
         opacity: 1 !important;
+      }
+
+      /* Add pop-out effect when hovering over player's highlighted territories */
+      .territory.player-turn-highlight:hover,
+      .territory.player-turn-highlight.territory-popped {
+        transform: scale(1.05);
+        stroke-width: 3 !important;
+        filter: drop-shadow(0 5.33px 13.33px rgba(0, 0, 0, 0.4)) 
+                drop-shadow(0 2.67px 6.67px rgba(0, 0, 0, 0.27))
+                drop-shadow(0 0 13.33px currentColor)
+                drop-shadow(0 0 20px currentColor)
+                brightness(1.15) saturate(1.2);
+        animation: dash-animate 0.6s linear infinite, territory-glow 1.5s ease-in-out infinite;
       }
 
       /* Ensure attack/fortification highlights override turn highlighting */
@@ -6756,9 +6775,9 @@
             detail: dashboardData
           }));
           
-          // Cross-tab message for dashboard
+          // Cross-tab message for dashboard using multiple methods
           try {
-            // Send message to other tabs
+            // Method 1: PostMessage to specific window
             const dashboardWindow = window.open('', 'riskDashboard');
             if (dashboardWindow && !dashboardWindow.closed) {
               dashboardWindow.postMessage({
@@ -6769,6 +6788,23 @@
           } catch (e) {
             // Ignore cross-tab messaging errors
           }
+
+          // Method 2: BroadcastChannel (modern browsers, works better than postMessage)
+          try {
+            if (!window.riskGameChannel) {
+              window.riskGameChannel = new BroadcastChannel('risk-game-updates');
+            }
+            window.riskGameChannel.postMessage({
+              type: 'gameStateUpdated',
+              data: dashboardData,
+              timestamp: Date.now()
+            });
+            console.log('📡 BroadcastChannel update sent to dashboard');
+          } catch (e) {
+            console.warn('⚠️ BroadcastChannel not available:', e.message);
+          }
+
+          // Method 3: Storage event will fire automatically when localStorage.setItem is called above
           
           // Save StatisticsManager data if available
           if (window.statsManager) {

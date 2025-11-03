@@ -43,6 +43,12 @@ class MultiplayerClient {
     this.isMyTurn = false;
     this.currentPlayerName = null;
     
+    // Reconnection management
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 5;
+    this.reconnectDelay = 2000;
+    this.isReconnecting = false;
+    
     // Event callbacks
     this.callbacks = {
       onConnect: [],
@@ -429,6 +435,247 @@ class MultiplayerClient {
       isConnected: this.isConnected,
       isMyTurn: this.isMyTurn
     };
+  }
+
+  // ============================================
+  // RECONNECTION & PERSISTENCE EXTENSIONS
+  // ============================================
+
+  /**
+   * 🔄 Attempt to reconnect to session
+   */
+  async attemptReconnection() {
+    if (this.isReconnecting) {
+      console.log('⚠️ Reconnection already in progress');
+      return;
+    }
+
+    this.isReconnecting = true;
+    console.log(`🔄 Reconnection attempt ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}`);
+
+    try {
+      // Try to restore session from localStorage
+      const savedSession = this.loadSessionFromLocalStorage();
+
+      if (!savedSession) {
+        throw new Error('No saved session found');
+      }
+
+      // Reconnect to server
+      await this.connect();
+
+      // Rejoin session
+      await this.rejoinSession(
+        savedSession.sessionId,
+        savedSession.userId,
+        savedSession.playerName
+      );
+
+      // Restore game state if available
+      if (window.GameStateManager && savedSession.gameState) {
+        window.GameStateManager.restoreFromPersistence(savedSession.gameState);
+      }
+
+      console.log('✅ Reconnection successful');
+      this.reconnectAttempts = 0;
+      this.isReconnecting = false;
+
+      // Trigger reconnection success callback
+      this.trigger('onReconnect', savedSession);
+
+      return true;
+    } catch (error) {
+      console.error('❌ Reconnection failed:', error);
+      this.reconnectAttempts++;
+
+      if (this.reconnectAttempts < this.maxReconnectAttempts) {
+        // Exponential backoff
+        const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
+        console.log(`⏳ Retrying in ${delay / 1000}s...`);
+
+        setTimeout(() => {
+          this.isReconnecting = false;
+          this.attemptReconnection();
+        }, delay);
+
+        return false;
+      } else {
+        console.error('❌ Max reconnection attempts reached');
+        this.isReconnecting = false;
+        this.trigger('onReconnectFailed');
+        return false;
+      }
+    }
+  }
+
+  /**
+   * 🔄 Rejoin an existing session (for reconnection)
+   */
+  async rejoinSession(sessionId, userId, playerName) {
+    try {
+      if (!this.socket || !this.isConnected) {
+        await this.connect();
+      }
+
+      this.sessionId = sessionId;
+      this.userId = userId;
+      this.playerName = playerName;
+
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Rejoin timeout'));
+        }, 5000);
+
+        this.on('onSessionUpdate', (session) => {
+          clearTimeout(timeout);
+          resolve(session);
+        });
+
+        this.on('onSessionError', (error) => {
+          clearTimeout(timeout);
+          reject(new Error(error.message));
+        });
+
+        // Emit rejoin request
+        this.socket.emit('session:rejoin', {
+          sessionId,
+          userId,
+          playerName
+        });
+      });
+    } catch (error) {
+      console.error('Failed to rejoin session:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 💾 Save session data to localStorage
+   */
+  saveSessionToLocalStorage(additionalData = {}) {
+    try {
+      const sessionData = {
+        sessionId: this.sessionId,
+        userId: this.userId,
+        playerName: this.playerName,
+        timestamp: Date.now(),
+        savedAt: new Date().toISOString(),
+        ...additionalData
+      };
+
+      // Save game state if available
+      if (window.GameStateManager) {
+        sessionData.gameState = window.GameStateManager.serializeForPersistence(this.sessionId);
+      }
+
+      localStorage.setItem('risk_multiplayer_currentSession', JSON.stringify(sessionData));
+      console.log('💾 Session saved to localStorage');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to save session:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 📂 Load session data from localStorage
+   */
+  loadSessionFromLocalStorage() {
+    try {
+      const data = localStorage.getItem('risk_multiplayer_currentSession');
+
+      if (!data) {
+        console.log('📭 No saved session in localStorage');
+        return null;
+      }
+
+      const sessionData = JSON.parse(data);
+
+      // Check if data is too old (24 hours)
+      const age = Date.now() - (sessionData.timestamp || 0);
+      if (age > 24 * 60 * 60 * 1000) {
+        console.warn('⚠️ Saved session is too old (>24h)');
+        this.clearSessionFromLocalStorage();
+        return null;
+      }
+
+      console.log('✅ Session loaded from localStorage');
+      return sessionData;
+    } catch (error) {
+      console.error('❌ Failed to load session:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 🗑️ Clear session data from localStorage
+   */
+  clearSessionFromLocalStorage() {
+    try {
+      localStorage.removeItem('risk_multiplayer_currentSession');
+      console.log('🗑️ Session cleared from localStorage');
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to clear session:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 🔌 Handle disconnect event with reconnection
+   */
+  setupAutoReconnect() {
+    if (!this.socket) return;
+
+    this.socket.on('disconnect', (reason) => {
+      this.isConnected = false;
+      console.log('🔌 Disconnected:', reason);
+
+      // Save current session before attempting reconnection
+      this.saveSessionToLocalStorage();
+
+      // Trigger disconnect callback
+      this.trigger('onDisconnect', { reason });
+
+      // Attempt automatic reconnection for certain disconnect reasons
+      if (reason === 'io server disconnect') {
+        // Server disconnected the client - don't auto-reconnect
+        console.log('⚠️ Server disconnected client - manual reconnection required');
+        this.trigger('onManualReconnectRequired');
+      } else {
+        // Network issue or other reason - auto-reconnect
+        console.log('🔄 Attempting auto-reconnection...');
+        this.attemptReconnection();
+      }
+    });
+
+    // Add reconnection event callback support
+    if (!this.callbacks.onReconnect) {
+      this.callbacks.onReconnect = [];
+    }
+    if (!this.callbacks.onReconnectFailed) {
+      this.callbacks.onReconnectFailed = [];
+    }
+    if (!this.callbacks.onManualReconnectRequired) {
+      this.callbacks.onManualReconnectRequired = [];
+    }
+  }
+
+  /**
+   * 🔄 Sync game state with server (for reconnection)
+   */
+  syncGameState() {
+    if (!this.socket || !this.sessionId) {
+      console.warn('⚠️ Cannot sync - not connected or no session');
+      return;
+    }
+
+    this.socket.emit('game:syncRequest', {
+      sessionId: this.sessionId,
+      userId: this.userId
+    });
+
+    console.log('🔄 Game state sync requested');
   }
 }
 

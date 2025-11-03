@@ -224,7 +224,229 @@ class GameStateManager {
             territoryCount: gameState?.territories ? Object.keys(gameState.territories).length : 0
         });
     }
+
+    // ============================================
+    // MULTIPLAYER PERSISTENCE EXTENSIONS
+    // ============================================
+
+    /**
+     * 💾 Save complete game state for multiplayer persistence
+     * @param {string} sessionCode - Multiplayer session identifier
+     * @returns {Object} - Serialized game state
+     */
+    static serializeForPersistence(sessionCode = null) {
+        const gameState = this.getGameState();
+        if (!gameState) {
+            console.warn('⚠️ No game state to serialize');
+            return null;
+        }
+
+        const serialized = {
+            sessionCode: sessionCode,
+            timestamp: Date.now(),
+            savedAt: new Date().toISOString(),
+            version: '1.0',
+            
+            // Core game data
+            territories: gameState.territories,
+            players: gameState.players || [],
+            currentPlayer: this.getCurrentPlayer(),
+            currentPhase: this.getCurrentPhase(),
+            
+            // Turn management
+            turnNumber: gameState.turnNumber || window.turnManager?.currentTurnNumber || 0,
+            turnOrder: gameState.turnOrder || window.turnManager?.turnOrder || [],
+            
+            // Phase-specific data
+            reinforcementsRemaining: gameState.reinforcementsRemaining || 0,
+            
+            // Additional context
+            gameStartedAt: gameState.gameStartedAt || null,
+            lastActionTimestamp: Date.now()
+        };
+
+        console.log('💾 Game state serialized for persistence');
+        return serialized;
+    }
+
+    /**
+     * 📂 Restore game state from persistence
+     * @param {Object} savedState - Previously serialized game state
+     * @returns {boolean} - Success status
+     */
+    static restoreFromPersistence(savedState) {
+        if (!savedState) {
+            console.error('❌ No saved state provided');
+            return false;
+        }
+
+        try {
+            const gameState = this.getGameState();
+            if (!gameState) {
+                console.error('❌ No game state object to restore into');
+                return false;
+            }
+
+            // Restore territories
+            if (savedState.territories) {
+                Object.assign(gameState.territories, savedState.territories);
+            }
+
+            // Restore players
+            if (savedState.players) {
+                gameState.players = savedState.players;
+            }
+
+            // Restore current player
+            if (savedState.currentPlayer) {
+                gameState.currentPlayer = savedState.currentPlayer;
+            }
+
+            // Restore phase
+            if (savedState.currentPhase) {
+                gameState.phase = savedState.currentPhase;
+            }
+
+            // Restore turn management
+            if (window.turnManager) {
+                if (savedState.turnNumber !== undefined) {
+                    window.turnManager.currentTurnNumber = savedState.turnNumber;
+                }
+                if (savedState.turnOrder) {
+                    window.turnManager.turnOrder = savedState.turnOrder;
+                }
+            }
+
+            // Restore phase-specific data
+            if (savedState.reinforcementsRemaining !== undefined) {
+                gameState.reinforcementsRemaining = savedState.reinforcementsRemaining;
+            }
+
+            // Update all visuals
+            this.refreshAllVisuals();
+
+            console.log('✅ Game state restored from persistence');
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to restore game state:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 🔄 Refresh all territory visuals after state restoration
+     */
+    static refreshAllVisuals() {
+        const gameState = this.getGameState();
+        if (!gameState || !gameState.territories) {
+            return;
+        }
+
+        Object.entries(gameState.territories).forEach(([territoryId, territory]) => {
+            this.updateTerritoryVisuals(territoryId, territory);
+        });
+
+        console.log('🔄 All visuals refreshed');
+    }
+
+    /**
+     * 💾 Save to localStorage (client-side backup)
+     * @param {string} sessionCode - Session identifier
+     * @returns {boolean} - Success status
+     */
+    static saveToLocalStorage(sessionCode) {
+        try {
+            const serialized = this.serializeForPersistence(sessionCode);
+            if (!serialized) {
+                return false;
+            }
+
+            const storageKey = `riskMultiplayer_${sessionCode}`;
+            localStorage.setItem(storageKey, JSON.stringify(serialized));
+
+            console.log('💾 Game state saved to localStorage:', sessionCode);
+            return true;
+        } catch (error) {
+            console.error('❌ Failed to save to localStorage:', error);
+            return false;
+        }
+    }
+
+    /**
+     * 📂 Load from localStorage (client-side backup)
+     * @param {string} sessionCode - Session identifier
+     * @returns {Object|null} - Saved state or null
+     */
+    static loadFromLocalStorage(sessionCode) {
+        try {
+            const storageKey = `riskMultiplayer_${sessionCode}`;
+            const data = localStorage.getItem(storageKey);
+
+            if (!data) {
+                console.log('📭 No saved state in localStorage for:', sessionCode);
+                return null;
+            }
+
+            const savedState = JSON.parse(data);
+
+            // Check age (24 hours max)
+            const age = Date.now() - savedState.timestamp;
+            if (age > 24 * 60 * 60 * 1000) {
+                console.warn('⚠️ Saved state is too old (>24h)');
+                this.clearLocalStorage(sessionCode);
+                return null;
+            }
+
+            console.log('✅ Game state loaded from localStorage:', sessionCode);
+            return savedState;
+        } catch (error) {
+            console.error('❌ Failed to load from localStorage:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 🗑️ Clear localStorage for session
+     * @param {string} sessionCode - Session identifier
+     */
+    static clearLocalStorage(sessionCode) {
+        try {
+            const storageKey = `riskMultiplayer_${sessionCode}`;
+            localStorage.removeItem(storageKey);
+            console.log('🗑️ localStorage cleared for:', sessionCode);
+        } catch (error) {
+            console.error('❌ Failed to clear localStorage:', error);
+        }
+    }
+
+    /**
+     * 🔄 Auto-save handler (call after significant game actions)
+     * @param {string} sessionCode - Session identifier
+     */
+    static autoSave(sessionCode) {
+        if (!sessionCode) {
+            return;
+        }
+
+        // Throttle auto-saves (max once per 5 seconds)
+        const now = Date.now();
+        if (this._lastAutoSave && (now - this._lastAutoSave) < 5000) {
+            return;
+        }
+
+        this._lastAutoSave = now;
+        this.saveToLocalStorage(sessionCode);
+
+        // Also sync to Firebase if available
+        if (window.firebaseManager && window.firebaseManager.initialized) {
+            const serialized = this.serializeForPersistence(sessionCode);
+            window.firebaseManager.updateGameState(sessionCode, serialized);
+        }
+    }
 }
+
+// Initialize auto-save timestamp
+GameStateManager._lastAutoSave = 0;
 
 // Make available globally
 if (typeof window !== 'undefined') {

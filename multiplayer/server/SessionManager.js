@@ -11,8 +11,60 @@ const {
 } = require('../shared/constants');
 
 class SessionManager {
-  constructor() {
+  constructor(persistence = null) {
     this.sessions = new Map();
+    this.persistence = persistence; // Optional SessionPersistence instance
+    
+    // Initialize persistence if provided
+    if (this.persistence) {
+      this.initializePersistence();
+    }
+  }
+
+  /**
+   * 🚀 Initialize persistence and restore sessions
+   */
+  async initializePersistence() {
+    if (!this.persistence) return;
+
+    try {
+      await this.persistence.initialize();
+      
+      // Restore active sessions from disk
+      const restoredSessions = await this.persistence.restoreActiveSessions();
+      
+      for (const sessionData of restoredSessions) {
+        this.sessions.set(sessionData.sessionId, sessionData);
+        console.log(`✅ Restored session: ${sessionData.sessionId}`);
+      }
+
+      console.log(`🔄 Restored ${restoredSessions.length} session(s) from persistence`);
+
+      // Clean old sessions every hour
+      setInterval(() => {
+        this.cleanOldSessions();
+      }, 60 * 60 * 1000);
+    } catch (error) {
+      console.error('❌ Failed to initialize persistence:', error);
+    }
+  }
+
+  /**
+   * 💾 Save session to persistence
+   */
+  async saveSessionToPersistence(sessionId) {
+    if (!this.persistence) return false;
+
+    const session = this.sessions.get(sessionId);
+    if (!session) return false;
+
+    try {
+      await this.persistence.saveSession(session);
+      return true;
+    } catch (error) {
+      console.error('❌ Failed to save session to persistence:', error);
+      return false;
+    }
   }
 
   /**
@@ -66,6 +118,10 @@ class SessionManager {
     this.sessions.set(sessionId, session);
     
     console.log(`✅ Session created: ${sessionId} by ${hostPlayerName}`);
+    
+    // Save to persistence
+    this.saveSessionToPersistence(sessionId);
+    
     return session;
   }
 
@@ -108,6 +164,10 @@ class SessionManager {
     });
 
     console.log(`✅ Player joined: ${playerName} to session ${sessionId} (${session.players.size}/${session.maxPlayers})`);
+    
+    // Save to persistence
+    this.saveSessionToPersistence(sessionId);
+    
     return session;
   }
 
@@ -213,6 +273,10 @@ class SessionManager {
 
     session.gameState = gameState;
     session.lastUpdated = Date.now();
+    
+    // Save to persistence
+    this.saveSessionToPersistence(sessionId);
+    
     return session;
   }
 
@@ -302,13 +366,38 @@ class SessionManager {
     const now = Date.now();
     const maxAge = maxAgeHours * 60 * 60 * 1000;
 
-    for (const [sessionId, session] of this.sessions) {
-      const age = now - session.createdAt;
-      if (age > maxAge && session.state !== SESSION_STATES.IN_PROGRESS) {
+    let cleaned = 0;
+    for (const [sessionId, session] of this.sessions.entries()) {
+      const age = now - (session.lastUpdated || session.createdAt);
+      
+      if (age > maxAge) {
         this.sessions.delete(sessionId);
-        console.log(`🗑️ Cleaned up old session: ${sessionId}`);
+        
+        // Also delete from persistence
+        if (this.persistence) {
+          this.persistence.deleteSession(sessionId);
+        }
+        
+        cleaned++;
+        console.log(`🧹 Cleaned old session: ${sessionId}`);
       }
     }
+
+    if (cleaned > 0) {
+      console.log(`🧹 Cleaned ${cleaned} old session(s)`);
+    }
+
+    return cleaned;
+  }
+
+  /**
+   * 🧹 Clean old sessions using persistence
+   */
+  async cleanOldSessions() {
+    if (this.persistence) {
+      return await this.persistence.cleanOldSessions();
+    }
+    return this.cleanupOldSessions();
   }
 }
 

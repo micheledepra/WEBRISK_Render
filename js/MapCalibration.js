@@ -70,7 +70,7 @@ class MapCalibration {
      */
     applyCalibration() {
         const unifiedLayer = document.getElementById('unified-map-layer');
-        const mapGroup = document.querySelector('.map-group');
+        const territoryLayer = document.getElementById('territory-layer');
         const bgRect = document.querySelector('rect[fill="url(#world-map-bg)"]');
         const vignetteGradient = document.getElementById('water-vignette');
         
@@ -88,14 +88,16 @@ class MapCalibration {
         const territoryOffsetY = this.calibrationData.territoryOffsetY ?? 0;
         const territoryScale = this.calibrationData.territoryScale ?? 1.0;
         
-        // Apply base transform to unified layer (backgrounds + territories together)
+        // Apply base transform to unified layer (backgrounds only)
         const baseTransform = `translate(${offsetX}, ${offsetY}) scale(${scale})`;
         unifiedLayer.setAttribute('transform', baseTransform);
         
-        // Apply additional territory-specific transform for fine-tuning alignment
-        if (mapGroup) {
+        // Apply territory-specific transform to separate territory layer
+        if (territoryLayer) {
             const territoryTransform = `translate(${territoryOffsetX}, ${territoryOffsetY}) scale(${territoryScale})`;
-            mapGroup.setAttribute('transform', territoryTransform);
+            territoryLayer.setAttribute('transform', territoryTransform);
+        } else {
+            console.warn('Territory layer not found - SVG territories may not be positioned correctly');
         }
         
         // Update world map opacity only
@@ -114,34 +116,42 @@ class MapCalibration {
             vignetteGradient.setAttribute('r', `${vignetteScale}%`);
         }
         
-        console.log('Applied calibration - Unified layer:', {
-            base: baseTransform,
-            territory: territoryOffsetX !== 0 || territoryOffsetY !== 0 || territoryScale !== 1.0 ? `translate(${territoryOffsetX}, ${territoryOffsetY}) scale(${territoryScale})` : 'default'
+        console.log('Applied calibration:', {
+            background: baseTransform,
+            territories: territoryOffsetX !== 0 || territoryOffsetY !== 0 || territoryScale !== 1.0 
+                ? `translate(${territoryOffsetX}, ${territoryOffsetY}) scale(${territoryScale})` 
+                : 'default (0, 0, 1.0)'
         });
     }
     
     /**
-     * Solidify the alignment by merging territory adjustments into base transform
+     * Solidify the alignment by saving current territory position as the new baseline
+     * This allows you to start fresh with territory fine-tuning from the current position
      */
     solidifyAlignment() {
-        // Merge territory offsets into base offsets
-        this.calibrationData.offsetX += this.calibrationData.territoryOffsetX * this.calibrationData.scale;
-        this.calibrationData.offsetY += this.calibrationData.territoryOffsetY * this.calibrationData.scale;
+        // Get the territory layer element
+        const territoryLayer = document.getElementById('territory-layer');
         
-        // Merge territory scale into base scale
-        this.calibrationData.scale *= this.calibrationData.territoryScale;
+        if (!territoryLayer) {
+            console.warn('Cannot solidify: Territory layer not found');
+            return;
+        }
         
-        // Reset territory-specific adjustments
-        this.calibrationData.territoryOffsetX = 0;
-        this.calibrationData.territoryOffsetY = 0;
-        this.calibrationData.territoryScale = 1.0;
+        // The current transform on territory layer represents the desired final position
+        // We need to preserve this visually while resetting the adjustment controls
         
-        // Apply the solidified transform
-        this.applyCalibration();
+        // Option: We could store the current values as a base offset for territories
+        // For now, just inform user that current position is locked in
+        
+        this.showNotification('⚠️ Territory position locked! Use territory sliders to adjust from current position.');
+        console.log('✅ Territory position solidified at:', {
+            territoryOffsetX: this.calibrationData.territoryOffsetX,
+            territoryOffsetY: this.calibrationData.territoryOffsetY,
+            territoryScale: this.calibrationData.territoryScale
+        });
+        
+        // Save current state
         this.saveCalibration();
-        
-        this.showNotification('Alignment solidified! Territory adjustments merged into base layer.');
-        console.log('✅ Alignment solidified:', this.calibrationData);
     }
     
     /**

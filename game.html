@@ -4156,7 +4156,7 @@
             </radialGradient>
           </defs>
           
-          <!-- UNIFIED MAP LAYER GROUP - All elements scale together -->
+          <!-- UNIFIED MAP LAYER GROUP - Background elements only (water + world map) -->
           <g id="unified-map-layer" class="unified-map-layer">
             <!-- Ocean water texture background layer -->
             <rect width="1920" height="1080" fill="url(#ocean-water-texture)" />
@@ -4171,9 +4171,10 @@
             
             <!-- Subtle overlay for better territory contrast -->
             <rect width="1920" height="1080" fill="url(#overlay-gradient)" opacity="0.2" />
-            
-            <!-- Continents and Territories -->
-            <g class="map-group">
+          </g> <!-- End of unified-map-layer -->
+          
+          <!-- SVG TERRITORIES - Separate layer controlled by territory fine-tuning sliders -->
+          <g id="territory-layer" class="map-group">
             <g
               id="north-america"
               class="continent continent-na"
@@ -4204,8 +4205,7 @@
               class="continent continent-au"
               filter="url(#drop-shadow)"
             ></g>
-          </g> <!-- End of map-group -->
-          </g> <!-- End of unified-map-layer -->
+          </g> <!-- End of territory-layer -->
         </svg>
         <div class="tooltip"></div>
       </div>

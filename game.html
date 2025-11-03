@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
@@ -2858,6 +2861,268 @@
         }
       }
 
+      /* ========================================
+         MOBILE & TABLET RESPONSIVE LAYOUT
+         ======================================== */
+      
+      /* Tablet Landscape & Small Desktop */
+      @media (max-width: 1024px) and (min-width: 769px) {
+        .sidebar {
+          width: 280px;
+          padding: 15px;
+        }
+
+        .game-container {
+          flex-direction: row;
+        }
+      }
+
+      /* Tablet Portrait */
+      @media (max-width: 768px) and (min-width: 481px) {
+        body {
+          overflow: auto;
+        }
+
+        .game-container {
+          flex-direction: column;
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .sidebar {
+          width: 100%;
+          max-width: 100%;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: auto;
+          max-height: 40vh;
+          padding: 15px;
+          overflow-y: auto;
+          z-index: 1000;
+          transform: translateY(calc(100% - 60px));
+          transition: transform 0.3s ease-in-out;
+          border-top: 3px solid rgba(255, 215, 0, 0.5);
+          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.expanded {
+          transform: translateY(0);
+        }
+
+        .sidebar-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 60px;
+          height: 40px;
+          position: absolute;
+          top: 10px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(255, 215, 0, 0.9);
+          border-radius: 20px 20px 0 0;
+          cursor: pointer;
+          font-size: 24px;
+          z-index: 10;
+        }
+
+        .map-container {
+          height: 60vh;
+          width: 100%;
+        }
+
+        .turn-header-panel {
+          position: relative;
+          top: 0;
+          left: 0;
+          right: 0;
+          width: 100%;
+          margin-bottom: 10px;
+        }
+
+        /* Hide certain elements on tablet for space */
+        .phase-progress-panel {
+          font-size: 0.9em;
+        }
+
+        .player-panel {
+          padding: 8px;
+        }
+      }
+
+      /* Mobile Phone Portrait */
+      @media (max-width: 480px) {
+        body {
+          overflow: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .game-container {
+          flex-direction: column;
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .sidebar {
+          width: 100%;
+          max-width: 100%;
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: auto;
+          max-height: 50vh;
+          padding: 10px;
+          overflow-y: auto;
+          z-index: 1000;
+          transform: translateY(calc(100% - 50px));
+          transition: transform 0.3s ease-in-out;
+          border-top: 3px solid rgba(255, 215, 0, 0.5);
+          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .sidebar.expanded {
+          transform: translateY(0);
+        }
+
+        .sidebar-toggle {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 50px;
+          height: 35px;
+          position: absolute;
+          top: 7px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(255, 215, 0, 0.9);
+          border-radius: 15px 15px 0 0;
+          cursor: pointer;
+          font-size: 20px;
+          z-index: 10;
+          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .map-container {
+          height: 50vh;
+          width: 100%;
+          touch-action: pan-x pan-y pinch-zoom;
+        }
+
+        #risk-map {
+          touch-action: none;
+        }
+
+        /* Optimize sidebar content for mobile */
+        .turn-counter-panel {
+          font-size: 0.9em;
+          padding: 8px;
+        }
+
+        .phase-progress-panel {
+          font-size: 0.85em;
+          padding: 8px;
+        }
+
+        .player-panel {
+          padding: 6px;
+          margin-bottom: 8px;
+        }
+
+        .player-info h3 {
+          font-size: 1em;
+        }
+
+        .player-stats {
+          font-size: 0.85em;
+        }
+
+        .reinforcement-panel {
+          padding: 10px;
+        }
+
+        .end-turn-container {
+          padding: 10px;
+        }
+
+        #end-turn-enhanced {
+          padding: 12px 20px;
+          font-size: 1em;
+        }
+
+        /* Make touch targets larger */
+        button, .button, a {
+          min-height: 44px;
+          min-width: 44px;
+        }
+
+        /* Adjust modals for mobile */
+        .modal {
+          padding: 10px;
+        }
+
+        .modal-content {
+          width: 95%;
+          max-width: 95%;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+
+        /* Turn header adjustments */
+        .turn-header-panel {
+          position: relative;
+          font-size: 0.9em;
+          padding: 8px;
+        }
+
+        /* Mobile-specific utility class */
+        .mobile-only {
+          display: block !important;
+        }
+
+        .desktop-only {
+          display: none !important;
+        }
+      }
+
+      /* Hide sidebar toggle on desktop */
+      @media (min-width: 769px) {
+        .sidebar-toggle {
+          display: none !important;
+        }
+
+        .mobile-only {
+          display: none !important;
+        }
+      }
+
+      /* Touch-friendly enhancements */
+      @media (hover: none) and (pointer: coarse) {
+        /* This targets touch devices specifically */
+        button, .button, a, [onclick] {
+          min-height: 44px;
+          padding: 10px 15px;
+        }
+
+        /* Increase territory click areas */
+        .territory {
+          stroke-width: 3;
+        }
+
+        /* Remove hover effects on touch devices */
+        *:hover {
+          transition: none;
+        }
+
+        /* Add active state instead */
+        *:active {
+          opacity: 0.7;
+          transition: opacity 0.1s;
+        }
+      }
+
       /* Music Manager Modal */
       #musicManagerModal {
         display: none;
@@ -3030,6 +3295,11 @@
 
     <div class="game-container">
       <div class="sidebar">
+        <!-- Mobile Sidebar Toggle -->
+        <div class="sidebar-toggle mobile-only" id="sidebar-toggle" title="Tap to expand/collapse">
+          <span>▲</span>
+        </div>
+
         <!-- 1. Turn Counter (NEW - First Element) -->
         <div class="turn-counter-panel" id="turn-counter-panel">
           <span class="turn-prefix"> Turn: </span><span class="turn-number" id="turn-number-display">1</span>
@@ -9659,4 +9929,260 @@
     `;
     document.head.appendChild(style);
     </script>
+
+    <!-- Mobile & Touch Interaction System -->
+    <script>
+    (function() {
+      // ═══════════════════════════════════════════════════════
+      // MOBILE SIDEBAR TOGGLE & SWIPE GESTURES
+      // ═══════════════════════════════════════════════════════
+      
+      const sidebar = document.querySelector('.sidebar');
+      const sidebarToggle = document.getElementById('sidebar-toggle');
+      
+      let touchStartY = 0;
+      let touchStartX = 0;
+      let sidebarStartY = 0;
+      let isSidebarDragging = false;
+      
+      // Toggle sidebar with button
+      if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+          sidebar.classList.toggle('expanded');
+          const arrow = sidebarToggle.querySelector('span');
+          if (sidebar.classList.contains('expanded')) {
+            arrow.textContent = '▼';
+          } else {
+            arrow.textContent = '▲';
+          }
+        });
+      }
+      
+      // Swipe gestures for sidebar
+      if (sidebar && window.innerWidth <= 768) {
+        sidebar.addEventListener('touchstart', function(e) {
+          touchStartY = e.touches[0].clientY;
+          touchStartX = e.touches[0].clientX;
+          isSidebarDragging = true;
+        }, { passive: true });
+        
+        sidebar.addEventListener('touchmove', function(e) {
+          if (!isSidebarDragging) return;
+          
+          const touchY = e.touches[0].clientY;
+          const deltaY = touchY - touchStartY;
+          
+          // Only handle vertical swipes
+          if (Math.abs(deltaY) > 10) {
+            if (deltaY > 50 && sidebar.classList.contains('expanded')) {
+              // Swipe down - collapse
+              sidebar.classList.remove('expanded');
+              if (sidebarToggle) {
+                sidebarToggle.querySelector('span').textContent = '▲';
+              }
+            } else if (deltaY < -50 && !sidebar.classList.contains('expanded')) {
+              // Swipe up - expand
+              sidebar.classList.add('expanded');
+              if (sidebarToggle) {
+                sidebarToggle.querySelector('span').textContent = '▼';
+              }
+            }
+          }
+        }, { passive: true });
+        
+        sidebar.addEventListener('touchend', function() {
+          isSidebarDragging = false;
+        }, { passive: true });
+      }
+      
+      console.log('📱 Mobile sidebar gestures initialized');
+      
+      // ═══════════════════════════════════════════════════════
+      // PINCH-TO-ZOOM FOR MAP
+      // ═══════════════════════════════════════════════════════
+      
+      const mapContainer = document.querySelector('.map-container');
+      const mapSvg = document.getElementById('risk-map');
+      
+      let scale = 1;
+      let posX = 0;
+      let posY = 0;
+      let lastDistance = 0;
+      let isPinching = false;
+      
+      function getDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+      
+      function getMidpoint(touch1, touch2) {
+        return {
+          x: (touch1.clientX + touch2.clientX) / 2,
+          y: (touch1.clientY + touch2.clientY) / 2
+        };
+      }
+      
+      if (mapSvg && 'ontouchstart' in window) {
+        mapSvg.addEventListener('touchstart', function(e) {
+          if (e.touches.length === 2) {
+            e.preventDefault();
+            isPinching = true;
+            lastDistance = getDistance(e.touches[0], e.touches[1]);
+          }
+        }, { passive: false });
+        
+        mapSvg.addEventListener('touchmove', function(e) {
+          if (e.touches.length === 2 && isPinching) {
+            e.preventDefault();
+            
+            const currentDistance = getDistance(e.touches[0], e.touches[1]);
+            const delta = currentDistance - lastDistance;
+            
+            // Scale adjustment
+            const scaleChange = delta * 0.01;
+            const newScale = Math.max(0.5, Math.min(3, scale + scaleChange));
+            
+            if (newScale !== scale) {
+              scale = newScale;
+              
+              // Apply transform
+              const mapGroup = mapSvg.querySelector('.map-group') || mapSvg;
+              mapGroup.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+              mapGroup.style.transformOrigin = 'center center';
+            }
+            
+            lastDistance = currentDistance;
+          }
+        }, { passive: false });
+        
+        mapSvg.addEventListener('touchend', function(e) {
+          if (e.touches.length < 2) {
+            isPinching = false;
+          }
+        }, { passive: true });
+        
+        console.log('📱 Pinch-to-zoom enabled for map');
+      }
+      
+      // ═══════════════════════════════════════════════════════
+      // ENHANCED TOUCH HANDLING FOR TERRITORIES
+      // ═══════════════════════════════════════════════════════
+      
+      let touchStartTime = 0;
+      let touchMoved = false;
+      
+      // Add touch event listeners to all territories
+      document.addEventListener('DOMContentLoaded', function() {
+        const territories = document.querySelectorAll('.territory');
+        
+        territories.forEach(territory => {
+          // Touch start
+          territory.addEventListener('touchstart', function(e) {
+            touchStartTime = Date.now();
+            touchMoved = false;
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+          }, { passive: true });
+          
+          // Track if user is scrolling/panning
+          territory.addEventListener('touchmove', function(e) {
+            const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
+            const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+            
+            if (deltaX > 10 || deltaY > 10) {
+              touchMoved = true;
+            }
+          }, { passive: true });
+          
+          // Touch end - trigger click only if it was a tap (not a drag)
+          territory.addEventListener('touchend', function(e) {
+            const touchDuration = Date.now() - touchStartTime;
+            
+            // Only count as tap if: quick touch, didn't move much
+            if (touchDuration < 500 && !touchMoved) {
+              e.preventDefault();
+              
+              // Visual feedback
+              territory.style.opacity = '0.7';
+              setTimeout(() => {
+                territory.style.opacity = '';
+              }, 100);
+              
+              // Trigger the territory click handler
+              const territoryId = territory.id;
+              if (window.handleTerritoryClick) {
+                window.handleTerritoryClick(territoryId);
+              }
+            }
+          }, { passive: false });
+        });
+        
+        console.log(`📱 Touch handlers added to ${territories.length} territories`);
+      });
+      
+      // ═══════════════════════════════════════════════════════
+      // PREVENT DOUBLE-TAP ZOOM ON IOS
+      // ═══════════════════════════════════════════════════════
+      
+      let lastTouchEnd = 0;
+      document.addEventListener('touchend', function(e) {
+        const now = Date.now();
+        if (now - lastTouchEnd <= 300) {
+          e.preventDefault();
+        }
+        lastTouchEnd = now;
+      }, { passive: false });
+      
+      // ═══════════════════════════════════════════════════════
+      // RESPONSIVE BREAKPOINT DETECTION
+      // ═══════════════════════════════════════════════════════
+      
+      function detectDevice() {
+        const width = window.innerWidth;
+        
+        if (width <= 480) {
+          document.body.classList.add('mobile-phone');
+          document.body.classList.remove('tablet', 'desktop');
+          console.log('📱 Device: Mobile Phone');
+        } else if (width <= 768) {
+          document.body.classList.add('tablet');
+          document.body.classList.remove('mobile-phone', 'desktop');
+          console.log('📱 Device: Tablet');
+        } else {
+          document.body.classList.add('desktop');
+          document.body.classList.remove('mobile-phone', 'tablet');
+          console.log('💻 Device: Desktop');
+        }
+      }
+      
+      // Detect on load and on resize
+      detectDevice();
+      window.addEventListener('resize', detectDevice);
+      
+      // ═══════════════════════════════════════════════════════
+      // MODAL TOUCH IMPROVEMENTS
+      // ═══════════════════════════════════════════════════════
+      
+      // Make modals easier to close on mobile
+      document.addEventListener('DOMContentLoaded', function() {
+        const modals = document.querySelectorAll('.modal, [id*="modal"]');
+        
+        modals.forEach(modal => {
+          modal.addEventListener('touchstart', function(e) {
+            // Close modal if touching the backdrop
+            if (e.target === modal) {
+              const closeBtn = modal.querySelector('.close-btn, [onclick*="close"]');
+              if (closeBtn) {
+                closeBtn.click();
+              }
+            }
+          });
+        });
+      });
+      
+      console.log('📱 Mobile & touch interaction system fully initialized');
+    })();
+    </script>
 </html>
+

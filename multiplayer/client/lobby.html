@@ -393,8 +393,8 @@
     const playerName = urlParams.get('name') || localStorage.getItem('risk_playerName') || 'Player';
     const playerCount = parseInt(urlParams.get('count')) || 2;
 
-    // Initialize multiplayer client
-    const client = new MultiplayerClient('http://localhost:3000');
+    // Initialize multiplayer client (auto-detect server URL)
+    const client = new MultiplayerClient();
     let isHost = false;
     let isReady = false;
     let currentSession = null;

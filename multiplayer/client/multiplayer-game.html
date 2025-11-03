@@ -76,7 +76,8 @@
       window.location.href = 'lobby.html';
     }
 
-    const client = new MultiplayerClient('http://localhost:3000');
+    // Initialize multiplayer client (auto-detect server URL)
+    const client = new MultiplayerClient();
     const userId = client.getUserId();
     const playerName = localStorage.getItem('risk_playerName') || 'Player';
 

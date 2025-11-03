@@ -48,67 +48,25 @@ class MapCalibration {
     }
     
     /**
-     * Apply current calibration to the background image
+     * Apply current calibration to the unified map layer
      */
     applyCalibration() {
-        const bgPattern = document.getElementById('world-map-bg');
+        const unifiedLayer = document.getElementById('unified-map-layer');
         const bgRect = document.querySelector('rect[fill="url(#world-map-bg)"]');
-        const waterPattern = document.getElementById('ocean-water-texture');
         const vignetteGradient = document.getElementById('water-vignette');
-        const mapGroup = document.querySelector('.map-group');
-        const svg = document.getElementById('risk-map');
         
-        if (!bgPattern || !bgRect) {
-            console.warn('Background pattern elements not found');
+        if (!unifiedLayer) {
+            console.warn('Unified map layer not found');
             return;
         }
         
-        const baseWidth = 1920;
-        const baseHeight = 1080;
+        // Apply single transform to unified layer (all elements scale together)
+        const transform = `translate(${this.calibrationData.offsetX}, ${this.calibrationData.offsetY}) scale(${this.calibrationData.scale})`;
+        unifiedLayer.setAttribute('transform', transform);
         
-        // Calculate scaled dimensions
-        const scaledWidth = baseWidth * this.calibrationData.scale;
-        const scaledHeight = baseHeight * this.calibrationData.scale;
-        
-        // Calculate offset to keep everything centered when scaling
-        // When scaling down, we need to shift the image to compensate
-        const scaleOffset = (1 - this.calibrationData.scale) / 2;
-        const adjustedX = this.calibrationData.offsetX + (baseWidth * scaleOffset);
-        const adjustedY = this.calibrationData.offsetY + (baseHeight * scaleOffset);
-        
-        // Update world map pattern position and scale
-        const image = bgPattern.querySelector('image');
-        if (image) {
-            image.setAttribute('x', adjustedX);
-            image.setAttribute('y', adjustedY);
-            image.setAttribute('width', scaledWidth);
-            image.setAttribute('height', scaledHeight);
-        }
-        
-        // Update world map opacity
-        bgRect.setAttribute('opacity', this.calibrationData.opacity);
-        
-        // Update water texture background scale and position
-        if (waterPattern) {
-            const waterImage = waterPattern.querySelector('image');
-            if (waterImage) {
-                const waterScaledWidth = baseWidth * this.calibrationData.bgScale;
-                const waterScaledHeight = baseHeight * this.calibrationData.bgScale;
-                const waterScaleOffset = (1 - this.calibrationData.bgScale) / 2;
-                const waterAdjustedX = this.calibrationData.offsetX + (baseWidth * waterScaleOffset);
-                const waterAdjustedY = this.calibrationData.offsetY + (baseHeight * waterScaleOffset);
-                
-                waterImage.setAttribute('x', waterAdjustedX);
-                waterImage.setAttribute('y', waterAdjustedY);
-                waterImage.setAttribute('width', waterScaledWidth);
-                waterImage.setAttribute('height', waterScaledHeight);
-            }
-        }
-        
-        // Apply scale and offset to SVG territories (map-group)
-        if (mapGroup) {
-            const transform = `translate(${this.calibrationData.offsetX}, ${this.calibrationData.offsetY}) scale(${this.calibrationData.scale})`;
-            mapGroup.setAttribute('transform', transform);
+        // Update world map opacity only
+        if (bgRect) {
+            bgRect.setAttribute('opacity', this.calibrationData.opacity);
         }
         
         // Update vignette gradient if present

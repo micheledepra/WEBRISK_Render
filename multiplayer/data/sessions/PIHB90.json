@@ -1,0 +1,22 @@
+{
+  "sessionId": "PIHB90",
+  "hostUserId": "8HLJzQnk-DwN9-2vAAAB",
+  "maxPlayers": 2,
+  "state": "waiting",
+  "createdAt": 1762260163738,
+  "savedAt": "2025-11-04T12:42:43.738Z",
+  "timestamp": 1762260163738,
+  "players": {
+    "8HLJzQnk-DwN9-2vAAAB": {
+      "userId": "8HLJzQnk-DwN9-2vAAAB",
+      "playerName": "miki1",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "not_ready",
+      "joinedAt": 1762260163738
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

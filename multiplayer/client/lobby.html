@@ -580,11 +580,19 @@
         localStorage.setItem('lastSessionCode', currentSession);
         localStorage.setItem('lastPlayerColor', currentPlayerColor);
         
+        // Store ALL players and colors for game initialization
+        const playerNames = sessionPlayers.map(p => p.name);
+        const playerColors = sessionPlayers.map(p => p.color);
+        localStorage.setItem('multiplayerPlayers', JSON.stringify(playerNames));
+        localStorage.setItem('multiplayerColors', JSON.stringify(playerColors));
+        
         console.log('✅ Stored player info for game:', {
           name: currentPlayerName,
           session: currentSession,
           color: currentPlayerColor,
-          userId: localStorage.getItem('risk_userId')
+          userId: localStorage.getItem('risk_userId'),
+          allPlayers: playerNames,
+          allColors: playerColors
         });
         
         showSuccessMessage('Game starting in 2 seconds...');

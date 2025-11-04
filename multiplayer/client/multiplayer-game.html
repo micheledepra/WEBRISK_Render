@@ -468,50 +468,11 @@
     console.log('Player:', window.multiplayerState.playerName);
   </script>
   
-  <!-- Load ALL game.html scripts in order -->
+  <!-- Load essential utilities first -->
   <script src="../../js/MusicPlayer.js"></script>
-  <script src="../../js/mapData.js"></script>
-  <script src="../../js/territory-paths.js"></script>
-  <script src="../../js/ColorManager.js"></script>
-  <script src="../../js/ArmyCountManager.js"></script>
-  <script src="../../js/EnhancedTooltip.js"></script>
-  <script src="../../js/DiceRoller.js"></script>
-  <script src="../../js/DirectCombat.js"></script>
-  <script src="../../js/attackLogic.js"></script>
-  <script src="../../js/ReinforcementManager.js"></script>
-  <script src="../../js/FortificationManager.js"></script>
-  <script src="../../js/GameState.js"></script>
-  <script src="../../js/GameStateManager.js"></script>
-  <script src="../../js/FirebaseManager.js"></script>
-  <script src="../../js/ValidationManager.js"></script>
-  <script src="../../js/CombatSystem.js"></script>
-  <script src="../../js/CombatAnimations.js"></script>
-  <script src="../../js/CombatDebugger.js"></script>
-  <script src="../../js/CombatManager.js"></script>
-  <script src="../../js/CombatUI.js"></script>
-  <script src="../../js/CombatEnhancements.js"></script>
-  <script src="../../js/CombatEnhancedIntegration.js"></script>
-  <script src="../../js/CombatTester.js"></script>
-  <script src="../../js/PhaseManager.js"></script>
-  <script src="../../js/PhaseSynchronizer.js"></script>
-  <script src="../../js/PhaseDebugger.js"></script>
-  <script src="../../js/TurnManager.js"></script>
-  <script src="../../js/RiskUI.js"></script>
-  <script src="../../js/RiskUI.AttackExtension.js"></script>
-  <script src="../../js/CombatIntegration.js"></script>
-  <script src="../../js/RiskMap.js"></script>
-  <script src="../../js/MapCalibrationPresets.js"></script>
-  <script src="../../js/MapCalibration.js"></script>
-  <script src="../../js/RiskGame.js"></script>
-  <script src="../../js/AttackManager.js"></script>
-  <script src="../../js/AttackManager.integration.js"></script>
-  <script src="../../js/AttackPathVisualizer.js"></script>
-  <script src="../../js/EnhancedAttackUI.js"></script>
-  <script src="../../js/EnhancedAttackUI.integration.js"></script>
-  <script src="../../js/StatisticsManager.js"></script>
   <script src="../../js/SaveGameManager.js"></script>
   
-  <!-- Multiplayer Bridge Scripts -->
+  <!-- Multiplayer Bridge Scripts (load before game scripts) -->
   <script src="../shared/SessionCodeGenerator.js"></script>
   <script src="../shared/TurnValidator.js"></script>
   <script src="../shared/ConflictResolver.js"></script>
@@ -613,24 +574,16 @@
         
         updateLoadingMessage('Initializing game systems...');
         
-        // STEP 4: Wait for game objects to be ready
-        await waitForGame();
+        // STEP 4: Initialize game objects manually
+        // Since we loaded game.html without its inline scripts, we need to create the objects ourselves
+        await initializeGameObjects();
         
-        console.log('✅ Game objects ready:', {
+        console.log('✅ Game objects initialized:', {
           riskUI: !!window.riskUI,
           gameState: !!window.gameState,
           riskMap: !!window.riskMap,
           riskGame: !!window.riskGame
         });
-        
-        // IMPORTANT: If game.html has an init function, call it
-        if (typeof initGame === 'function') {
-          console.log('🎮 Calling game.html initGame() function...');
-          initGame();
-        } else if (window.riskUI && typeof window.riskUI.init === 'function') {
-          console.log('🎮 Calling riskUI.init()...');
-          window.riskUI.init();
-        }
         
         updateLoadingMessage('Setting up multiplayer...');
         
@@ -661,7 +614,21 @@
         setupMultiplayerUI();
         
         // Register multiplayer event listeners
-        registerMultiplayerListeners();
+        setupMultiplayerListeners();
+        
+        // STEP 7: Initialize turn management UI
+        // Update phase progress and turn order with initial game state
+        if (window.updateTurnUI && window.gameState) {
+          setTimeout(() => {
+            window.updateTurnUI(
+              window.gameState.turnNumber,
+              window.gameState.getCurrentPlayer(),
+              window.gameState.phase,
+              window.gameState.players
+            );
+            console.log('✅ Initial turn UI updated');
+          }, 200);
+        }
         
         // STEP 8: Hide loading screen & show HUD
         hideLoadingScreen();
@@ -691,11 +658,21 @@
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        // Extract <style> tags from head
+        // Extract <style> tags from head and fix their URLs
         const styleElements = doc.querySelectorAll('head style');
         styleElements.forEach(style => {
-          document.head.appendChild(style.cloneNode(true));
+          const clonedStyle = style.cloneNode(true);
+          // Fix CSS background-image URLs
+          let cssText = clonedStyle.textContent;
+          cssText = cssText.replace(
+            /url\(['"]?(?!http|\/\/|data:)(\.\.\/)?([^'")\s]+)['"]?\)/g,
+            'url("../../$2")'
+          );
+          clonedStyle.textContent = cssText;
+          document.head.appendChild(clonedStyle);
         });
+        
+        console.log('✅ CSS styles loaded and URLs fixed');
         
         // Extract body content WITHOUT script tags to prevent duplicate execution
         const bodyClone = doc.body.cloneNode(true);
@@ -707,10 +684,107 @@
         // Insert cleaned body content
         document.getElementById('game-root').innerHTML = bodyClone.innerHTML;
         
-        // Fix ALL resource paths
+        // Fix ALL resource paths in HTML elements
         fixResourcePaths();
         
         console.log('✅ Game HTML loaded (scripts excluded to prevent duplicates)');
+        
+        // ============================================
+        // EXTRACT AND EXPOSE GAME.HTML UI FUNCTIONS
+        // These functions manage turn UI elements
+        // ============================================
+        
+        // Wait for DOM to be ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Function: Update Phase Progress Bar (from game.html lines 5241-5337)
+        window.updatePhaseProgressBar = function(currentPhase) {
+          const progressBar = document.getElementById("phase-progress-bar");
+          if (!progressBar) return;
+
+          const phases = ["reinforcement", "attack", "fortification"];
+          const phaseNames = ["Reinforce", "Attack", "Fortify"];
+          
+          progressBar.innerHTML = "";
+
+          if (currentPhase === 'startup') {
+            const startupSegment = document.createElement("div");
+            startupSegment.className = "phase-segment active";
+            startupSegment.style.cssText = "flex: 1; text-align: center;";
+            startupSegment.innerHTML = '<span class="phase-name">Initial Army Deployment</span>';
+            progressBar.appendChild(startupSegment);
+            console.log('🎯 Phase Progress Updated: STARTUP');
+            return;
+          }
+
+          phases.forEach((phase, index) => {
+            const segment = document.createElement("div");
+            segment.className = "phase-segment";
+            
+            const currentIndex = phases.indexOf(currentPhase);
+            const phaseIndex = phases.indexOf(phase);
+            
+            if (phase === currentPhase) {
+              segment.classList.add("active");
+            } else if (phaseIndex < currentIndex) {
+              segment.classList.add("completed");
+            } else {
+              segment.classList.add("upcoming");
+            }
+
+            segment.innerHTML = `<span class="phase-name">${phaseNames[index]}</span>`;
+            progressBar.appendChild(segment);
+          });
+
+          console.log(`🎯 Phase Progress Updated: ${currentPhase.toUpperCase()}`);
+        };
+        
+        // Function: Update Players Turn Order (from game.html lines 5370-5418)
+        window.updatePlayersTurnOrder = function(players, currentPlayer) {
+          const playersList = document.getElementById("players-list-order");
+          if (!playersList) return;
+
+          playersList.innerHTML = "";
+
+          players.forEach((player, index) => {
+            const item = document.createElement("li");
+            item.className = "player-order-item";
+
+            if (player === currentPlayer) {
+              item.classList.add("current");
+            }
+
+            const indicator = document.createElement("span");
+            indicator.className = "player-order-indicator";
+            indicator.textContent = index + 1;
+
+            const colorDot = document.createElement("span");
+            colorDot.className = "player-color-dot";
+            
+            const colorManager = window.ColorManager || 
+                                (window.riskUI && window.riskUI.colorManager);
+            if (colorManager) {
+              const playerColor = colorManager.getPlayerColor(player);
+              colorDot.style.backgroundColor = playerColor;
+              if (player === currentPlayer) {
+                indicator.style.backgroundColor = playerColor;
+                indicator.style.color = "white";
+              }
+            }
+
+            const nameSpan = document.createElement("span");
+            nameSpan.textContent = player;
+
+            item.appendChild(indicator);
+            item.appendChild(nameSpan);
+            item.appendChild(colorDot);
+
+            playersList.appendChild(item);
+          });
+        };
+        
+        console.log('✅ Game UI functions exposed globally');
+        
       } catch (error) {
         console.error('❌ Failed to load game HTML:', error);
         throw error;
@@ -798,6 +872,322 @@
     }
     
     /**
+     * Load game scripts dynamically (from game.html pattern)
+     * This ensures scripts load in the correct order with proper dependencies
+     */
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => {
+          console.log(`✅ Loaded: ${src}`);
+          resolve();
+        };
+        script.onerror = () => reject(new Error(`Failed to load ${src}`));
+        document.head.appendChild(script);
+      });
+    }
+    
+    /**
+     * Load all game scripts in sequence (exact pattern from game.html)
+     * Then initialize game objects
+     */
+    async function initializeGameObjects() {
+      console.log('🎮 Loading game scripts dynamically (game.html pattern)...');
+      
+      try {
+        // Load all scripts in the EXACT order from game.html
+        await loadScript('../../js/mapData.js')
+          .then(() => loadScript('../../js/territory-paths.js'))
+          .then(() => loadScript('../../js/ColorManager.js'))
+          .then(() => loadScript('../../js/ArmyCountManager.js'))
+          .then(() => loadScript('../../js/EnhancedTooltip.js'))
+          .then(() => loadScript('../../js/DiceRoller.js'))
+          .then(() => loadScript('../../js/DirectCombat.js'))
+          .then(() => loadScript('../../js/attackLogic.js'))
+          .then(() => loadScript('../../js/ReinforcementManager.js'))
+          .then(() => loadScript('../../js/FortificationManager.js'))
+          .then(() => loadScript('../../js/GameState.js'))
+          .then(() => loadScript('../../js/GameStateManager.js'))
+          .then(() => loadScript('../../js/FirebaseManager.js'))
+          .then(() => loadScript('../../js/ValidationManager.js'))
+          .then(() => loadScript('../../js/CombatSystem.js'))
+          .then(() => loadScript('../../js/CombatAnimations.js'))
+          .then(() => loadScript('../../js/CombatDebugger.js'))
+          .then(() => loadScript('../../js/CombatManager.js'))
+          .then(() => loadScript('../../js/CombatUI.js'))
+          .then(() => loadScript('../../js/CombatEnhancements.js'))
+          .then(() => loadScript('../../js/CombatEnhancedIntegration.js'))
+          .then(() => loadScript('../../js/CombatTester.js'))
+          .then(() => loadScript('../../js/PhaseManager.js'))
+          .then(() => loadScript('../../js/PhaseSynchronizer.js'))
+          .then(() => loadScript('../../js/PhaseDebugger.js'))
+          .then(() => loadScript('../../js/TurnManager.js'))
+          .then(() => loadScript('../../js/RiskUI.js'))
+          .then(() => loadScript('../../js/RiskUI.AttackExtension.js'))
+          .then(() => loadScript('../../js/CombatIntegration.js'))
+          .then(() => loadScript('../../js/RiskMap.js'))
+          .then(() => loadScript('../../js/MapCalibrationPresets.js'))
+          .then(() => loadScript('../../js/MapCalibration.js'))
+          .then(() => loadScript('../../js/RiskGame.js'))
+          .then(() => loadScript('../../js/AttackManager.js'))
+          .then(() => loadScript('../../js/AttackManager.integration.js'))
+          .then(() => loadScript('../../js/AttackPathVisualizer.js'))
+          .then(() => loadScript('../../js/EnhancedAttackUI.js'))
+          .then(() => loadScript('../../js/EnhancedAttackUI.integration.js'))
+          .then(() => loadScript('../../js/StatisticsManager.js'));
+        
+    console.log('✅ All game scripts loaded successfully!');
+    
+    // Brief wait for script registration
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Verify required data is loaded
+    if (typeof mapData === 'undefined' || typeof territoryPaths === 'undefined') {
+      throw new Error('Required game data not loaded (mapData or territoryPaths missing)');
+    }
+    
+    console.log('✅ Game data verified (mapData, territoryPaths)');
+    
+    // ============================================
+    // GAME.HTML INITIALIZATION PATTERN (EXACT COPY)
+    // Lines 5998-6313 from game.html
+    // ============================================
+    
+    console.log('🎮 Initializing game objects (game.html pattern)...');
+    
+    // Pre-initialize attack modal elements (game.html line 5998)
+    ensureAttackModalElements();
+    
+    // Get players from localStorage (set by lobby) or use defaults
+    const storedPlayers = localStorage.getItem('multiplayerPlayers');
+    const storedColors = localStorage.getItem('multiplayerColors');
+    
+    let players, playerColors;
+    
+    if (storedPlayers && storedColors) {
+      players = JSON.parse(storedPlayers);
+      playerColors = JSON.parse(storedColors);
+      console.log('📋 Using stored players:', players);
+    } else {
+      // Fallback to defaults
+      players = ['Player 1', 'Player 2'];
+      playerColors = ['red', 'blue'];
+      console.log('📋 Using default players:', players);
+    }
+    
+    // Store colors for GameState constructor (game.html pattern)
+    window.playerColors = playerColors;
+    
+    // Initialize game components in the correct order (game.html line 6079)
+    const riskUI = new RiskUI();
+    riskUI.initGame(players, window.playerColors || []);
+    
+    // Make riskUI globally available BEFORE initializing Combat System (game.html line 6082)
+    window.riskUI = riskUI;
+    
+    console.log('  ✅ RiskUI initialized');
+    
+    // Initialize StatisticsManager (game.html line 6085)
+    if (typeof StatisticsManager !== 'undefined') {
+      window.statsManager = new StatisticsManager(riskUI.gameState);
+      console.log('  ✅ StatisticsManager initialized');
+    }
+    
+    // Expose ColorManager globally for easy access (game.html line 6091)
+    window.colorManager = riskUI.colorManager;
+    window.ColorManager = riskUI.colorManager;
+    
+    // Update turn header and reinforcement panel colors immediately (game.html line 6094)
+    if (window.updateTurnHeaderPanelColor) {
+      window.updateTurnHeaderPanelColor();
+    }
+    if (window.updateReinforcementPanel) {
+      window.updateReinforcementPanel();
+    }
+    
+    // Initialize Combat System after riskUI is available (game.html line 6104)
+    setTimeout(() => {
+      // Double-check critical elements are ready
+      ensureAttackModalElements();
+
+      if (typeof initializeCombatSystem === 'function') {
+        const combatInitialized = initializeCombatSystem();
+        if (combatInitialized) {
+          console.log('  ✅ Combat System initialized');
+        }
+      }
+    }, 100);
+    
+    // Distribute territories randomly among players (game.html line 6298)
+    riskUI.gameState.assignTerritoriesRandomly();
+    
+    // Update PhaseManager after territory distribution (game.html line 6301)
+    riskUI.phaseManager.syncWithGameState();
+    riskUI.updatePlayerStats();
+    
+    // Initialize RiskMap (game.html line 6304)
+    const riskMap = new RiskMap(riskUI);
+    const riskGame = new RiskGame(riskUI, riskMap);
+    
+    console.log('  ✅ RiskMap initialized');
+    console.log('  ✅ RiskGame initialized');
+    
+    // Store references globally if needed (game.html line 6307)
+    window.gameState = riskUI.gameState;
+    window.riskUI = riskUI;
+    window.riskMap = riskMap;
+    window.riskGame = riskGame;
+    
+    // Initialize army count manager after RiskMap has created territories (game.html line 6312)
+    if (window.ArmyCountManager) {
+      try {
+        riskUI.armyCountManager = new ArmyCountManager(riskUI.colorManager);
+        console.log('  ✅ ArmyCountManager instantiated');
+        
+        // Setup army count map integration
+        riskUI.setupArmyCountMapIntegration();
+        
+        // Initialize territory visuals after map is ready
+        riskUI.initializeVisualsAfterMap();
+        
+        console.log('  ✅ ArmyCountManager integrated with RiskUI');
+      } catch (error) {
+        console.error('  ⚠️ Failed to initialize ArmyCountManager:', error);
+      }
+    }
+    
+    // Store additional references (game.html pattern)
+    window.turnManager = riskUI.turnManager;
+    window.phaseSynchronizer = riskUI.phaseSynchronizer || window.phaseSynchronizer;
+    
+    // ============================================
+    // MULTIPLAYER TURN UI INTEGRATION
+    // Expose game.html's turn management functions for multiplayer
+    // ============================================
+    
+    // Initialize turn UI update function (from game.html lines 5140-5236)
+    window.updateTurnUI = function(turnNumber, currentPlayer, currentPhase, players) {
+      try {
+        // 1. Update Turn Number Display
+        const turnNumberEl = document.getElementById("turn-number-display");
+        const turnPrefixEl = document.getElementById("turn-prefix");
+        
+        if (turnNumberEl) {
+          if (currentPhase === 'startup') {
+            if (turnPrefixEl) turnPrefixEl.textContent = '🎮 ';
+            turnNumberEl.textContent = 'Initial Setup';
+          } else {
+            if (turnPrefixEl) turnPrefixEl.textContent = '🎮 Turn ';
+            turnNumberEl.textContent = turnNumber;
+          }
+        }
+
+        // 2. Update Current Player Display
+        const playerNameHeader = document.getElementById("current-player-name-header");
+        const playerColorDot = document.getElementById("current-player-color");
+        
+        if (playerNameHeader) {
+          playerNameHeader.textContent = currentPlayer;
+        }
+        
+        if (playerColorDot && window.ColorManager) {
+          playerColorDot.style.backgroundColor = window.ColorManager.getPlayerColor(currentPlayer);
+        }
+
+        // Update turn header panel background color
+        if (window.updateTurnHeaderPanelColor) {
+          window.updateTurnHeaderPanelColor();
+        }
+
+        // 3. Update Phase Progress Bar
+        if (window.updatePhaseProgressBar) {
+          window.updatePhaseProgressBar(currentPhase);
+        }
+
+        // 4. Update Players Turn Order List
+        if (window.updatePlayersTurnOrder) {
+          window.updatePlayersTurnOrder(players, currentPlayer);
+        }
+
+        // 5. Update Reinforcement Panel
+        if (window.updateReinforcementPanel) {
+          window.updateReinforcementPanel();
+        }
+
+        console.log(`✅ Multiplayer Turn UI Updated - ${currentPhase === 'startup' ? 'Initial Setup' : `Turn ${turnNumber}`}, Player: ${currentPlayer}, Phase: ${currentPhase}`);
+      } catch (error) {
+        console.warn("Error updating multiplayer turn UI:", error);
+      }
+    };
+    
+    // Hook into turn manager to update UI automatically
+    if (riskUI.turnManager) {
+      const originalAdvancePhase = riskUI.turnManager.advancePhase;
+      riskUI.turnManager.advancePhase = function() {
+        originalAdvancePhase.call(this);
+        
+        // Update UI after phase advance
+        setTimeout(() => {
+          const gameState = window.gameState || riskUI.gameState;
+          if (gameState && window.updateTurnUI) {
+            window.updateTurnUI(
+              gameState.turnNumber,
+              gameState.getCurrentPlayer(),
+              gameState.phase,
+              gameState.players
+            );
+          }
+        }, 100);
+      };
+      
+      console.log('✅ Multiplayer turn UI hooks installed');
+    }
+    
+    console.log('✅ All game objects initialized successfully!');
+    console.log('   riskUI:', typeof window.riskUI);
+    console.log('   gameState:', typeof window.gameState);
+    console.log('   riskMap:', typeof window.riskMap);
+    console.log('   riskGame:', typeof window.riskGame);
+        
+        return true;
+        
+  } catch (error) {
+    console.error('❌ Failed to initialize game objects:', error);
+    console.log('     Available classes:', Object.keys(window).filter(k => 
+      typeof window[k] === 'function' && 
+      k.length > 3 &&
+      (k.includes('Risk') || k.includes('Game') || k.includes('Map') || k.includes('Manager') || k.includes('State'))
+    ));
+    throw error;
+  }
+}    /**
+     * Pre-initialize attack modal elements
+     * From game.html - ensures critical DOM elements exist before game initialization
+     */
+    function ensureAttackModalElements() {
+      const attackModal = document.getElementById('attack-modal');
+      if (!attackModal) {
+        console.warn('⚠️ Attack modal not found during pre-initialization (will be created later)');
+        return;
+      }
+      
+      const modalContent = attackModal.querySelector('.modal-content');
+      if (!modalContent) return;
+      
+      // Find or create attack-selection container
+      let attackSelection = attackModal.querySelector('#attack-modal-selection');
+      if (!attackSelection) {
+        attackSelection = document.createElement('div');
+        attackSelection.id = 'attack-modal-selection';
+        attackSelection.className = 'attack-selection';
+        modalContent.appendChild(attackSelection);
+      }
+      
+      console.log('✅ Attack modal elements pre-initialized');
+    }
+    
+    /**
      * Wait for game objects to be initialized
      * Checks for critical game components
      */
@@ -826,26 +1216,8 @@
           }
           
           // Check if core components are ready
-          // We need at least riskUI and gameState - riskMap initializes later
-          if (hasRiskUI && hasGameState) {
+          if (hasRiskUI && hasGameState && hasRiskMap) {
             clearInterval(checkInterval);
-            
-            // Create a game object wrapper if it doesn't exist
-            if (!window.riskGame) {
-              console.log('📦 Creating riskGame wrapper object');
-              window.riskGame = {
-                riskUI: window.riskUI,
-                gameState: window.gameState,
-                riskMap: window.riskMap,
-                phaseManager: window.phaseManager,
-                turnManager: window.turnManager,
-                
-                // Add common game methods
-                handleAttack: window.handleAttack,
-                handleReinforce: window.handleReinforce,
-                handleFortify: window.handleFortify
-              };
-            }
             
             console.log('✅ Game objects ready:', {
               riskUI: hasRiskUI,

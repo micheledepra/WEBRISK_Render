@@ -1330,7 +1330,7 @@
                 const rawData = localStorage.getItem('riskGameData');
                 
                 if (!rawData) {
-                    console.warn('⚠️ No game data found');
+                    console.warn('⚠️ No game data found in localStorage');
                     document.getElementById('connection-status').textContent = 'No Data';
                     document.getElementById('connection-status').className = 'connection-status disconnected';
                     return;
@@ -1378,6 +1378,82 @@
                 console.error('❌ Error loading dashboard data:', error);
                 document.getElementById('connection-status').textContent = 'Error';
                 document.getElementById('connection-status').className = 'connection-status disconnected';
+            }
+        }
+
+        /**
+         * Load historical game data from backend server
+         * This ensures data persistence even when dashboard tab is closed
+         */
+        async function loadHistoricalDataFromBackend() {
+            try {
+                console.log('📡 Loading historical game data from backend...');
+                
+                // Determine backend URL
+                // Always use localhost:3000 for local development (works with Live Server on any port)
+                const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+                    ? 'http://localhost:3000' 
+                    : window.location.origin;
+                
+                console.log(`📡 Attempting to connect to backend at: ${backendUrl}`);
+                
+                const response = await fetch(`${backendUrl}/api/game-data/history?limit=100`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success && result.games && result.games.length > 0) {
+                    console.log(`✅ Loaded ${result.games.length} historical game snapshots from backend`);
+                    
+                    // Process each historical game snapshot
+                    result.games.forEach((historicalGame, index) => {
+                        console.log(`   Processing snapshot ${index + 1}: Game ${historicalGame.gameId} (${new Date(historicalGame.timestamp).toLocaleString()})`);
+                        
+                        // Capture in historical data structure
+                        captureHistoricalSnapshot(historicalGame);
+                        
+                        // If this is the most recent snapshot, use it as current game data
+                        if (index === result.games.length - 1) {
+                            gameData = historicalGame;
+                            lastDataTimestamp = historicalGame.timestamp;
+                            
+                            // Initialize player colors
+                            initPlayerColors(gameData);
+                            
+                            // Update visualizations with the latest data
+                            displayPlayerStats(gameData);
+                            visualizePowerRanking(gameData);
+                            visualizeComparison(gameData);
+                            visualizeContinentControl(gameData);
+                            visualizeContinentBreakdown(gameData);
+                            displayGameStatus(gameData);
+                        }
+                    });
+                    
+                    // Visualize all historical data
+                    visualizeHistoricalData();
+                    
+                    // Update connection status
+                    document.getElementById('connection-status').textContent = '✓ Backend Connected';
+                    document.getElementById('connection-status').className = 'connection-status connected';
+                    
+                    // Show dashboard content
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('dashboard-content').style.display = 'block';
+                    
+                    return true;
+                } else {
+                    console.log('ℹ️ No historical data found on backend');
+                    return false;
+                }
+                
+            } catch (error) {
+                console.warn('⚠️ Could not load historical data from backend:', error.message);
+                console.log('ℹ️ Falling back to localStorage only');
+                return false;
             }
         }
 
@@ -2780,8 +2856,8 @@
         }, 5000);
 
         // Initial load on page ready
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('📊 Dashboard initialized - waiting for game data...');
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('📊 Dashboard initialized - loading game data...');
             
             // Initialize drag and drop functionality
             initDragAndDrop();
@@ -2790,8 +2866,14 @@
             loadSectionOrder();
             loadSectionStates();
             
-            // Load dashboard data
-            loadDashboardData();
+            // Try to load historical data from backend first
+            const backendLoaded = await loadHistoricalDataFromBackend();
+            
+            // If backend load failed or no data, fall back to localStorage
+            if (!backendLoaded) {
+                console.log('📊 Loading from localStorage...');
+                loadDashboardData();
+            }
         });
     </script>
 </body>

@@ -9,6 +9,7 @@ const socketIO = require('socket.io');
 const path = require('path');
 const SessionManager = require('./SessionManager');
 const SessionPersistence = require('./SessionPersistence');
+const GameDataStore = require('./GameDataStore');
 const { EVENTS, ACTION_TYPES } = require('../shared/constants');
 
 // Configuration
@@ -44,9 +45,47 @@ const sessionPersistence = new SessionPersistence();
 // Initialize Session Manager with Persistence
 const sessionManager = new SessionManager(sessionPersistence);
 
+// Initialize Game Data Store for historical data
+const gameDataStore = new GameDataStore();
+
+// CORS middleware - Allow all origins for development
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Serve static files from the root directory (all game assets)
 console.log('📁 Serving static files from:', ROOT_DIR);
-app.use(express.static(ROOT_DIR));
+app.use(express.static(ROOT_DIR, {
+  setHeaders: (res, path) => {
+    // Fix MIME types for CSS files
+    if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    }
+    // Fix MIME types for JS files
+    if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+    // Fix MIME types for image files
+    if (path.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    }
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    }
+    if (path.endsWith('.svg')) {
+      res.setHeader('Content-Type', 'image/svg+xml');
+    }
+  }
+}));
 app.use(express.json());
 
 // Explicit route for game.html
@@ -407,6 +446,150 @@ app.get('/api/sessions/:sessionId', (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ============================================================
+// Game Data API Endpoints - Historical Data Persistence
+// ============================================================
+
+/**
+ * Save game data snapshot
+ * POST /api/game-data/save
+ * Body: { gameId: string, gameData: object }
+ */
+app.post('/api/game-data/save', (req, res) => {
+  try {
+    const { gameId, gameData } = req.body;
+    
+    if (!gameId || !gameData) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Missing required fields: gameId or gameData' 
+      });
+    }
+
+    console.log(`📊 Saving game data for game: ${gameId}`);
+    const result = gameDataStore.saveGameData(gameId, gameData);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('❌ Error saving game data:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Get all historical game data
+ * GET /api/game-data/history?limit=100
+ */
+app.get('/api/game-data/history', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 100;
+    console.log(`📊 Fetching game history (limit: ${limit})`);
+    
+    const history = gameDataStore.getAllGamesHistory(limit);
+    
+    res.json({
+      success: true,
+      count: history.length,
+      games: history
+    });
+  } catch (error) {
+    console.error('❌ Error fetching game history:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Get historical data for a specific game
+ * GET /api/game-data/:gameId/history?limit=50
+ */
+app.get('/api/game-data/:gameId/history', (req, res) => {
+  try {
+    const { gameId } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+    
+    console.log(`📊 Fetching history for game: ${gameId} (limit: ${limit})`);
+    const history = gameDataStore.getGameHistory(gameId, limit);
+    
+    res.json({
+      success: true,
+      gameId,
+      count: history.length,
+      snapshots: history
+    });
+  } catch (error) {
+    console.error('❌ Error fetching game history:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Get latest snapshot for a specific game
+ * GET /api/game-data/:gameId/latest
+ */
+app.get('/api/game-data/:gameId/latest', (req, res) => {
+  try {
+    const { gameId } = req.params;
+    
+    console.log(`📊 Fetching latest data for game: ${gameId}`);
+    const data = gameDataStore.getLatestGameData(gameId);
+    
+    if (!data) {
+      return res.status(404).json({ 
+        success: false, 
+        error: 'Game not found' 
+      });
+    }
+    
+    res.json({
+      success: true,
+      gameId,
+      data
+    });
+  } catch (error) {
+    console.error('❌ Error fetching game data:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+/**
+ * Get storage statistics
+ * GET /api/game-data/stats
+ */
+app.get('/api/game-data/stats', (req, res) => {
+  try {
+    const stats = gameDataStore.getStats();
+    res.json({
+      success: true,
+      stats
+    });
+  } catch (error) {
+    console.error('❌ Error fetching stats:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
+// ============================================================
+// End of Game Data API Endpoints
+// ============================================================
 
 // Socket.IO Connection Handling
 io.on(EVENTS.CONNECTION, (socket) => {

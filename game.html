@@ -7143,6 +7143,55 @@
       };
 
       /**
+       * Send game data to backend server for historical persistence
+       * @param {Object} gameData - The game state data to persist
+       * @returns {Promise} - Resolves when data is saved
+       */
+      async function sendGameDataToBackend(gameData) {
+        try {
+          // Determine backend URL
+          // Always use localhost:3000 for local development (works with Live Server on any port)
+          const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:3000' 
+            : window.location.origin;
+          
+          console.log(`📡 Sending game data to backend at: ${backendUrl}`);
+          
+          const response = await fetch(`${backendUrl}/api/game-data/save`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              gameId: gameData.gameId,
+              gameData: gameData
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('✅ Game data saved to backend:', result.gameId);
+          } else {
+            console.warn('⚠️ Backend save failed:', result.error);
+          }
+          
+          return result;
+        } catch (error) {
+          // Only log if backend is expected to be running
+          if (window.location.hostname === 'localhost' || window.location.port === '3000') {
+            console.warn('⚠️ Backend not available for data persistence:', error.message);
+            console.log('ℹ️ To enable persistence, start the server with: npm start');
+          }
+          throw error;
+        }
+      }
+
+      /**
        * Enhanced updateDashboardData with change detection
        * This replaces the original time-based approach
        */
@@ -7257,6 +7306,11 @@
             territories: Object.keys(dashboardData.territories).length,
             phase: dashboardData.phase,
             turn: dashboardData.turnNumber
+          });
+          
+          // Send data to backend for historical persistence
+          sendGameDataToBackend(dashboardData).catch(err => {
+            console.warn('⚠️ Could not send data to backend:', err.message);
           });
           
           // Dispatch custom event for dashboard listening

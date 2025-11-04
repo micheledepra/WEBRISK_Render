@@ -31,7 +31,13 @@ class MultiplayerGameAdapter {
     console.log('🚀 Initializing multiplayer game with session:', sessionData);
     
     this.sessionId = sessionData.sessionCode || sessionData.sessionId;
-    this.userId = this.client.userId;
+    
+    // Get userId from localStorage (set by lobby) or client
+    this.userId = localStorage.getItem('risk_userId') || 
+                  this.client.userId || 
+                  window.multiplayerState?.userId;
+    
+    console.log('🆔 Using userId:', this.userId);
     
     // Extract users from session (lobby names and colors)
     const users = Object.entries(sessionData.players || {}).map(([name, data]) => ({
@@ -66,6 +72,7 @@ class MultiplayerGameAdapter {
     window.multiplayerState.myPlayerName = myPlayerName;
     
     console.log('✅ My player name:', myPlayerName);
+    console.log('   My userId:', this.userId);
     
     // Sync initial game state
     if (sessionData.gameState) {

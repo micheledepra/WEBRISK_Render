@@ -219,6 +219,73 @@
       text-align: center;
       font-size: 0.9em;
     }
+    .saved-game-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 215, 0, 0.3);
+      border-radius: 10px;
+      padding: 15px;
+      margin: 10px 0;
+      transition: all 0.3s ease;
+    }
+    .saved-game-item:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #ffd700;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(255, 215, 0, 0.3);
+    }
+    .saved-game-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .saved-game-name {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ffd700;
+    }
+    .saved-game-badge {
+      background: rgba(255, 215, 0, 0.2);
+      color: #ffd700;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.8em;
+    }
+    .saved-game-info {
+      color: #bbb;
+      font-size: 0.9em;
+      margin: 5px 0;
+    }
+    .saved-game-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .saved-game-actions button {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.2s;
+    }
+    .load-btn {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+    .load-btn:hover {
+      background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      transform: scale(1.05);
+    }
+    .delete-btn {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+    .delete-btn:hover {
+      background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+      transform: scale(1.05);
+    }
   </style>
 </head>
 <body>
@@ -234,6 +301,7 @@
     <div id="menuView" class="view active">
       <button class="btn btn-primary" onclick="showCreateView()">Create Game</button>
       <button class="btn btn-secondary" onclick="showJoinView()">Join Game</button>
+      <button class="btn btn-success" onclick="showLoadView()">📂 Load Saved Game</button>
       <a href="../../index.html" class="btn" style="margin-top: 20px;">Back to Main Menu</a>
     </div>
 
@@ -328,7 +396,20 @@
       <button class="btn btn-success" onclick="startGame()" id="startBtn" style="display: none;" disabled>Start Game</button>
       <button class="btn" onclick="leaveGame()">Leave Game</button>
     </div>
+
+    <!-- Load Saved Game View -->
+    <div id="loadView" class="view">
+      <h2>📂 Load Saved Game</h2>
+      <div id="savedGamesList"></div>
+      <div id="noSavesMessage" class="info-box" style="display: none;">
+        No saved games found. Start a new game to create saves!
+      </div>
+      <button class="btn" onclick="showMenu()">Back</button>
+    </div>
   </div>
+  
+  <!-- Include SaveGameManager -->
+  <script src="../../js/SaveGameManager.js"></script>
   
   <script>
     let client = null;
@@ -588,6 +669,99 @@
       selectColor('red', 'join');
     }
 
+    function showLoadView() {
+      showView('loadView');
+      clearErrors();
+      loadSavedGames();
+    }
+
+    function loadSavedGames() {
+      const listEl = document.getElementById('savedGamesList');
+      const noSavesEl = document.getElementById('noSavesMessage');
+      
+      if (!window.SaveGameManager) {
+        console.error('SaveGameManager not available');
+        listEl.innerHTML = '';
+        noSavesEl.style.display = 'block';
+        return;
+      }
+
+      const saves = window.SaveGameManager.getAllSaves();
+      
+      if (saves.length === 0) {
+        listEl.innerHTML = '';
+        noSavesEl.style.display = 'block';
+        return;
+      }
+
+      noSavesEl.style.display = 'none';
+      listEl.innerHTML = saves.map(save => {
+        const dateTime = window.SaveGameManager.getFormattedDateTime(save.timestamp);
+        const playerNames = save.players.map(p => p.name).join(', ');
+        
+        return `
+          <div class="saved-game-item">
+            <div class="saved-game-header">
+              <div class="saved-game-name">${save.name}</div>
+              <div class="saved-game-badge">${save.isMultiplayer ? 'Multiplayer' : 'Single Player'}</div>
+            </div>
+            <div class="saved-game-info">
+              📅 ${dateTime.date} at ${dateTime.time} (${dateTime.relative})
+            </div>
+            <div class="saved-game-info">
+              👥 Players: ${playerNames}
+            </div>
+            <div class="saved-game-info">
+              ⏱️ Duration: ${save.duration} | Turn: ${save.turnNumber}
+            </div>
+            ${save.sessionCode ? `<div class="saved-game-info">🎮 Session: ${save.sessionCode}</div>` : ''}
+            <div class="saved-game-actions">
+              <button class="load-btn" onclick="loadSavedGame('${save.id}')">
+                📂 Load Game
+              </button>
+              <button class="delete-btn" onclick="deleteSavedGame('${save.id}')">
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function loadSavedGame(saveId) {
+      try {
+        const saveData = window.SaveGameManager.loadGame(saveId);
+        console.log('Loading saved game:', saveData);
+        
+        // Redirect to game page with save ID
+        if (saveData.isMultiplayer && saveData.sessionCode) {
+          // Multiplayer game - redirect to multiplayer game page
+          window.location.href = `multiplayer-game.html?session=${saveData.sessionCode}&loadSave=${saveId}`;
+        } else {
+          // Single player game - redirect to main game page
+          window.location.href = `../../game.html?loadSave=${saveId}`;
+        }
+      } catch (error) {
+        console.error('Error loading game:', error);
+        alert(`Failed to load game: ${error.message}`);
+      }
+    }
+
+    function deleteSavedGame(saveId) {
+      if (!confirm('Are you sure you want to delete this saved game? This cannot be undone.')) {
+        return;
+      }
+
+      try {
+        window.SaveGameManager.deleteSave(saveId);
+        console.log('Deleted save:', saveId);
+        loadSavedGames(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting save:', error);
+        alert(`Failed to delete save: ${error.message}`);
+      }
+    }
+
     function selectColor(color, context) {
       currentPlayerColor = color;
       const picker = document.getElementById(`${context}ColorPicker`);
@@ -614,6 +788,11 @@
     function createGame() {
       const name = document.getElementById('createName').value.trim();
       const maxPlayers = parseInt(document.getElementById('createPlayerCount').value);
+      
+      // Clear old session data before creating new game
+      localStorage.removeItem('lastPlayerName');
+      localStorage.removeItem('lastSessionCode');
+      console.log('🗑️ Cleared old session data');
       
       // Validation
       const nameError = validateName(name);
@@ -660,6 +839,11 @@
     function joinGame() {
       const name = document.getElementById('joinName').value.trim();
       const sessionCode = document.getElementById('joinCode').value.trim().toUpperCase();
+      
+      // Clear old session data before joining new game
+      localStorage.removeItem('lastPlayerName');
+      localStorage.removeItem('lastSessionCode');
+      console.log('🗑️ Cleared old session data');
       
       // Validation
       const nameError = validateName(name);

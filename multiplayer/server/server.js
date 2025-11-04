@@ -810,6 +810,31 @@ io.on(EVENTS.CONNECTION, (socket) => {
         return;
       }
       
+      // Allow loading session data even if game is in progress (for reconnection)
+      // But only if this socket is one of the players in the session
+      if (session.state === 'playing') {
+        console.log('✅ Loading data for game in progress:', sessionCode);
+        
+        // Join the session room for receiving updates
+        socket.join(sessionCode);
+        
+        // Try to match player by finding their data in the session
+        let matchedPlayer = null;
+        for (const [userId, playerData] of session.players.entries()) {
+          // Check if this socket's old ID matches (reconnection case)
+          if (playerData.socketId !== socket.id) {
+            const oldSocketConnected = io.sockets.sockets.get(playerData.socketId);
+            if (!oldSocketConnected) {
+              // Old socket disconnected, update to new socket ID
+              matchedPlayer = { userId, oldSocketId: playerData.socketId };
+              console.log(`🔄 Updating socket ID for ${playerData.playerName}: ${playerData.socketId} → ${socket.id}`);
+              playerData.socketId = socket.id;
+              break;
+            }
+          }
+        }
+      }
+      
       console.log('✅ Sending session data for:', sessionCode);
       
       // Convert Map to object

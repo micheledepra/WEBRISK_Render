@@ -844,6 +844,14 @@
         console.log('📋 Session code:', sessionCode);
         window.multiplayerState.sessionId = sessionCode;
         
+        // Clear old session data if it doesn't match current session
+        const savedSessionCode = localStorage.getItem('lastSessionCode');
+        if (savedSessionCode && savedSessionCode !== sessionCode) {
+          console.log('🗑️ Clearing old session data (different session)');
+          localStorage.removeItem('lastPlayerName');
+          localStorage.removeItem('lastSessionCode');
+        }
+        
         // Initialize multiplayer client
         multiplayerClient = new MultiplayerClient();
         window.multiplayerClient = multiplayerClient;

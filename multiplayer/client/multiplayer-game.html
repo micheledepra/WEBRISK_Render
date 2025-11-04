@@ -6,51 +6,98 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <title>Risk Multiplayer Game</title>
   <link rel="icon" type="image/x-icon" href="../../favicon.ico">
   
-  <!-- Firebase SDK - Cloud Persistence -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
   <script src="../../js/firebase-config.js"></script>
   
-  <!-- Original game styles -->
+  <!-- Import ALL game.html styles -->
   <link rel="stylesheet" href="../../css/combat-system.css">
   <link rel="stylesheet" href="../../css/combat-animations.css">
   <link rel="stylesheet" href="../../css/combat-testing.css">
   <link rel="stylesheet" href="../../css/army-counts.css">
   
-  <!-- Multiplayer UI styles -->
-  <link rel="stylesheet" href="multiplayer-ui.css">
-  
   <style>
-    /* Multiplayer-specific overrides */
-    body {
-      font-family: 'Australian Flying Corps Stencil', Arial, sans-serif;
-      background-color: #f0f0f0;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+    /* Import game.html font definitions */
+    @font-face {
+      font-family: 'Australian Flying Corps Stencil';
+      src: url('../../res/Font/Australianflyingcorpsstencil-gpR1.ttf') format('truetype');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
     }
+
+    @font-face {
+      font-family: 'Mechfire';
+      src: url('../../res/Font/Second font/Mechfire-jq3v.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: 'Mechfire';
+      src: url('../../res/Font/Second font/MechfireBold-z1e1.ttf') format('truetype');
+      font-weight: bold;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    /* Custom cursor */
+    * {
+      cursor: url('../../images/cursor1-32x32.png'), auto;
+    }
+
+    .custom-cursor {
+      position: fixed;
+      width: 32px;
+      height: 32px;
+      pointer-events: none;
+      z-index: 99999;
+      transition: transform 0.1s ease;
+      filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.5));
+    }
+
+    .custom-cursor img {
+      width: 100%;
+      height: 100%;
+    }
+
+    .custom-cursor.clicking {
+      transform: rotate(-15deg) scale(0.9);
+    }
+
+    body.custom-cursor-active * {
+      cursor: none !important;
+    }
+
+    /* ============================================
+       MULTIPLAYER OVERLAY - NON-INTRUSIVE LAYER
+       ============================================ */
     
-    /* Multiplayer HUD - Top bar */
+    /* Multiplayer HUD - Top bar overlay */
     #multiplayer-hud {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       height: 60px;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(22, 33, 62, 0.95) 100%);
       border-bottom: 3px solid #ffd700;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: space-between;
       padding: 0 20px;
       z-index: 10000;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+    }
+    
+    #multiplayer-hud.active {
+      display: flex;
     }
     
     #multiplayer-hud .session-info {
@@ -60,28 +107,6 @@
       color: #ffd700;
       font-weight: bold;
       font-size: 1.1em;
-    }
-    
-    #multiplayer-hud .player-mapping-badge {
-      background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 2px solid #90caf9;
-      font-size: 1em;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    #multiplayer-hud .player-mapping-badge .player-color-dot {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     
     #multiplayer-hud .session-code {
@@ -142,16 +167,10 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       cursor: pointer;
       transition: transform 0.2s;
-      position: relative;
     }
     
     #multiplayer-hud .player-dot:hover {
       transform: scale(1.2);
-    }
-    
-    #multiplayer-hud .player-dot.offline {
-      opacity: 0.3;
-      border-color: #666;
     }
     
     #multiplayer-hud .player-dot.current-turn {
@@ -162,57 +181,6 @@
     @keyframes pulse-turn {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.15); }
-    }
-    
-    /* Action Log - Right side */
-    #action-log {
-      position: fixed;
-      right: 20px;
-      top: 80px;
-      width: 300px;
-      max-height: 400px;
-      background: rgba(15, 32, 62, 0.95);
-      border: 2px solid #ffd700;
-      border-radius: 12px;
-      padding: 15px;
-      color: #eee;
-      z-index: 9000;
-      overflow-y: auto;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-    }
-    
-    #action-log h3 {
-      margin: 0 0 10px 0;
-      color: #ffd700;
-      border-bottom: 2px solid #ffd700;
-      padding-bottom: 8px;
-    }
-    
-    #action-log ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    #action-log li {
-      padding: 8px;
-      margin: 5px 0;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 6px;
-      font-size: 0.9em;
-      border-left: 3px solid #ffd700;
-    }
-    
-    #action-log li.action-attack {
-      border-left-color: #f44336;
-    }
-    
-    #action-log li.action-fortify {
-      border-left-color: #2196f3;
-    }
-    
-    #action-log li.action-reinforce {
-      border-left-color: #4caf50;
     }
     
     /* Loading screen */
@@ -227,6 +195,8 @@
       justify-content: center;
       align-items: center;
       z-index: 20000;
+      flex-direction: column;
+      color: #ffd700;
     }
     
     #mp-loading-screen .spinner {
@@ -243,59 +213,43 @@
       to { transform: rotate(360deg); }
     }
     
-    /* Map dimming when not player's turn */
-    #svg-map.not-my-turn {
-      opacity: 0.6;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-    
-    /* Adjust game container for multiplayer HUD */
-    .game-container {
+    /* Push game content down when HUD is visible */
+    body.multiplayer-active #game-root {
       margin-top: 60px;
       height: calc(100vh - 60px);
+      overflow: hidden;
     }
     
-    /* Turn indicator in sidebar */
-    .turn-indicator-mp {
-      background: rgba(255, 215, 0, 0.1);
-      border: 2px solid #ffd700;
+    /* Copy notification */
+    .copy-notification {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: #4caf50;
+      color: white;
+      padding: 15px 30px;
       border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 15px;
-      text-align: center;
-    }
-    
-    .turn-indicator-mp.my-turn {
-      background: rgba(76, 175, 80, 0.2);
-      border-color: #4caf50;
-      animation: pulse-my-turn 2s infinite;
-    }
-    
-    @keyframes pulse-my-turn {
-      0%, 100% { box-shadow: 0 0 10px rgba(76, 175, 80, 0.5); }
-      50% { box-shadow: 0 0 25px rgba(76, 175, 80, 0.8); }
-    }
-    
-    .turn-indicator-mp .turn-label {
-      font-size: 0.9em;
-      color: #999;
-      margin-bottom: 5px;
-    }
-    
-    .turn-indicator-mp .turn-player {
-      font-size: 1.3em;
       font-weight: bold;
+      z-index: 10001;
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
     }
     
-    /* Waiting for turn overlay */
+    .copy-notification.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+    
+    /* Waiting overlay - when not player's turn */
     #waiting-overlay {
       position: fixed;
       top: 60px;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.6);
       display: none;
       justify-content: center;
       align-items: center;
@@ -322,402 +276,70 @@
       font-size: 2em;
     }
     
-    #waiting-overlay .waiting-message .spinner {
-      margin: 20px auto;
-    }
-    
-    /* Copy notification */
-    .copy-notification {
-      position: fixed;
-      top: 80px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-100px);
-      background: #4caf50;
+    /* Player mapping badge */
+    .player-mapping-badge {
+      background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
       color: white;
-      padding: 15px 30px;
+      padding: 8px 16px;
       border-radius: 8px;
+      border: 2px solid #90caf9;
+      font-size: 1em;
       font-weight: bold;
-      z-index: 10001;
-      opacity: 0;
-      transition: all 0.3s ease;
-      pointer-events: none;
-    }
-    
-    .copy-notification.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
-    
-    /* Mobile Sidebar Toggle Button */
-    .mobile-sidebar-toggle {
-      display: none;
-      position: fixed;
-      left: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 50px;
-      height: 50px;
-      background: rgba(255, 215, 0, 0.95);
-      border: 3px solid #1a1a2e;
-      border-radius: 50%;
-      z-index: 9999;
-      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+      display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 24px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-      transition: all 0.3s ease;
+      gap: 8px;
     }
-
-    .mobile-sidebar-toggle:hover {
-      background: rgba(255, 215, 0, 1);
-      transform: translateY(-50%) scale(1.1);
+    
+    .player-mapping-badge .player-color-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
-
-    .mobile-sidebar-toggle.hidden {
-      display: none !important;
-    }
-
-    /* Mobile responsiveness - LANDSCAPE MODE (Horizontal) */
-    @media (max-width: 1024px) and (orientation: landscape) {
-      /* Show toggle button */
-      .mobile-sidebar-toggle {
-        display: flex !important;
-      }
-
-      /* Sidebar collapsed by default in landscape */
-      .sidebar {
-        position: fixed !important;
-        left: 0 !important;
-        top: 60px !important;
-        bottom: 0 !important;
-        width: 280px !important;
-        height: auto !important;
-        max-height: calc(100vh - 60px) !important;
-        transform: translateX(-100%) !important;
-        transition: transform 0.3s ease-in-out !important;
-        z-index: 9998 !important;
-        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3) !important;
-        padding: 15px !important;
-        overflow-y: auto !important;
-      }
-
-      .sidebar.mobile-expanded {
-        transform: translateX(0) !important;
-      }
-
-      /* When sidebar is expanded, move the toggle button */
-      .sidebar.mobile-expanded ~ .mobile-sidebar-toggle {
-        left: 290px !important;
-      }
-
-      /* Map takes full width when sidebar collapsed */
-      .map-container {
-        margin-left: 0 !important;
-        width: 100% !important;
-        position: relative !important;
-      }
-
-      /* Adjust HUD for landscape */
+    
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
       #multiplayer-hud {
-        height: 60px !important;
-        padding: 0 15px !important;
-        font-size: 0.9em;
-      }
-
-      #multiplayer-hud .session-code {
-        font-size: 1.1em;
-        padding: 6px 12px;
-      }
-
-      #action-log {
-        max-width: 350px;
-        max-height: 250px;
-        font-size: 0.9em;
-      }
-
-      .game-container {
-        margin-top: 60px !important;
-        height: calc(100vh - 60px) !important;
-        flex-direction: row !important;
-      }
-
-      /* Ensure sidebar content is readable */
-      .sidebar * {
-        font-size: 0.9em;
-      }
-
-      .player-panel {
-        padding: 8px !important;
-        margin-bottom: 8px !important;
-      }
-    }
-
-    /* Mobile responsiveness - PORTRAIT MODE (Vertical) */
-    @media (max-width: 768px) and (orientation: portrait) {
-      /* Hide landscape toggle button */
-      .mobile-sidebar-toggle {
-        display: none !important;
-      }
-
-      /* Portrait mode adjustments */
-      #multiplayer-hud {
-        height: auto !important;
-        padding: 8px 10px !important;
-        flex-wrap: wrap !important;
-        gap: 8px !important;
+        height: auto;
+        padding: 8px 10px;
+        flex-wrap: wrap;
+        gap: 8px;
         font-size: 0.85em;
       }
-
-      #multiplayer-hud .session-info {
-        gap: 10px;
-        width: 100%;
-        justify-content: space-between;
-      }
-
+      
       #multiplayer-hud .session-code {
         font-size: 1em;
         padding: 6px 10px;
-        letter-spacing: 0.1em;
       }
-
-      #multiplayer-hud .online-players {
-        width: 100%;
-        justify-content: center;
+      
+      body.multiplayer-active #game-root {
+        margin-top: 80px;
+        height: calc(100vh - 80px);
       }
-
-      .game-container {
-        margin-top: 80px !important;
-        height: calc(100vh - 80px) !important;
-        flex-direction: column !important;
-      }
-
-      /* Sidebar at bottom, can be pulled up */
-      .sidebar {
-        position: fixed !important;
-        bottom: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        top: auto !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        max-height: 50vh !important;
-        height: auto !important;
-        transform: translateY(calc(100% - 60px)) !important;
-        transition: transform 0.3s ease-in-out !important;
-        z-index: 9998 !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        border-top: 3px solid rgba(255, 215, 0, 0.7) !important;
-        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3) !important;
-        padding: 12px !important;
-      }
-
-      .sidebar.mobile-expanded {
-        transform: translateY(0) !important;
-      }
-
-      /* Pull-up indicator for sidebar */
-      .sidebar::before {
-        content: '☰' !important;
-        position: absolute !important;
-        top: 15px !important;
-        left: 50% !important;
-        transform: translateX(-50%) !important;
-        font-size: 28px !important;
-        color: #ffd700 !important;
-        z-index: 10 !important;
-        pointer-events: none !important;
-        display: block !important;
-      }
-
-      /* Map container centered and taking available space */
-      .map-container {
-        width: 100% !important;
-        height: calc(50vh - 80px) !important;
-        max-height: calc(50vh - 80px) !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        margin: 0 auto !important;
-        position: relative !important;
-      }
-
-      #risk-map {
-        max-width: 100% !important;
-        max-height: 100% !important;
-        width: auto !important;
-        height: auto !important;
-      }
-
-      /* Resize sidebar content for readability */
-      .sidebar > * {
-        font-size: 0.92em !important;
-      }
-
-      .turn-counter-panel,
-      .phase-progress-panel {
-        padding: 8px !important;
-        font-size: 0.88em !important;
-        margin-bottom: 8px !important;
-      }
-
-      .player-panel {
-        padding: 8px !important;
-        margin-bottom: 8px !important;
-      }
-
-      .player-info h3 {
-        font-size: 1em !important;
-      }
-
-      .player-stats {
-        font-size: 0.85em !important;
-      }
-
-      .reinforcement-panel {
-        padding: 10px !important;
-      }
-
-      .end-turn-container {
-        padding: 10px !important;
-      }
-
-      button, .button {
-        min-height: 44px !important;
-        padding: 10px 16px !important;
-        font-size: 0.95em !important;
-        touch-action: manipulation !important;
-      }
-
-      #action-log {
-        width: calc(100% - 20px) !important;
-        max-height: 180px !important;
-        right: 10px !important;
-        left: 10px !important;
-        bottom: calc(50vh + 10px) !important;
-        font-size: 0.85em;
-      }
-
-      /* Modals optimized for portrait */
-      .modal-content {
-        width: 95% !important;
-        max-width: 95% !important;
-        max-height: 85vh !important;
-        font-size: 0.95em;
-      }
-    }
-
-    /* Small mobile devices (phones in portrait) */
-    @media (max-width: 480px) and (orientation: portrait) {
-      #multiplayer-hud {
-        padding: 6px 8px !important;
-        font-size: 0.8em;
-      }
-
-      #multiplayer-hud .session-code {
-        font-size: 0.95em;
-        padding: 5px 8px;
-      }
-
-      .sidebar {
-        transform: translateY(calc(100% - 50px)) !important;
-        max-height: 55vh !important;
-        padding: 12px 8px !important;
-      }
-
-      .sidebar::before {
-        font-size: 24px !important;
-        top: 12px !important;
-      }
-
-      .map-container {
-        height: calc(45vh - 80px) !important;
-        max-height: calc(45vh - 80px) !important;
-      }
-
-      .sidebar > * {
-        font-size: 0.88em !important;
-      }
-
-      .sidebar .player-panel {
-        padding: 6px !important;
-      }
-
-      #action-log {
-        bottom: calc(55vh + 10px) !important;
-        font-size: 0.8em;
-        max-height: 150px;
-      }
-    }
-
-    /* Extra small landscape (small phones in landscape) */
-    @media (max-height: 500px) and (orientation: landscape) {
-      .sidebar {
-        width: 280px;
-        font-size: 0.9em;
-      }
-
-      .sidebar > * {
-        padding: 6px;
-      }
-
-      #multiplayer-hud {
-        height: 50px;
-        padding: 0 10px;
-        font-size: 0.85em;
-      }
-
-      .game-container {
-        margin-top: 50px;
-        height: calc(100vh - 50px);
-      }
-
-      #action-log {
-        max-height: 200px;
-        font-size: 0.85em;
-      }
-    }
-    
-    /* Fix for missing resource images */
-    .custom-cursor {
-      cursor: pointer !important;
-    }
-    
-    .custom-cursor img {
-      /* Fallback if image doesn't load */
-      display: none;
-    }
-    
-    /* Handle missing water texture gracefully */
-    .water-layer {
-      background: linear-gradient(135deg, #2c5f8d 0%, #1a3a52 100%) !important;
-    }
-    
-    /* Ensure map preview loads with fallback */
-    .map-preview {
-      background-color: #1a1a2e;
     }
   </style>
 </head>
 <body>
-  <!-- Loading Screen -->
+  <!-- Custom Cursor (from game.html) -->
+  <div class="custom-cursor">
+    <img src="../../images/cursor1-32x32.png" alt="cursor" onerror="this.style.display='none'">
+  </div>
+
+  <!-- Multiplayer Loading Screen -->
   <div id="mp-loading-screen">
-    <div style="text-align: center; color: #ffd700;">
-      <div class="spinner"></div>
-      <h2 style="font-size: 2em; margin-bottom: 10px;">Connecting to Game...</h2>
-      <p id="loading-message" style="font-size: 1.2em;">Initializing multiplayer session</p>
-    </div>
+    <div class="spinner"></div>
+    <h2 style="font-size: 2em; margin: 10px 0;">Connecting to Game...</h2>
+    <p id="loading-message" style="font-size: 1.2em;">Initializing multiplayer session</p>
   </div>
   
-  <!-- Multiplayer HUD -->
-  <div id="multiplayer-hud" style="display:none;">
+  <!-- Multiplayer HUD Overlay -->
+  <div id="multiplayer-hud">
     <div class="session-info">
       <div>
         <span style="font-size: 0.8em;">SESSION:</span>
-        <div class="session-code" id="hud-session-code" title="Click to copy">
-          ------
-        </div>
+        <div class="session-code" id="hud-session-code" title="Click to copy"></div>
       </div>
       <div class="player-mapping-badge" id="player-mapping-badge" style="display:none;">
         <div class="player-color-dot" id="player-color-dot"></div>
@@ -738,13 +360,11 @@
     
     <div class="online-players">
       <span style="font-size: 0.9em;">Players:</span>
-      <div id="online-player-list" style="display: flex; gap: 8px;">
-        <!-- Player dots will be added dynamically -->
-      </div>
+      <div id="online-player-list" style="display: flex; gap: 8px;"></div>
     </div>
   </div>
   
-  <!-- Waiting for Turn Overlay -->
+  <!-- Waiting Overlay -->
   <div id="waiting-overlay">
     <div class="waiting-message">
       <h2>⏳ Waiting for Turn</h2>
@@ -753,38 +373,21 @@
     </div>
   </div>
   
-  <!-- Action Log -->
-  <div id="action-log" style="display:none;">
-    <h3>📜 Recent Actions</h3>
-    <ul id="action-list">
-      <li>Game started!</li>
-    </ul>
-  </div>
-  
   <!-- Copy Notification -->
   <div class="copy-notification" id="copy-notification">
     ✅ Session code copied to clipboard!
   </div>
 
-  <!-- Mobile Sidebar Toggle Button (for landscape mode) -->
-  <div class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" title="Toggle sidebar">
-    ☰
-  </div>
-  
-  <!-- Main Game Container (will be injected from game.html content) -->
+  <!-- Game Container (will be injected from game.html) -->
   <div id="game-root"></div>
   
-  <!-- Socket.IO Client - Load with fallback -->
-  <script src="/socket.io/socket.io.js" 
-          onerror="console.warn('⚠️ Failed to load socket.io from server, trying CDN...'); 
-                   var script = document.createElement('script'); 
-                   script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js'; 
-                   script.onerror = function() { console.error('❌ Failed to load socket.io from CDN'); }; 
-                   document.head.appendChild(script);">
-  </script>
+  <!-- Socket.IO Client -->
+  <script src="/socket.io/socket.io.js"></script>
   
-  <!-- Load all game scripts in order -->
+  <!-- Multiplayer State Management -->
   <script>
+    console.log('🎮 Multiplayer Game Loading...');
+    
     // Global multiplayer state
     window.multiplayerState = {
       sessionId: null,
@@ -821,12 +424,11 @@
       if (elem) elem.textContent = message;
     }
     
-    console.log('🎮 Multiplayer Game Loading...');
     console.log('Session:', window.multiplayerState.sessionId);
     console.log('Player:', window.multiplayerState.playerName);
   </script>
   
-  <!-- Load game scripts -->
+  <!-- Load ALL game.html scripts in order -->
   <script src="../../js/MusicPlayer.js"></script>
   <script src="../../js/mapData.js"></script>
   <script src="../../js/territory-paths.js"></script>
@@ -867,77 +469,68 @@
   <script src="../../js/EnhancedAttackUI.js"></script>
   <script src="../../js/EnhancedAttackUI.integration.js"></script>
   <script src="../../js/StatisticsManager.js"></script>
+  <script src="../../js/SaveGameManager.js"></script>
   
-  <!-- Multiplayer specific modules -->
+  <!-- Multiplayer Bridge Scripts -->
   <script src="../shared/SessionCodeGenerator.js"></script>
   <script src="../shared/TurnValidator.js"></script>
   <script src="../shared/ConflictResolver.js"></script>
   <script src="MultiplayerClient.js"></script>
   <script src="MultiplayerGameAdapter.js"></script>
   
-  <!-- Multiplayer game initialization -->
+  <!-- Multiplayer Initialization & Bridging Logic -->
   <script>
     let multiplayerClient;
     let gameAdapter;
     
+    /**
+     * Main multiplayer initialization function
+     * Bridges multiplayer users → game players seamlessly
+     */
     async function initializeMultiplayerGame() {
       try {
-        console.log('🎮 Multiplayer Game Loading...');
+        updateLoadingMessage('Loading game structure...');
+        
+        // STEP 1: Load complete game.html content
+        await loadGameHTML();
+        
+        // STEP 1.5: Setup resource path watcher for dynamically added resources
+        setupResourcePathWatcher();
         
         updateLoadingMessage('Connecting to server...');
         
-        // Get session code from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const sessionCode = urlParams.get('session');
-        
-        if (!sessionCode) {
-          throw new Error('No session code in URL');
-        }
-        
-        console.log('📋 Session code:', sessionCode);
-        window.multiplayerState.sessionId = sessionCode;
-        
-        // Clear old session data if it doesn't match current session
-        const savedSessionCode = localStorage.getItem('lastSessionCode');
-        if (savedSessionCode && savedSessionCode !== sessionCode) {
-          console.log('🗑️ Clearing old session data (different session)');
-          localStorage.removeItem('lastPlayerName');
-          localStorage.removeItem('lastSessionCode');
-        }
-        
-        // Initialize multiplayer client
+        // STEP 2: Initialize multiplayer client
         multiplayerClient = new MultiplayerClient();
         window.multiplayerClient = multiplayerClient;
         
-        // Connect to server
-        updateLoadingMessage('Connecting to multiplayer server...');
         await multiplayerClient.connect();
         window.multiplayerState.isConnected = true;
         console.log('✅ Connected to server');
         
-        // Request session data from server
         updateLoadingMessage('Loading session data...');
-        const sessionData = await requestSessionData(sessionCode);
+        
+        // STEP 3: Get session data
+        const sessionData = await requestSessionData(window.multiplayerState.sessionId);
         console.log('📊 Session data received:', sessionData);
         
-        // Store session data globally
+        // Store session data
         window.multiplayerSession = {
-          code: sessionCode,
-          data: sessionData,
-          players: Object.entries(sessionData.players).map(([name, playerData]) => ({
+          code: sessionData.sessionId,
+          players: Object.entries(sessionData.players).map(([name, data]) => ({
             name: name,
-            color: playerData.color,
-            isHost: playerData.isHost,
-            socketId: playerData.socketId,
-            userId: playerData.userId
+            color: data.color,
+            socketId: data.socketId,
+            userId: data.userId,
+            isHost: data.isHost
           })),
-          currentPlayer: null // Will be set based on socket ID
+          currentPlayer: null,
+          state: sessionData.state
         };
         
-        // Find current player based on socket ID
+        // Find current player
         const mySocketId = multiplayerClient.socket.id;
         const currentPlayerEntry = Object.entries(sessionData.players).find(
-          ([name, data]) => data.socketId === mySocketId
+          ([name, data]) => data.socketId === mySocketId || data.userId === window.multiplayerState.userId
         );
         
         if (currentPlayerEntry) {
@@ -945,70 +538,40 @@
             name: currentPlayerEntry[0],
             ...currentPlayerEntry[1]
           };
-          window.multiplayerState.playerName = currentPlayerEntry[0];
           console.log('✅ Current player:', window.multiplayerSession.currentPlayer);
-        } else {
-          console.warn('⚠️ Could not find current player by socket ID');
         }
         
-        updateLoadingMessage('Connecting to game...');
+        updateLoadingMessage('Initializing game systems...');
         
-        // ✅ FIXED: Don't call joinSession for games already in progress
-        // The session data request already connected us to the game
-        if (sessionData.state !== 'playing') {
-          // Only join if game hasn't started yet
-          const joinResult = await multiplayerClient.joinSession(
-            sessionCode,
-            window.multiplayerState.playerName || 'Player'
-          );
-          console.log('✅ Joined session:', joinResult);
-        } else {
-          console.log('✅ Connected to game in progress');
-        }
-        
-        updateLoadingMessage('Loading game state...');
-        
-        // Request game state sync (with delay to ensure session is fully established)
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        if (multiplayerClient && multiplayerClient.sessionCode) {
-          await multiplayerClient.syncGameState();
-        }
-        
-        updateLoadingMessage('Initializing game...');
-        
-        // Load game HTML content
-        await loadGameContent();
-        
-        updateLoadingMessage('Setting up multiplayer...');
-        
-        // Initialize game systems with session player data
+        // STEP 4: Initialize game systems using session player data
         await initializeGameSystems();
         
         updateLoadingMessage('Connecting multiplayer adapter...');
         
-        // Initialize multiplayer adapter
+        // STEP 5: Initialize multiplayer adapter (bridge layer)
         gameAdapter = new MultiplayerGameAdapter(
           multiplayerClient,
           window.gameState,
-          window.turnManager
+          window.riskUI
         );
         window.gameAdapter = gameAdapter;
         
         await gameAdapter.initialize();
         
-        // Setup multiplayer UI
+        // STEP 6: Setup multiplayer UI overlay
         setupMultiplayerUI();
         
-        // Setup event listeners
+        // STEP 7: Setup event listeners
         setupMultiplayerListeners();
         
-        // Hide loading screen
+        // STEP 8: Hide loading screen & show HUD
         hideLoadingScreen();
+        document.body.classList.add('multiplayer-active');
+        document.getElementById('multiplayer-hud').classList.add('active');
         
         console.log('✅ Multiplayer game fully initialized!');
         console.log('   Session:', window.multiplayerSession.code);
         console.log('   Players:', window.multiplayerSession.players.map(p => p.name).join(', '));
-        console.log('   Current player:', window.multiplayerSession.currentPlayer?.name);
         
       } catch (error) {
         console.error('❌ Multiplayer initialization error:', error);
@@ -1016,95 +579,132 @@
       }
     }
     
-    // Request session data from server
-    function requestSessionData(sessionCode) {
-      return new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('Timeout waiting for session data'));
-        }, 10000);
-        
-        console.log('📥 Requesting session data for:', sessionCode);
-        
-        // Listen for session data response
-        multiplayerClient.socket.once('sessionData', (data) => {
-          clearTimeout(timeout);
-          console.log('✅ Session data received');
-          resolve(data);
-        });
-        
-        // Listen for errors
-        multiplayerClient.socket.once('error', (error) => {
-          clearTimeout(timeout);
-          reject(new Error(error.message || 'Failed to get session data'));
-        });
-        
-        // Request session data
-        multiplayerClient.socket.emit('requestSessionData', { sessionCode });
-      });
-    }
-    
-    async function loadGameContent() {
+    /**
+     * Load complete game.html content into #game-root
+     * FIXED: Prevents duplicate script execution and fixes all resource paths
+     */
+    async function loadGameHTML() {
       try {
-        // Load game.html content dynamically
         const response = await fetch('../../game.html');
         const html = await response.text();
         
-        // Extract body content (exclude head and scripts)
+        // Parse HTML
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         
-        // Get game container
-        const gameContainer = doc.querySelector('.game-container');
-        if (!gameContainer) {
-          throw new Error('Game container not found in game.html');
-        }
+        // Extract <style> tags from head
+        const styleElements = doc.querySelectorAll('head style');
+        styleElements.forEach(style => {
+          document.head.appendChild(style.cloneNode(true));
+        });
         
-        // Inject into game-root
-        document.getElementById('game-root').innerHTML = gameContainer.outerHTML;
+        // Extract body content WITHOUT script tags to prevent duplicate execution
+        const bodyClone = doc.body.cloneNode(true);
         
-        // Fix resource paths in injected content
+        // Remove all script tags (already loaded via <script> tags in head)
+        const scripts = bodyClone.querySelectorAll('script');
+        scripts.forEach(script => script.remove());
+        
+        // Insert cleaned body content
+        document.getElementById('game-root').innerHTML = bodyClone.innerHTML;
+        
+        // Fix ALL resource paths
         fixResourcePaths();
         
-        console.log('✅ Game content loaded with corrected paths');
+        console.log('✅ Game HTML loaded (scripts excluded to prevent duplicates)');
       } catch (error) {
-        console.error('❌ Failed to load game content:', error);
+        console.error('❌ Failed to load game HTML:', error);
         throw error;
       }
     }
     
     /**
-     * Fix relative paths in dynamically loaded content
+     * Fix ALL relative paths in dynamically loaded content
+     * FIXED: Comprehensive path correction for images, backgrounds, fonts, SVG
      */
     function fixResourcePaths() {
+      const gameRoot = document.getElementById('game-root');
+      
       // Fix image sources
-      document.querySelectorAll('#game-root img[src^="images/"], #game-root img[src^="res/"]').forEach(img => {
+      gameRoot.querySelectorAll('img').forEach(img => {
         const src = img.getAttribute('src');
-        if (!src.includes('../../')) {
-          img.src = '../../' + src;
-          console.log('Fixed image path:', src, '→', img.src);
+        if (src && !src.startsWith('http') && !src.startsWith('../../')) {
+          img.setAttribute('src', '../../' + src.replace(/^\.\.\//, ''));
         }
       });
       
-      // Fix background images in inline styles
-      document.querySelectorAll('#game-root [style*="background"]').forEach(el => {
+      // Fix background images in style attributes
+      gameRoot.querySelectorAll('[style]').forEach(el => {
         const style = el.getAttribute('style');
-        if (style && (style.includes('url("images/') || style.includes('url("res/') || 
-                      style.includes("url('images/") || style.includes("url('res/"))) {
-          const fixedStyle = style
-            .replace(/url\(["']?images\//g, 'url("../../images/')
-            .replace(/url\(["']?res\//g, 'url("../../res/')
-            .replace(/["']\)/g, '")'); // Normalize closing
-          el.setAttribute('style', fixedStyle);
-          console.log('Fixed background style');
+        if (style && style.includes('url(')) {
+          // Fix paths like url("images/...") or url("res/...") or url("../images/...")
+          const fixed = style.replace(
+            /url\(["']?(?!http|\/\/|data:|\.\.\/\.\.\/)(\.\.\/)?([^"')]+)["']?\)/g, 
+            'url("../../$2")'
+          );
+          el.setAttribute('style', fixed);
         }
       });
       
-      console.log('✅ Resource paths corrected');
+      // Fix SVG image elements
+      gameRoot.querySelectorAll('image').forEach(img => {
+        const href = img.getAttribute('href') || img.getAttribute('xlink:href');
+        if (href && !href.startsWith('http') && !href.startsWith('../../')) {
+          const fixed = '../../' + href.replace(/^\.\.\//, '');
+          img.setAttribute('href', fixed);
+          img.setAttribute('xlink:href', fixed);
+        }
+      });
+      
+      console.log('✅ All resource paths fixed with ../../ prefix');
     }
     
+    /**
+     * Watch for dynamically added CSS/JS resources and fix their paths
+     * Handles resources added by game scripts (like EnhancedAttackUI)
+     */
+    function setupResourcePathWatcher() {
+      const observer = new MutationObserver(mutations => {
+        mutations.forEach(mutation => {
+          mutation.addedNodes.forEach(node => {
+            // Fix dynamically added <link> stylesheets
+            if (node.nodeName === 'LINK' && node.rel === 'stylesheet') {
+              const href = node.getAttribute('href');
+              if (href && !href.startsWith('http') && !href.startsWith('../../')) {
+                node.setAttribute('href', '../../' + href.replace(/^\.\.\//, ''));
+                console.log(`🔧 Fixed dynamic CSS path: ${href} → ../../${href}`);
+              }
+            }
+            
+            // Fix dynamically added <script> sources
+            if (node.nodeName === 'SCRIPT' && node.src) {
+              const src = node.src;
+              const urlObj = new URL(src, window.location.href);
+              const pathname = urlObj.pathname;
+              if (!pathname.startsWith('/http') && !pathname.includes('../../')) {
+                const newSrc = pathname.replace(/^\//, '../../');
+                node.src = newSrc;
+                console.log(`🔧 Fixed dynamic script path: ${pathname} → ${newSrc}`);
+              }
+            }
+          });
+        });
+      });
+      
+      // Watch both <head> and <body> for dynamically added resources
+      observer.observe(document.head, { childList: true, subtree: true });
+      observer.observe(document.body, { childList: true, subtree: true });
+      
+      console.log('👁️ Resource path watcher active');
+    }
+    
+    /**
+     * Initialize game systems with multiplayer session players
+     * Maps: Multiplayer Users → Game Players
+     */
     async function initializeGameSystems() {
       try {
-        // Get player data from session
+        // Extract player data from session
         const sessionPlayers = window.multiplayerSession.players;
         const players = sessionPlayers.map(p => p.name);
         const playerColors = sessionPlayers.map(p => p.color);
@@ -1114,109 +714,73 @@
           console.log(`   ${p.name} - ${p.color} ${p.isHost ? '(HOST)' : ''}`);
         });
         
-        // Wait for game container to be fully rendered
+        // Wait for DOM to be ready
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Verify SVG map exists
         const svgMap = document.getElementById('risk-map');
         if (!svgMap) {
-          console.error('❌ SVG map not found after loading game.html');
-          throw new Error('SVG map element not found');
-        }
-        console.log('✅ SVG map verified:', svgMap);
-        
-        // Initialize RiskUI
-        const riskUI = new RiskUI();
-        window.riskUI = riskUI;
-        
-        riskUI.initGame(players, playerColors);
-        
-        // Initialize color manager globally
-        window.colorManager = riskUI.colorManager;
-        window.ColorManager = riskUI.colorManager;
-        
-        // ✅ FIX: Set gameState globally BEFORE combat system
-        window.gameState = riskUI.gameState;
-        
-        // Initialize combat system
-        if (typeof initializeCombatSystem !== 'undefined') {
-          initializeCombatSystem();
+          throw new Error('SVG map not found in loaded HTML');
         }
         
-        // Load game state from server if exists
-        const sessionData = window.multiplayerSession.data;
-        if (sessionData.gameState) {
-          console.log('📥 Restoring game state from server');
-          GameStateManager.restoreFromPersistence(sessionData.gameState);
-          
-          // ✅ FIX: Restore current turn from saved state
-          if (sessionData.currentPlayerName) {
-            const playerIndex = players.indexOf(sessionData.currentPlayerName);
-            if (playerIndex !== -1) {
-              window.gameState.currentTurn = playerIndex;
-              console.log(`✅ Restored current turn: ${sessionData.currentPlayerName} (index ${playerIndex})`);
-            }
-          }
-        } else {
-          console.log('🎲 New game - distributing territories');
-          // First time - distribute territories
-          riskUI.gameState.assignTerritoriesRandomly();
-          
-          // ✅ FIX: Set initial turn to first player
-          window.gameState.currentTurn = 0;
-          console.log(`✅ Set initial turn: ${players[0]} (index 0)`);
+        // Initialize RiskUI with multiplayer players
+        if (typeof RiskUI !== 'undefined') {
+          window.riskUI = new RiskUI(players, playerColors);
+          console.log('✅ RiskUI initialized');
         }
         
-        // Sync phases
-        riskUI.phaseManager.syncWithGameState();
-        riskUI.updatePlayerStats();
-        
-        // Initialize map
-        const riskMap = new RiskMap(riskUI);
-        const riskGame = new RiskGame(riskUI, riskMap);
-        
-        // ✅ FIX: Set all globals in correct order
-        window.riskMap = riskMap;
-        window.riskGame = riskGame;
-        window.phaseSynchronizer = riskUI.phaseSynchronizer;
-        window.turnManager = riskUI.turnManager;
-        
-        // Initialize army count manager
-        if (window.ArmyCountManager) {
-          riskUI.armyCountManager = new ArmyCountManager(riskUI.colorManager);
-          riskUI.setupArmyCountMapIntegration();
-          riskUI.initializeVisualsAfterMap();
+        // Initialize game state
+        if (typeof GameState !== 'undefined') {
+          window.gameState = new GameState(players, playerColors);
+          console.log('✅ GameState initialized');
         }
         
-        // Initialize turn management UI
-        if (window.initializeTurnManagement) {
-          window.initializeTurnManagement();
+        // Initialize TurnManager
+        if (typeof TurnManager !== 'undefined' && window.riskUI && window.gameState) {
+          window.turnManager = new TurnManager(window.gameState, window.riskUI);
+          console.log('✅ TurnManager initialized');
         }
         
-        // ✅ FIX: Update multiplayer state with current turn
-        const currentPlayerIndex = window.gameState.currentTurn;
-        if (currentPlayerIndex !== undefined && currentPlayerIndex >= 0) {
-          window.multiplayerState.currentPlayerName = players[currentPlayerIndex];
-          window.multiplayerState.isMyTurn = 
-            window.multiplayerState.currentPlayerName === window.multiplayerState.playerName;
-          console.log(`✅ Multiplayer state synced - current: ${window.multiplayerState.currentPlayerName}, isMyTurn: ${window.multiplayerState.isMyTurn}`);
+        // Initialize RiskMap
+        if (typeof RiskMap !== 'undefined') {
+          window.riskMap = new RiskMap();
+          console.log('✅ RiskMap initialized');
         }
         
-        console.log('✅ Game systems initialized');
-        console.log('   Players:', players.join(', '));
-        console.log('   Colors:', playerColors.join(', '));
-        console.log('   Current turn:', window.gameState.currentTurn, '(' + players[window.gameState.currentTurn] + ')');
+        console.log('✅ All game systems initialized');
       } catch (error) {
         console.error('❌ Failed to initialize game systems:', error);
         throw error;
       }
     }
     
+    /**
+     * Request session data from server
+     */
+    function requestSessionData(sessionCode) {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout waiting for session data'));
+        }, 10000);
+        
+        multiplayerClient.socket.once('sessionData', (data) => {
+          clearTimeout(timeout);
+          resolve(data);
+        });
+        
+        multiplayerClient.socket.once('error', (error) => {
+          clearTimeout(timeout);
+          reject(new Error(error.message || 'Failed to get session data'));
+        });
+        
+        multiplayerClient.socket.emit('requestSessionData', { sessionCode });
+      });
+    }
+    
+    /**
+     * Setup multiplayer UI overlay (non-intrusive)
+     */
     function setupMultiplayerUI() {
-      // Show multiplayer HUD
-      document.getElementById('multiplayer-hud').style.display = 'flex';
-      document.getElementById('action-log').style.display = 'block';
-      
       // Set session code
       const sessionCodeEl = document.getElementById('hud-session-code');
       sessionCodeEl.textContent = window.multiplayerState.sessionId;
@@ -1227,160 +791,44 @@
         showCopyNotification();
       });
       
-      // Update player list
-      updatePlayerList();
-      
       // Show player mapping badge
       showPlayerMapping();
       
-      // Update turn indicator
-      updateTurnIndicator();
-      
-      // Add turn indicator to sidebar
-      addTurnIndicatorToSidebar();
-      
-      // Setup mobile sidebar toggle
-      setupMobileSidebarToggle();
-      
-      // Initialize map interactivity state
-      updateMapInteractivity();
+      // Update player list
+      updatePlayerList();
       
       console.log('✅ Multiplayer UI ready');
     }
     
-    function setupMobileSidebarToggle() {
-      const toggleBtn = document.getElementById('mobile-sidebar-toggle');
-      const sidebar = document.querySelector('.sidebar');
-      
-      if (!toggleBtn) {
-        console.log('⚠️ Toggle button not found');
-        return;
-      }
-
-      if (!sidebar) {
-        console.log('⚠️ Sidebar not found yet, will retry...');
-        // Retry after a short delay to allow game content to load
-        setTimeout(() => {
-          setupMobileSidebarToggle();
-        }, 500);
-        return;
-      }
-      
-      console.log('✅ Setting up mobile sidebar toggle');
-      
-      // Toggle sidebar on button click (landscape mode)
-      toggleBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sidebar.classList.toggle('mobile-expanded');
-        
-        // Update button icon
-        if (sidebar.classList.contains('mobile-expanded')) {
-          toggleBtn.textContent = '✕';
-        } else {
-          toggleBtn.textContent = '☰';
-        }
-      });
-      
-      // For portrait mode - tap on sidebar top area to expand/collapse
-      let touchStartY = 0;
-      let touchStartTime = 0;
-      
-      sidebar.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = Date.now();
-      }, { passive: true });
-      
-      sidebar.addEventListener('touchend', (e) => {
-        const touchEndY = e.changedTouches[0].clientY;
-        const touchEndTime = Date.now();
-        const diff = touchStartY - touchEndY;
-        const duration = touchEndTime - touchStartTime;
-        
-        // Get sidebar bounds
-        const sidebarRect = sidebar.getBoundingClientRect();
-        const tapY = e.changedTouches[0].clientY - sidebarRect.top;
-        
-        // If tapped near the top (within 80px) and didn't swipe much and was a quick tap
-        if (tapY < 80 && Math.abs(diff) < 30 && duration < 300) {
-          e.preventDefault();
-          sidebar.classList.toggle('mobile-expanded');
-          console.log('📱 Sidebar toggled via tap');
-        }
-      }, { passive: false });
-      
-      // Close sidebar when clicking outside in landscape mode
-      document.addEventListener('click', (e) => {
-        // Only in landscape mode
-        if (window.matchMedia('(max-width: 1024px) and (orientation: landscape)').matches) {
-          if (!sidebar.contains(e.target) && 
-              !toggleBtn.contains(e.target) && 
-              sidebar.classList.contains('mobile-expanded')) {
-            sidebar.classList.remove('mobile-expanded');
-            toggleBtn.textContent = '☰';
-          }
-        }
-      });
-      
-      // Handle orientation changes
-      window.addEventListener('orientationchange', () => {
-        setTimeout(() => {
-          // Reset sidebar state on orientation change
-          sidebar.classList.remove('mobile-expanded');
-          toggleBtn.textContent = '☰';
-          console.log('📱 Orientation changed, sidebar reset');
-        }, 100);
-      });
-      
-      console.log('✅ Mobile sidebar toggle ready');
-    }
-    
-    let playerMappingRetries = 0;
-    const MAX_PLAYER_MAPPING_RETRIES = 10;
-    
+    /**
+     * Show player mapping badge (User → Player)
+     */
     function showPlayerMapping() {
-      // Get current player from multiplayerSession (set during initialization)
       const currentPlayer = window.multiplayerSession?.currentPlayer;
+      if (!currentPlayer) return;
       
-      if (!currentPlayer) {
-        if (playerMappingRetries < MAX_PLAYER_MAPPING_RETRIES) {
-          playerMappingRetries++;
-          console.warn(`⚠️ Missing current player data - retry ${playerMappingRetries}/${MAX_PLAYER_MAPPING_RETRIES}`);
-          setTimeout(() => showPlayerMapping(), 500); // Reduced delay
-          return;
-        } else {
-          console.error('❌ Failed to load player mapping after maximum retries');
-          return;
-        }
-      }
-      
-      // Reset retry counter on success
-      playerMappingRetries = 0;
-      
-      // Find which player number this user is (based on array index)
       const sessionPlayers = window.multiplayerSession.players;
       const myIndex = sessionPlayers.findIndex(p => p.name === currentPlayer.name);
       
-      if (myIndex === -1) {
-        console.warn('⚠️ Could not find player in session players list');
-        return;
-      }
+      if (myIndex === -1) return;
       
       const playerNumber = myIndex + 1;
-      const playerColor = currentPlayer.color || sessionPlayers[myIndex].color;
+      const playerColor = currentPlayer.color;
       
-      // Update badge
       const badge = document.getElementById('player-mapping-badge');
       const colorDot = document.getElementById('player-color-dot');
       const text = document.getElementById('player-mapping-text');
       
       if (badge && colorDot && text) {
-        colorDot.style.backgroundColor = playerColor;
-        text.textContent = `You are Player ${playerNumber}`;
         badge.style.display = 'flex';
-        console.log(`✅ Player mapping: ${currentPlayer.name} = Player ${playerNumber} (${playerColor})`);
+        colorDot.style.backgroundColor = playerColor;
+        text.textContent = `You are ${currentPlayer.name}`;
       }
     }
     
+    /**
+     * Setup multiplayer event listeners
+     */
     function setupMultiplayerListeners() {
       // Connection status
       multiplayerClient.on('onConnect', () => {
@@ -1391,58 +839,35 @@
         updateConnectionStatus('disconnected', 'Disconnected');
       });
       
-      multiplayerClient.on('onReconnecting', () => {
-        updateConnectionStatus('connecting', 'Reconnecting...');
-      });
-      
-      // Game state updates
-      multiplayerClient.on('onGameStateUpdate', (state) => {
-        console.log('📥 Game state updated');
-        addActionLog('Game state synchronized', 'system');
-      });
-      
       // Turn changes
       multiplayerClient.on('onTurnStart', (data) => {
-        console.log('🔄 Turn started:', data.currentPlayerName);
-        window.multiplayerState.currentPlayerName = data.currentPlayerName;
-        window.multiplayerState.isMyTurn = 
-          data.currentPlayerName === window.multiplayerState.playerName;
+        const currentPlayer = data.playerName;
+        const isMyTurn = currentPlayer === window.multiplayerSession.currentPlayer?.name;
+        
+        window.multiplayerState.isMyTurn = isMyTurn;
+        window.multiplayerState.currentPlayerName = currentPlayer;
         
         updateTurnIndicator();
         updateWaitingOverlay();
-        updateMapInteractivity();
         
-        addActionLog(
-          `${data.currentPlayerName}'s turn started (Turn ${data.turnNumber})`,
-          'system'
-        );
+        console.log(`🎯 Turn changed: ${currentPlayer} (My turn: ${isMyTurn})`);
       });
       
       // Player actions
       multiplayerClient.on('onPlayerAction', (data) => {
-        console.log('👤 Player action:', data);
-        
-        const actionText = formatPlayerAction(data);
-        addActionLog(actionText, data.action.type);
+        console.log('📥 Player action received:', data);
       });
       
-      // Player joined
-      multiplayerClient.on('onPlayerJoined', (data) => {
-        console.log('✅ Player joined:', data.playerName);
-        addActionLog(`${data.playerName} joined the game`, 'system');
-        updatePlayerList();
-      });
-      
-      // Player left
-      multiplayerClient.on('onPlayerLeft', (data) => {
-        console.log('👋 Player left:', data.playerName);
-        addActionLog(`${data.playerName} left the game`, 'system');
-        updatePlayerList();
-      });
+      // Player joined/left
+      multiplayerClient.on('onPlayerJoined', () => updatePlayerList());
+      multiplayerClient.on('onPlayerLeft', () => updatePlayerList());
       
       console.log('✅ Multiplayer listeners registered');
     }
     
+    /**
+     * Update connection status indicator
+     */
     function updateConnectionStatus(status, text) {
       const statusEl = document.getElementById('connection-status');
       const textEl = document.getElementById('connection-text');
@@ -1450,12 +875,14 @@
       statusEl.className = 'connection-status ' + status;
       textEl.textContent = text;
       
-      // Update emoji
       const emoji = status === 'connected' ? '🟢' : 
                     status === 'connecting' ? '🟡' : '🔴';
       statusEl.querySelector('span').textContent = emoji;
     }
     
+    /**
+     * Update player list (online dots)
+     */
     function updatePlayerList() {
       const listEl = document.getElementById('online-player-list');
       const sessionData = multiplayerClient.sessionData;
@@ -1467,12 +894,8 @@
       Object.entries(sessionData.players).forEach(([name, data]) => {
         const dot = document.createElement('div');
         dot.className = 'player-dot';
-        dot.style.backgroundColor = data.color || '#999';
-        dot.title = name + (data.isOnline ? ' (Online)' : ' (Offline)');
-        
-        if (!data.isOnline) {
-          dot.classList.add('offline');
-        }
+        dot.style.backgroundColor = data.color;
+        dot.title = name;
         
         if (name === window.multiplayerState.currentPlayerName) {
           dot.classList.add('current-turn');
@@ -1482,34 +905,24 @@
       });
     }
     
+    /**
+     * Update turn indicator in HUD
+     */
     function updateTurnIndicator() {
       const playerEl = document.getElementById('hud-current-player');
       const currentPlayer = window.multiplayerState.currentPlayerName;
       
       if (currentPlayer) {
         playerEl.textContent = currentPlayer;
-        
-        // Get player color
-        const sessionData = multiplayerClient.sessionData;
-        if (sessionData && sessionData.players[currentPlayer]) {
-          playerEl.style.color = sessionData.players[currentPlayer].color;
-        }
-      } else {
-        // ✅ FIX: Show fallback based on gameState if available
-        if (window.gameState && window.gameState.currentTurn !== undefined) {
-          const playerIndex = window.gameState.currentTurn;
-          const players = window.multiplayerSession?.players;
-          if (players && players[playerIndex]) {
-            playerEl.textContent = players[playerIndex].name;
-            playerEl.style.color = players[playerIndex].color;
-          }
-        }
+        playerEl.style.color = window.multiplayerState.isMyTurn ? '#4caf50' : '#ffd700';
       }
       
-      // Update player list dots as well
       updatePlayerList();
     }
     
+    /**
+     * Update waiting overlay (shown when not player's turn)
+     */
     function updateWaitingOverlay() {
       const overlay = document.getElementById('waiting-overlay');
       const playerNameEl = document.getElementById('waiting-player-name');
@@ -1518,138 +931,13 @@
         overlay.classList.remove('active');
       } else {
         overlay.classList.add('active');
-        playerNameEl.textContent = 
-          `${window.multiplayerState.currentPlayerName} is playing...`;
+        playerNameEl.textContent = `${window.multiplayerState.currentPlayerName} is playing...`;
       }
     }
     
-    let mapInteractivityRetries = 0;
-    const MAX_MAP_INTERACTIVITY_RETRIES = 20;
-    
-    function updateMapInteractivity() {
-      // Get SVG map element
-      const svgMap = document.getElementById('risk-map');
-      if (!svgMap) {
-        if (mapInteractivityRetries < MAX_MAP_INTERACTIVITY_RETRIES) {
-          mapInteractivityRetries++;
-          console.warn(`⚠️ SVG map not found - retry ${mapInteractivityRetries}/${MAX_MAP_INTERACTIVITY_RETRIES}`);
-          setTimeout(() => updateMapInteractivity(), 200); // Reduced delay from 500ms
-          return;
-        } else {
-          console.error('❌ SVG map element not found after maximum retries');
-          // Try one more time with direct query
-          const mapInRoot = document.querySelector('#game-root #risk-map');
-          if (mapInRoot) {
-            console.log('✅ Found SVG map in game-root container');
-            updateMapInteractivityWithElement(mapInRoot);
-            return;
-          }
-          return;
-        }
-      }
-      
-      // Reset retry counter on success
-      mapInteractivityRetries = 0;
-      updateMapInteractivityWithElement(svgMap);
-    }
-    
-    function updateMapInteractivityWithElement(svgMap) {
-      // Check if it's my turn
-      const isMyTurn = window.multiplayerState?.isMyTurn;
-      
-      if (isMyTurn) {
-        // Enable map interaction
-        svgMap.classList.remove('not-my-turn');
-        console.log('🟢 Map enabled - your turn');
-      } else {
-        // Dim and disable map interaction
-        svgMap.classList.add('not-my-turn');
-        console.log('⏸️ Map dimmed - waiting for other player');
-      }
-    }
-    
-    function addTurnIndicatorToSidebar() {
-      const sidebar = document.querySelector('.sidebar');
-      if (!sidebar) return;
-      
-      const indicator = document.createElement('div');
-      indicator.className = 'turn-indicator-mp';
-      indicator.id = 'turn-indicator-mp';
-      indicator.innerHTML = `
-        <div class="turn-label">Current Turn</div>
-        <div class="turn-player" id="sidebar-turn-player">Waiting...</div>
-      `;
-      
-      // Insert at top of sidebar
-      sidebar.insertBefore(indicator, sidebar.firstChild);
-      
-      // Update it
-      updateSidebarTurnIndicator();
-    }
-    
-    function updateSidebarTurnIndicator() {
-      const indicator = document.getElementById('turn-indicator-mp');
-      const playerEl = document.getElementById('sidebar-turn-player');
-      
-      if (!indicator || !playerEl) return;
-      
-      const currentPlayer = window.multiplayerState.currentPlayerName;
-      const isMyTurn = window.multiplayerState.isMyTurn;
-      
-      if (currentPlayer) {
-        playerEl.textContent = currentPlayer;
-        
-        if (isMyTurn) {
-          indicator.classList.add('my-turn');
-          playerEl.textContent += ' (YOU)';
-        } else {
-          indicator.classList.remove('my-turn');
-        }
-        
-        // Color code
-        const sessionData = multiplayerClient.sessionData;
-        if (sessionData && sessionData.players[currentPlayer]) {
-          playerEl.style.color = sessionData.players[currentPlayer].color;
-        }
-      }
-    }
-    
-    function addActionLog(text, type = 'system') {
-      const listEl = document.getElementById('action-list');
-      const li = document.createElement('li');
-      li.className = `action-${type}`;
-      li.textContent = text;
-      
-      // Add timestamp
-      const time = new Date().toLocaleTimeString();
-      li.title = time;
-      
-      listEl.insertBefore(li, listEl.firstChild);
-      
-      // Limit to 20 entries
-      while (listEl.children.length > 20) {
-        listEl.removeChild(listEl.lastChild);
-      }
-    }
-    
-    function formatPlayerAction(data) {
-      const player = data.playerName;
-      const action = data.action;
-      
-      switch (action.type) {
-        case 'reinforcement':
-          return `${player} placed ${action.armies} armies on ${action.territory}`;
-        case 'attack':
-          return `${player} attacked ${action.targetTerritory} from ${action.sourceTerritory}`;
-        case 'fortification':
-          return `${player} moved ${action.armies} armies from ${action.sourceTerritory} to ${action.targetTerritory}`;
-        case 'endTurn':
-          return `${player} ended their turn`;
-        default:
-          return `${player} performed ${action.type}`;
-      }
-    }
-    
+    /**
+     * Show copy notification
+     */
     function showCopyNotification() {
       const notification = document.getElementById('copy-notification');
       notification.classList.add('show');
@@ -1659,38 +947,27 @@
       }, 2000);
     }
     
+    /**
+     * Hide loading screen
+     */
     function hideLoadingScreen() {
       const loadingScreen = document.getElementById('mp-loading-screen');
       loadingScreen.style.display = 'none';
     }
     
+    /**
+     * Show error message
+     */
     function showError(message) {
       const loadingScreen = document.getElementById('mp-loading-screen');
       loadingScreen.innerHTML = `
         <div style="text-align: center; color: #f44336;">
-          <h2 style="font-size: 2em; margin-bottom: 20px;">❌ Error</h2>
-          <p style="font-size: 1.2em; margin-bottom: 30px; max-width: 600px;">${message}</p>
-          <button onclick="window.location.href='lobby.html'" style="
-            padding: 15px 30px;
-            font-size: 1.2em;
-            background: #ffd700;
-            color: #1a1a2e;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-          ">Back to Lobby</button>
-          <button onclick="location.reload()" style="
-            padding: 15px 30px;
-            font-size: 1.2em;
-            background: #2196f3;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 10px;
-          ">Retry</button>
+          <h2 style="font-size: 2em; margin-bottom: 10px;">❌ Error</h2>
+          <p style="font-size: 1.2em; margin-bottom: 20px;">${message}</p>
+          <button onclick="window.location.href='lobby.html'" 
+                  style="padding: 15px 30px; font-size: 1.2em; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer;">
+            Return to Lobby
+          </button>
         </div>
       `;
     }
@@ -1698,7 +975,7 @@
     // Handle page unload
     window.addEventListener('beforeunload', () => {
       if (multiplayerClient) {
-        multiplayerClient.leaveSession();
+        multiplayerClient.disconnect();
       }
     });
     
@@ -1708,6 +985,38 @@
     } else {
       initializeMultiplayerGame();
     }
+  </script>
+
+  <!-- Custom Cursor Animation (from game.html) -->
+  <script>
+    const customCursor = document.querySelector('.custom-cursor');
+    let mouseX = 0;
+    let mouseY = 0;
+
+    document.addEventListener('mousemove', (e) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+      customCursor.style.left = mouseX + 'px';
+      customCursor.style.top = mouseY + 'px';
+    });
+
+    document.addEventListener('mousedown', () => {
+      customCursor.classList.add('clicking');
+    });
+
+    document.addEventListener('mouseup', () => {
+      customCursor.classList.remove('clicking');
+    });
+
+    document.body.classList.add('custom-cursor-active');
+
+    document.addEventListener('mouseleave', () => {
+      customCursor.style.opacity = '0';
+    });
+
+    document.addEventListener('mouseenter', () => {
+      customCursor.style.opacity = '1';
+    });
   </script>
 </body>
 </html>

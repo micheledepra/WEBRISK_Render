@@ -574,10 +574,23 @@
 
       client.socket.on('gameStarting', (data) => {
         console.log('Game starting:', data);
-        showSuccessMessage('Game starting in 3 seconds...');
+        
+        // Store player info for the game page to use
+        localStorage.setItem('lastPlayerName', currentPlayerName);
+        localStorage.setItem('lastSessionCode', currentSession);
+        localStorage.setItem('lastPlayerColor', currentPlayerColor);
+        
+        console.log('✅ Stored player info for game:', {
+          name: currentPlayerName,
+          session: currentSession,
+          color: currentPlayerColor,
+          userId: localStorage.getItem('risk_userId')
+        });
+        
+        showSuccessMessage('Game starting in 2 seconds...');
         setTimeout(() => {
           window.location.href = `multiplayer-game.html?session=${currentSession}`;
-        }, 3000);
+        }, 2000);
       });
 
       // Error events

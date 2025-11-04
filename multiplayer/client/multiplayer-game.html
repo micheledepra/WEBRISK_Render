@@ -534,6 +534,17 @@
         // STEP 1: Load complete game.html content
         await loadGameHTML();
         
+        // Debug: Check what game objects are available immediately after loading
+        console.log('🔍 Checking available game objects after HTML load:', {
+          riskUI: typeof window.riskUI,
+          gameState: typeof window.gameState,
+          riskMap: typeof window.riskMap,
+          riskGame: typeof window.riskGame,
+          RiskUI: typeof window.RiskUI,
+          GameState: typeof window.GameState,
+          RiskMap: typeof window.RiskMap
+        });
+        
         // STEP 1.5: Setup resource path watcher for dynamically added resources
         setupResourcePathWatcher();
         
@@ -549,20 +560,54 @@
         
         updateLoadingMessage('Joining session...');
         
-        // STEP 3: Join session and get session data
+        // STEP 3: Request session data (game already started)
         const sessionData = await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => reject(new Error('Session join timeout')), 10000);
+          const timeout = setTimeout(() => {
+            console.error('❌ Session data request timeout');
+            console.log('Debug info:', {
+              sessionId: window.multiplayerState.sessionId,
+              userId: window.multiplayerState.userId,
+              playerName: window.multiplayerState.playerName,
+              socketConnected: multiplayerClient.socket?.connected
+            });
+            reject(new Error('Session join timeout'));
+          }, 15000);
           
+          // Listen for session data response
           multiplayerClient.socket.once('sessionData', (data) => {
             clearTimeout(timeout);
             console.log('📊 Session data received:', data);
             resolve(data);
           });
           
-          multiplayerClient.socket.emit('joinSession', {
+          // Listen for errors
+          multiplayerClient.socket.once('error', (error) => {
+            clearTimeout(timeout);
+            console.error('❌ Session error from server:', error);
+            reject(new Error(error.message || 'Failed to get session data'));
+          });
+          
+          // Get player info from localStorage (set by lobby)
+          const playerName = localStorage.getItem('lastPlayerName') || 
+                             window.multiplayerState.playerName || 
+                             'Player';
+          
+          const userId = localStorage.getItem('risk_userId') || 
+                         window.multiplayerState.userId;
+          
+          console.log('📤 Requesting session data for:', {
             sessionCode: window.multiplayerState.sessionId,
-            playerName: window.multiplayerState.playerName,
-            userId: window.multiplayerState.userId
+            playerName: playerName,
+            userId: userId
+          });
+          
+          // Store in global state for adapter
+          window.multiplayerState.playerName = playerName;
+          window.multiplayerState.userId = userId;
+          
+          // Request session data (game already started via lobby)
+          multiplayerClient.socket.emit('requestSessionData', {
+            sessionCode: window.multiplayerState.sessionId
           });
         });
         
@@ -570,12 +615,22 @@
         
         // STEP 4: Wait for game objects to be ready
         await waitForGame();
+        
         console.log('✅ Game objects ready:', {
           riskUI: !!window.riskUI,
           gameState: !!window.gameState,
           riskMap: !!window.riskMap,
           riskGame: !!window.riskGame
         });
+        
+        // IMPORTANT: If game.html has an init function, call it
+        if (typeof initGame === 'function') {
+          console.log('🎮 Calling game.html initGame() function...');
+          initGame();
+        } else if (window.riskUI && typeof window.riskUI.init === 'function') {
+          console.log('🎮 Calling riskUI.init()...');
+          window.riskUI.init();
+        }
         
         updateLoadingMessage('Setting up multiplayer...');
         
@@ -743,33 +798,87 @@
     }
     
     /**
-     * Wait for game objects to be available
-     * Polls until window.riskGame and core objects exist
+     * Wait for game objects to be initialized
+     * Checks for critical game components
      */
     async function waitForGame() {
-      const maxAttempts = 50;
+      const maxAttempts = 50; // 10 seconds total (50 * 200ms)
       let attempts = 0;
       
-      while (attempts < maxAttempts) {
-        if (window.riskGame || (window.riskUI && window.gameState && window.riskMap)) {
-          // Ensure riskGame object exists with all components
-          if (!window.riskGame) {
-            window.riskGame = {
-              riskUI: window.riskUI,
-              gameState: window.gameState,
-              riskMap: window.riskMap,
-              turnManager: window.turnManager,
-              phaseManager: window.phaseManager
-            };
-          }
-          return true;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 100));
-        attempts++;
-      }
+      console.log('⏳ Waiting for game objects to initialize...');
       
-      throw new Error('Game objects failed to initialize');
+      return new Promise((resolve, reject) => {
+        const checkInterval = setInterval(() => {
+          attempts++;
+          
+          // Check what's available
+          const hasRiskUI = typeof window.riskUI !== 'undefined' && window.riskUI !== null;
+          const hasGameState = typeof window.gameState !== 'undefined' && window.gameState !== null;
+          const hasRiskMap = typeof window.riskMap !== 'undefined' && window.riskMap !== null;
+          
+          // Log progress every 10 attempts
+          if (attempts % 10 === 0) {
+            console.log(`⏳ Attempt ${attempts}/${maxAttempts}:`, {
+              riskUI: hasRiskUI,
+              gameState: hasGameState,
+              riskMap: hasRiskMap
+            });
+          }
+          
+          // Check if core components are ready
+          // We need at least riskUI and gameState - riskMap initializes later
+          if (hasRiskUI && hasGameState) {
+            clearInterval(checkInterval);
+            
+            // Create a game object wrapper if it doesn't exist
+            if (!window.riskGame) {
+              console.log('📦 Creating riskGame wrapper object');
+              window.riskGame = {
+                riskUI: window.riskUI,
+                gameState: window.gameState,
+                riskMap: window.riskMap,
+                phaseManager: window.phaseManager,
+                turnManager: window.turnManager,
+                
+                // Add common game methods
+                handleAttack: window.handleAttack,
+                handleReinforce: window.handleReinforce,
+                handleFortify: window.handleFortify
+              };
+            }
+            
+            console.log('✅ Game objects ready:', {
+              riskUI: hasRiskUI,
+              gameState: hasGameState,
+              riskMap: hasRiskMap,
+              riskGame: !!window.riskGame
+            });
+            
+            resolve();
+            return;
+          }
+          
+          // Timeout check
+          if (attempts >= maxAttempts) {
+            clearInterval(checkInterval);
+            
+            console.error('❌ Game initialization timeout. Available objects:', {
+              riskUI: hasRiskUI,
+              gameState: hasGameState,
+              riskMap: hasRiskMap,
+              // List ALL window properties that might be game-related
+              gameRelated: Object.keys(window).filter(key => 
+                key.toLowerCase().includes('risk') || 
+                key.toLowerCase().includes('game') ||
+                key.toLowerCase().includes('phase') ||
+                key.toLowerCase().includes('turn')
+              )
+            });
+            
+            reject(new Error('Game objects failed to initialize'));
+          }
+        }, 200); // Check every 200ms
+      });
     }
     
     /**

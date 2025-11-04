@@ -721,8 +721,14 @@
   <!-- Main Game Container (will be injected from game.html content) -->
   <div id="game-root"></div>
   
-  <!-- Socket.IO Client -->
-  <script src="/socket.io/socket.io.js"></script>
+  <!-- Socket.IO Client - Load with fallback -->
+  <script src="/socket.io/socket.io.js" 
+          onerror="console.warn('⚠️ Failed to load socket.io from server, trying CDN...'); 
+                   var script = document.createElement('script'); 
+                   script.src = 'https://cdn.socket.io/4.6.1/socket.io.min.js'; 
+                   script.onerror = function() { console.error('❌ Failed to load socket.io from CDN'); }; 
+                   document.head.appendChild(script);">
+  </script>
   
   <!-- Load all game scripts in order -->
   <script>
@@ -823,22 +829,73 @@
     
     async function initializeMultiplayerGame() {
       try {
+        console.log('🎮 Multiplayer Game Loading...');
+        
         updateLoadingMessage('Connecting to server...');
+        
+        // Get session code from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionCode = urlParams.get('session');
+        
+        if (!sessionCode) {
+          throw new Error('No session code in URL');
+        }
+        
+        console.log('📋 Session code:', sessionCode);
+        window.multiplayerState.sessionId = sessionCode;
         
         // Initialize multiplayer client
         multiplayerClient = new MultiplayerClient();
         window.multiplayerClient = multiplayerClient;
         
         // Connect to server
+        updateLoadingMessage('Connecting to multiplayer server...');
         await multiplayerClient.connect();
         window.multiplayerState.isConnected = true;
+        console.log('✅ Connected to server');
+        
+        // Request session data from server
+        updateLoadingMessage('Loading session data...');
+        const sessionData = await requestSessionData(sessionCode);
+        console.log('📊 Session data received:', sessionData);
+        
+        // Store session data globally
+        window.multiplayerSession = {
+          code: sessionCode,
+          data: sessionData,
+          players: Object.entries(sessionData.players).map(([name, playerData]) => ({
+            name: name,
+            color: playerData.color,
+            isHost: playerData.isHost,
+            socketId: playerData.socketId,
+            userId: playerData.userId
+          })),
+          currentPlayer: null // Will be set based on socket ID
+        };
+        
+        // Find current player based on socket ID
+        const mySocketId = multiplayerClient.socket.id;
+        const currentPlayerEntry = Object.entries(sessionData.players).find(
+          ([name, data]) => data.socketId === mySocketId
+        );
+        
+        if (currentPlayerEntry) {
+          window.multiplayerSession.currentPlayer = {
+            name: currentPlayerEntry[0],
+            ...currentPlayerEntry[1]
+          };
+          window.multiplayerState.playerName = currentPlayerEntry[0];
+          console.log('✅ Current player:', window.multiplayerSession.currentPlayer);
+        } else {
+          console.warn('⚠️ Could not find current player by socket ID');
+        }
         
         updateLoadingMessage('Joining session...');
         
-        // Join session
+        // Join session with player name
         const joinResult = await multiplayerClient.joinSession(
-          window.multiplayerState.sessionId,
-          window.multiplayerState.playerName
+          sessionCode,
+          window.multiplayerState.playerName || 'Player'
         );
         
         console.log('✅ Joined session:', joinResult);
@@ -855,7 +912,7 @@
         
         updateLoadingMessage('Setting up multiplayer...');
         
-        // Initialize game systems (similar to game.html)
+        // Initialize game systems with session player data
         await initializeGameSystems();
         
         updateLoadingMessage('Connecting multiplayer adapter...');
@@ -880,11 +937,41 @@
         hideLoadingScreen();
         
         console.log('✅ Multiplayer game fully initialized!');
+        console.log('   Session:', window.multiplayerSession.code);
+        console.log('   Players:', window.multiplayerSession.players.map(p => p.name).join(', '));
+        console.log('   Current player:', window.multiplayerSession.currentPlayer?.name);
         
       } catch (error) {
         console.error('❌ Multiplayer initialization error:', error);
         showError('Failed to initialize game: ' + error.message);
       }
+    }
+    
+    // Request session data from server
+    function requestSessionData(sessionCode) {
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('Timeout waiting for session data'));
+        }, 10000);
+        
+        console.log('📥 Requesting session data for:', sessionCode);
+        
+        // Listen for session data response
+        multiplayerClient.socket.once('sessionData', (data) => {
+          clearTimeout(timeout);
+          console.log('✅ Session data received');
+          resolve(data);
+        });
+        
+        // Listen for errors
+        multiplayerClient.socket.once('error', (error) => {
+          clearTimeout(timeout);
+          reject(new Error(error.message || 'Failed to get session data'));
+        });
+        
+        // Request session data
+        multiplayerClient.socket.emit('requestSessionData', { sessionCode });
+      });
     }
     
     async function loadGameContent() {
@@ -905,11 +992,14 @@
     
     async function initializeGameSystems() {
       // Get player data from session
-      const sessionData = multiplayerClient.sessionData;
-      const players = Object.keys(sessionData.players);
-      const playerColors = Object.values(sessionData.players).map(p => p.color);
+      const sessionPlayers = window.multiplayerSession.players;
+      const players = sessionPlayers.map(p => p.name);
+      const playerColors = sessionPlayers.map(p => p.color);
       
-      console.log('🎮 Initializing with players:', players);
+      console.log('🎮 Initializing game systems with players:');
+      sessionPlayers.forEach(p => {
+        console.log(`   ${p.name} - ${p.color} ${p.isHost ? '(HOST)' : ''}`);
+      });
       
       // Initialize RiskUI
       const riskUI = new RiskUI();
@@ -927,9 +1017,12 @@
       }
       
       // Load game state from server if exists
+      const sessionData = window.multiplayerSession.data;
       if (sessionData.gameState) {
+        console.log('📥 Restoring game state from server');
         GameStateManager.restoreFromPersistence(sessionData.gameState);
       } else {
+        console.log('🎲 New game - distributing territories');
         // First time - distribute territories
         riskUI.gameState.assignTerritoriesRandomly();
       }
@@ -961,6 +1054,9 @@
       }
       
       console.log('✅ Game systems initialized');
+      console.log('   Players:', players.join(', '));
+      console.log('   Colors:', playerColors.join(', '));
+      console.log('   Current turn:', window.gameState.currentTurn);
     }
     
     function setupMultiplayerUI() {

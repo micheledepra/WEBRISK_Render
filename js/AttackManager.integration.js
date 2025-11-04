@@ -9,7 +9,24 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         // Check if game is initialized
         if (!window.riskGame) {
-            console.error('Game not initialized, cannot setup AttackManager');
+            console.log('⏳ Game not yet initialized, will retry AttackManager setup...');
+            
+            // For multiplayer, keep checking until game is ready
+            const isMultiplayer = window.location.pathname.includes('multiplayer-game.html');
+            
+            if (isMultiplayer) {
+                const checkInterval = setInterval(() => {
+                    if (window.riskGame) {
+                        clearInterval(checkInterval);
+                        console.log('✅ Game initialized, setting up AttackManager');
+                        addAttackStyles();
+                        integrateAttackManager();
+                    }
+                }, 500);
+                
+                // Timeout after 30 seconds
+                setTimeout(() => clearInterval(checkInterval), 30000);
+            }
             return;
         }
         

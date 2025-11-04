@@ -5,7 +5,30 @@
 
 // Initialize attack controller when document is loaded
 document.addEventListener("DOMContentLoaded", () => {
-  initializeAttackUI();
+  // Check if we're in multiplayer mode (game not yet loaded)
+  const isMultiplayer = window.location.pathname.includes('multiplayer-game.html');
+  
+  if (!isMultiplayer) {
+    // Single player - initialize immediately
+    initializeAttackUI();
+  } else {
+    // Multiplayer - wait for game content to load
+    console.log('⏳ Waiting for multiplayer game to load before initializing attack UI');
+    
+    // Poll for the attack modal element
+    const checkInterval = setInterval(() => {
+      if (document.getElementById("enhanced-attack-modal")) {
+        clearInterval(checkInterval);
+        console.log('✅ Attack UI elements loaded, initializing...');
+        initializeAttackUI();
+      }
+    }, 100);
+    
+    // Timeout after 30 seconds
+    setTimeout(() => {
+      clearInterval(checkInterval);
+    }, 30000);
+  }
 });
 
 /**

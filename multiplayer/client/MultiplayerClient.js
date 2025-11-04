@@ -84,9 +84,28 @@ class MultiplayerClient {
 
     console.log('🔌 Initializing socket connection to:', this.serverUrl);
     
-    // Check if Socket.IO is loaded
+    // Check if Socket.IO is loaded, if not wait for it
     if (typeof io === 'undefined') {
-      console.error('❌ Socket.IO library not loaded');
+      console.warn('⏳ Socket.IO library not yet loaded, waiting...');
+      
+      // Wait for socket.io to load with timeout
+      let attempts = 0;
+      const maxAttempts = 50; // 5 seconds
+      
+      const waitForSocketIO = setInterval(() => {
+        attempts++;
+        
+        if (typeof io !== 'undefined') {
+          clearInterval(waitForSocketIO);
+          console.log('✅ Socket.IO library loaded, connecting...');
+          this.initSocket(); // Retry initialization
+        } else if (attempts >= maxAttempts) {
+          clearInterval(waitForSocketIO);
+          console.error('❌ Socket.IO library failed to load after 5 seconds');
+          console.error('   Please check your internet connection or server configuration');
+        }
+      }, 100);
+      
       return;
     }
 
@@ -198,22 +217,50 @@ class MultiplayerClient {
         this.initSocket();
       }
 
-      // Wait for connection
-      const checkConnection = setInterval(() => {
-        if (this.isConnected) {
-          clearInterval(checkConnection);
-          resolve();
-        }
-      }, 100);
+      // If socket.io is still loading, wait for it
+      if (typeof io === 'undefined') {
+        console.log('⏳ Waiting for Socket.IO to load...');
+        
+        let attempts = 0;
+        const checkInterval = setInterval(() => {
+          attempts++;
+          
+          if (typeof io !== 'undefined' && this.socket) {
+            clearInterval(checkInterval);
+            // Continue with normal connection flow
+            this.waitForConnection(resolve, reject);
+          } else if (attempts > 50) {
+            clearInterval(checkInterval);
+            reject(new Error('Socket.IO failed to load'));
+          }
+        }, 100);
+        
+        return;
+      }
 
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        clearInterval(checkConnection);
-        if (!this.isConnected) {
-          reject(new Error('Connection timeout'));
-        }
-      }, 10000);
+      // Wait for connection
+      this.waitForConnection(resolve, reject);
     });
+  }
+  
+  /**
+   * Helper method to wait for socket connection
+   */
+  waitForConnection(resolve, reject) {
+    const checkConnection = setInterval(() => {
+      if (this.isConnected) {
+        clearInterval(checkConnection);
+        resolve();
+      }
+    }, 100);
+
+    // Timeout after 10 seconds
+    setTimeout(() => {
+      clearInterval(checkConnection);
+      if (!this.isConnected) {
+        reject(new Error('Connection timeout'));
+      }
+    }, 10000);
   }
 
   /**

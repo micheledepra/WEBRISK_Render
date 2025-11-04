@@ -703,19 +703,143 @@ io.on(EVENTS.CONNECTION, (socket) => {
   });
 
   // Start Game Event
-  socket.on('startGame', (data) => {
+  socket.on('startGame', async (data) => {
+    console.log('🎮 Start game request from', socket.id, 'with data:', data);
+    
     try {
-      const { sessionCode, initialGameState } = data;
-      const session = sessionManager.startGame(sessionCode, initialGameState);
+      const { sessionCode } = data;
       
-      io.to(sessionCode).emit('gameStarted', {
-        gameState: session.gameState,
-        players: session.players
+      // Validate session code
+      if (!sessionCode) {
+        throw new Error('Session code required');
+      }
+      
+      // Get session
+      const session = sessionManager.getSession(sessionCode);
+      if (!session) {
+        console.error('❌ Session not found:', sessionCode);
+        socket.emit('error', { message: 'Session not found' });
+        return;
+      }
+      
+      console.log('📊 Session state:', {
+        sessionId: session.sessionId,
+        hostUserId: session.hostUserId,
+        requesterId: socket.id,
+        state: session.state,
+        playerCount: session.players.size
       });
-
-      console.log(`🎮 Game started in ${sessionCode}`);
+      
+      // Verify requester is host
+      if (session.hostUserId !== socket.id) {
+        console.error('❌ Not host. Host:', session.hostUserId, 'Requester:', socket.id);
+        socket.emit('error', { message: 'Only the host can start the game' });
+        return;
+      }
+      
+      // Get all players
+      const players = Array.from(session.players.values());
+      console.log('👥 Players:', players.map(p => ({ name: p.playerName, ready: p.state === 'ready' })));
+      
+      // Check if all players are ready
+      const allReady = players.every(p => p.state === 'ready');
+      if (!allReady) {
+        const notReady = players.filter(p => p.state !== 'ready').map(p => p.playerName);
+        console.error('❌ Not all ready. Not ready:', notReady);
+        socket.emit('error', { 
+          message: `Not all players are ready. Waiting for: ${notReady.join(', ')}` 
+        });
+        return;
+      }
+      
+      // Check minimum players
+      if (players.length < 2) {
+        console.error('❌ Not enough players:', players.length);
+        socket.emit('error', { message: 'Need at least 2 players to start' });
+        return;
+      }
+      
+      // Update session state
+      session.state = 'playing';
+      session.startedAt = Date.now();
+      
+      console.log(`✅ Game starting in session ${sessionCode}`);
+      console.log(`   Players: ${players.length}`);
+      console.log(`   All ready: ${allReady}`);
+      
+      // Notify all players
+      io.to(sessionCode).emit('gameStarting', {
+        sessionCode: sessionCode,
+        countdown: 3,
+        players: players.map(p => ({
+          name: p.playerName,
+          color: p.color,
+          isHost: p.isHost || p.userId === session.hostUserId
+        }))
+      });
+      
+      console.log('📤 Broadcasted gameStarting to session:', sessionCode);
+      
+      // Save to persistence
+      await sessionManager.saveSessionToPersistence(sessionCode);
+      
     } catch (error) {
-      console.error('❌ Start game error:', error);
+      console.error('❌ Error in startGame:', error);
+      socket.emit('error', {
+        message: error.message || 'Failed to start game'
+      });
+    }
+  });
+  
+  // Request Session Data (for game initialization)
+  socket.on('requestSessionData', (data) => {
+    console.log('📥 Session data request from', socket.id, 'for session:', data.sessionCode);
+    
+    try {
+      const { sessionCode } = data;
+      
+      if (!sessionCode) {
+        throw new Error('Session code required');
+      }
+      
+      const session = sessionManager.getSession(sessionCode);
+      
+      if (!session) {
+        console.error('❌ Session not found:', sessionCode);
+        socket.emit('error', { message: 'Session not found' });
+        return;
+      }
+      
+      console.log('✅ Sending session data for:', sessionCode);
+      
+      // Convert Map to object
+      const playersObj = {};
+      session.players.forEach((playerData, userId) => {
+        playersObj[playerData.playerName] = {
+          socketId: playerData.socketId,
+          userId: userId,
+          color: playerData.color,
+          isHost: playerData.isHost || userId === session.hostUserId,
+          isReady: playerData.state === 'ready',
+          playerIndex: playerData.playerIndex
+        };
+      });
+      
+      // Send session data
+      socket.emit('sessionData', {
+        sessionId: session.sessionId,
+        hostUserId: session.hostUserId,
+        maxPlayers: session.maxPlayers,
+        state: session.state,
+        players: playersObj,
+        createdAt: session.createdAt,
+        startedAt: session.startedAt
+      });
+      
+      console.log('📤 Sent session data with', Object.keys(playersObj).length, 'players');
+      
+    } catch (error) {
+      console.error('❌ Error sending session data:', error);
       socket.emit('error', { message: error.message });
     }
   });

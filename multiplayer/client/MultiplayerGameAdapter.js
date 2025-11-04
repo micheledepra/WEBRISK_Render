@@ -28,8 +28,12 @@ class MultiplayerGameAdapter {
     // Intercept game methods
     this.interceptGameMethods();
     
-    // Request initial sync
-    this.client.syncGameState();
+    // Request initial sync (only if connected and session exists)
+    if (this.client.socket && this.client.sessionId) {
+      this.client.syncGameState();
+    } else {
+      console.log('⏳ Skipping initial sync - will sync when session is established');
+    }
     
     this.isInitialized = true;
     console.log('✅ Multiplayer adapter ready');

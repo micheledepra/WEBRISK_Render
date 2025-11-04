@@ -1,0 +1,22 @@
+{
+  "sessionId": "2UDSXY",
+  "hostUserId": "4-ewbzfFZ1rc_UIeAAAB",
+  "maxPlayers": 2,
+  "state": "waiting",
+  "createdAt": 1762259183886,
+  "savedAt": "2025-11-04T12:26:23.887Z",
+  "timestamp": 1762259183887,
+  "players": {
+    "4-ewbzfFZ1rc_UIeAAAB": {
+      "userId": "4-ewbzfFZ1rc_UIeAAAB",
+      "playerName": "weq",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "not_ready",
+      "joinedAt": 1762259183886
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

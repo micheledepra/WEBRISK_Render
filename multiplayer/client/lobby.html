@@ -374,14 +374,28 @@
         console.log('Session created:', data);
         currentSession = data.sessionCode;
         isHost = true;
-        joinWaitingRoom(data.sessionCode);
+        
+        // Re-enable button
+        const btn = document.getElementById('createBtn');
+        btn.disabled = false;
+        btn.textContent = 'Create Game';
+        
+        // Show waiting room with session data
+        joinWaitingRoom(data.sessionCode, data.session);
       });
 
       client.socket.on('sessionJoined', (data) => {
         console.log('Session joined:', data);
         currentSession = data.sessionCode;
-        sessionPlayers = data.players || [];
-        updatePlayerList();
+        isHost = false;
+        
+        // Re-enable button
+        const btn = document.getElementById('joinBtn');
+        btn.disabled = false;
+        btn.textContent = 'Join Game';
+        
+        // Show waiting room with session data
+        joinWaitingRoom(data.sessionCode, data.session);
       });
 
       client.socket.on('playerJoined', (data) => {
@@ -536,23 +550,21 @@
       // Store player info
       currentPlayerName = name;
       
-      // Generate session code using SessionCodeGenerator
-      const sessionCode = SessionCodeGenerator.generate();
-      
-      // Create session
-      console.log('Creating session:', sessionCode);
+      // Create session - server will generate the code
+      console.log('Creating session with:', { name, color: currentPlayerColor, maxPlayers });
       client.socket.emit('createSession', {
-        sessionCode: sessionCode,
-        playerName: name,
-        playerColor: currentPlayerColor,
+        hostName: name,
+        color: currentPlayerColor,
         maxPlayers: maxPlayers
       });
       
-      // Re-enable button after timeout
+      // Re-enable button after timeout (in case of no response)
       setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = 'Create Game';
-      }, 3000);
+        if (btn.disabled) {
+          btn.disabled = false;
+          btn.textContent = 'Create Game';
+        }
+      }, 10000);
     }
 
     function joinGame() {
@@ -568,11 +580,6 @@
       
       if (!sessionCode || sessionCode.length !== 6) {
         showError('Please enter a valid 6-character code', 'join');
-        return;
-      }
-      
-      if (!SessionCodeGenerator.validate(sessionCode)) {
-        showError('Invalid session code format', 'join');
         return;
       }
       
@@ -600,30 +607,43 @@
       client.socket.emit('joinSession', {
         sessionCode: sessionCode,
         playerName: name,
-        playerColor: currentPlayerColor
+        color: currentPlayerColor
       });
       
-      // Re-enable button after timeout
+      // Re-enable button after timeout (in case of no response)
       setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = 'Join Game';
-      }, 3000);
+        if (btn.disabled) {
+          btn.disabled = false;
+          btn.textContent = 'Join Game';
+        }
+      }, 10000);
     }
 
-    function joinWaitingRoom(sessionCode) {
+    function joinWaitingRoom(sessionCode, sessionData) {
       currentSession = sessionCode;
       document.getElementById('sessionCodeDisplay').textContent = sessionCode;
       document.getElementById('hostInfo').style.display = isHost ? 'block' : 'none';
       document.getElementById('startBtn').style.display = isHost ? 'inline-block' : 'none';
       
-      // Initialize player list
-      sessionPlayers = [{
-        id: client.userId,
-        name: currentPlayerName,
-        color: currentPlayerColor,
-        ready: false,
-        isHost: isHost
-      }];
+      // Initialize player list from session data
+      if (sessionData && sessionData.players) {
+        sessionPlayers = Object.entries(sessionData.players).map(([name, playerData]) => ({
+          id: playerData.socketId || playerData.id,
+          name: name,
+          color: playerData.color,
+          ready: playerData.isReady || false,
+          isHost: playerData.isHost || false
+        }));
+      } else {
+        // Fallback if no session data
+        sessionPlayers = [{
+          id: client.userId,
+          name: currentPlayerName,
+          color: currentPlayerColor,
+          ready: false,
+          isHost: isHost
+        }];
+      }
       
       updatePlayerList();
       showView('lobbyView');

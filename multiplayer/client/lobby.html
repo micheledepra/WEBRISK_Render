@@ -372,7 +372,21 @@
       // Session events
       client.socket.on('sessionCreated', (data) => {
         console.log('Session created:', data);
-        currentSession = data.sessionCode;
+        
+        // Extract sessionId correctly - handle both nested and flat structures
+        const sessionCode = data.sessionCode?.sessionId || data.sessionCode || data.sessionId;
+        
+        if (!sessionCode) {
+          console.error('❌ No session code in response:', data);
+          showError('Failed to get session code from server', 'create');
+          const btn = document.getElementById('createBtn');
+          btn.disabled = false;
+          btn.textContent = 'Create Game';
+          return;
+        }
+        
+        console.log('✅ Extracted session code:', sessionCode);
+        currentSession = sessionCode;
         isHost = true;
         
         // Re-enable button
@@ -381,12 +395,26 @@
         btn.textContent = 'Create Game';
         
         // Show waiting room with session data
-        joinWaitingRoom(data.sessionCode, data.session);
+        joinWaitingRoom(sessionCode, data.session || data.sessionCode);
       });
 
       client.socket.on('sessionJoined', (data) => {
         console.log('Session joined:', data);
-        currentSession = data.sessionCode;
+        
+        // Extract sessionId correctly - handle both nested and flat structures
+        const sessionCode = data.sessionCode?.sessionId || data.sessionCode || data.sessionId;
+        
+        if (!sessionCode) {
+          console.error('❌ No session code in response:', data);
+          showError('Failed to get session code from server', 'join');
+          const btn = document.getElementById('joinBtn');
+          btn.disabled = false;
+          btn.textContent = 'Join Game';
+          return;
+        }
+        
+        console.log('✅ Extracted session code:', sessionCode);
+        currentSession = sessionCode;
         isHost = false;
         
         // Re-enable button
@@ -395,7 +423,7 @@
         btn.textContent = 'Join Game';
         
         // Show waiting room with session data
-        joinWaitingRoom(data.sessionCode, data.session);
+        joinWaitingRoom(sessionCode, data.session || data.sessionCode);
       });
 
       client.socket.on('playerJoined', (data) => {
@@ -620,8 +648,19 @@
     }
 
     function joinWaitingRoom(sessionCode, sessionData) {
+      console.log('📋 Joining waiting room:', { sessionCode, sessionData });
+      
       currentSession = sessionCode;
-      document.getElementById('sessionCodeDisplay').textContent = sessionCode;
+      
+      // Display session code
+      const sessionCodeEl = document.getElementById('sessionCodeDisplay');
+      if (sessionCodeEl) {
+        sessionCodeEl.textContent = sessionCode;
+        console.log('✅ Session code displayed:', sessionCode);
+      } else {
+        console.error('❌ sessionCodeDisplay element not found!');
+      }
+      
       document.getElementById('hostInfo').style.display = isHost ? 'block' : 'none';
       document.getElementById('startBtn').style.display = isHost ? 'inline-block' : 'none';
       

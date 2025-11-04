@@ -429,7 +429,11 @@
       client.socket.on('playerJoined', (data) => {
         console.log('Player joined:', data);
         if (data.player) {
-          sessionPlayers.push(data.player);
+          // Check if player already exists (avoid duplicates)
+          const existingPlayer = sessionPlayers.find(p => p.id === data.player.id);
+          if (!existingPlayer) {
+            sessionPlayers.push(data.player);
+          }
           updatePlayerList();
           showSuccessMessage(`${data.player.name} joined the game!`);
         }
@@ -454,6 +458,38 @@
           }
         }
       });
+      
+      // Session update event - syncs all player data
+      client.socket.on('sessionUpdate', (data) => {
+        console.log('📊 Session update received:', data);
+        
+        if (data.sessionCode !== currentSession) {
+          console.log('⚠️ Update for different session, ignoring');
+          return;
+        }
+        
+        // Update player list from server data
+        if (data.players) {
+          sessionPlayers = Object.entries(data.players).map(([name, playerData]) => ({
+            id: playerData.socketId || playerData.id,
+            name: name,
+            color: playerData.color,
+            ready: playerData.isReady || false,
+            isHost: playerData.isHost || false
+          }));
+          
+          console.log('✅ Updated player list from server:', sessionPlayers);
+          updatePlayerList();
+        }
+        
+        // Update max players display
+        if (data.maxPlayers) {
+          const maxPlayersEl = document.getElementById('maxPlayers');
+          if (maxPlayersEl) {
+            maxPlayersEl.textContent = data.maxPlayers;
+          }
+        }
+      });
 
       client.socket.on('gameStarting', (data) => {
         console.log('Game starting:', data);
@@ -467,6 +503,32 @@
       client.socket.on('error', (data) => {
         console.error('Socket error:', data);
         showError(data.message || 'An error occurred');
+      });
+      
+      // Join error event
+      client.socket.on('joinError', (data) => {
+        console.error('Join error:', data);
+        showError(data.message || 'Failed to join session', 'join');
+        
+        // Re-enable join button
+        const btn = document.getElementById('joinBtn');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Join Game';
+        }
+      });
+      
+      // Session error event
+      client.socket.on('sessionError', (data) => {
+        console.error('Session error:', data);
+        showError(data.message || 'Session error', 'create');
+        
+        // Re-enable create button
+        const btn = document.getElementById('createBtn');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Create Game';
+        }
       });
 
       client.socket.on('sessionError', (data) => {

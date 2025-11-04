@@ -428,30 +428,62 @@ io.on(EVENTS.CONNECTION, (socket) => {
         throw new Error('Missing required fields: hostName, color, or maxPlayers');
       }
       
-      // Create session with SessionManager (generates code automatically)
-      const sessionCode = sessionManager.createSession(socket.id, hostName, maxPlayers);
-      
-      // Get the session object
-      const session = sessionManager.getSession(sessionCode);
+      // Create session with SessionManager (returns session object)
+      const session = sessionManager.createSession(socket.id, hostName, maxPlayers);
+      const sessionCode = session.sessionId;
       
       // Update host with color
-      if (session && session.players && session.players[hostName]) {
-        session.players[hostName].color = color;
+      if (session.players) {
+        const hostPlayer = session.players.get(socket.id);
+        if (hostPlayer) {
+          hostPlayer.color = color;
+          hostPlayer.isHost = true;
+          hostPlayer.socketId = socket.id;
+        }
       }
       
       socket.join(sessionCode);
       
-      console.log(`🎮 Session ${sessionCode} created by ${hostName}`);
+      console.log(`✅ Session created: ${sessionCode} by ${hostName}`);
       
-      // Send response
+      // Convert players Map to object for client
+      const playersObj = {};
+      if (session.players instanceof Map) {
+        session.players.forEach((player, userId) => {
+          playersObj[player.playerName] = {
+            socketId: player.socketId || userId,
+            color: player.color,
+            isReady: player.state === 'ready',
+            isHost: player.isHost || userId === socket.id,
+            id: userId
+          };
+        });
+      }
+      
+      // Send response with properly formatted data
       socket.emit('sessionCreated', { 
-        sessionCode,
-        session
+        sessionCode: sessionCode,
+        session: {
+          sessionId: sessionCode,
+          hostUserId: socket.id,
+          maxPlayers: maxPlayers,
+          state: session.state,
+          players: playersObj,
+          createdAt: session.createdAt
+        }
+      });
+      
+      // Emit session update to room
+      io.to(sessionCode).emit('sessionUpdate', {
+        sessionCode: sessionCode,
+        players: playersObj,
+        playerCount: session.players.size,
+        maxPlayers: maxPlayers
       });
 
     } catch (error) {
       console.error('❌ Create session error:', error);
-      socket.emit('error', { message: error.message });
+      socket.emit('sessionError', { message: error.message });
     }
   });
 
@@ -466,36 +498,116 @@ io.on(EVENTS.CONNECTION, (socket) => {
         throw new Error('Missing required fields: sessionCode, playerName, or color');
       }
       
-      const session = sessionManager.joinSession(sessionCode, playerName, socket.id);
+      const session = sessionManager.getSession(sessionCode);
       
-      // Update player with color
-      if (session && session.players && session.players[playerName]) {
-        session.players[playerName].color = color;
+      if (!session) {
+        socket.emit('joinError', { message: 'Session not found. Please check the code.' });
+        return;
       }
+      
+      // Check if session is full
+      if (session.players.size >= session.maxPlayers) {
+        socket.emit('joinError', { message: 'Session is full' });
+        return;
+      }
+      
+      // Check if name is already taken
+      let nameTaken = false;
+      session.players.forEach((player) => {
+        if (player.playerName === playerName) {
+          nameTaken = true;
+        }
+      });
+      
+      if (nameTaken) {
+        socket.emit('joinError', { message: 'Name already taken. Please choose another name.' });
+        return;
+      }
+      
+      // Check if color is already taken
+      let colorTaken = false;
+      session.players.forEach((player) => {
+        if (player.color === color) {
+          colorTaken = true;
+        }
+      });
+      
+      if (colorTaken) {
+        socket.emit('joinError', { message: 'Color already taken. Please choose another color.' });
+        return;
+      }
+      
+      // Add player to session
+      const playerIndex = session.players.size;
+      session.players.set(socket.id, {
+        userId: socket.id,
+        playerName: playerName,
+        socketId: socket.id,
+        playerIndex: playerIndex,
+        state: 'not_ready',
+        color: color,
+        isHost: false,
+        joinedAt: Date.now()
+      });
       
       socket.join(sessionCode);
       
-      console.log(`👤 ${playerName} joined ${sessionCode}`);
+      console.log(`✅ ${playerName} joined session ${sessionCode}`);
       
-      // Notify player
+      // Convert players Map to object for client
+      const playersObj = {};
+      session.players.forEach((player, userId) => {
+        playersObj[player.playerName] = {
+          socketId: player.socketId || userId,
+          color: player.color,
+          isReady: player.state === 'ready',
+          isHost: player.isHost || false,
+          id: userId
+        };
+      });
+      
+      // Notify the joining player
       socket.emit('sessionJoined', { 
-        sessionCode,
-        session 
+        sessionCode: sessionCode,
+        session: {
+          sessionId: sessionCode,
+          hostUserId: session.hostUserId,
+          maxPlayers: session.maxPlayers,
+          state: session.state,
+          players: playersObj,
+          createdAt: session.createdAt
+        }
       });
 
       // Notify all players in session
       io.to(sessionCode).emit('playerJoined', {
-        playerName,
-        players: session.players
+        player: {
+          id: socket.id,
+          name: playerName,
+          color: color,
+          ready: false,
+          isHost: false
+        }
       });
+      
+      // Send session update to all players
+      io.to(sessionCode).emit('sessionUpdate', {
+        sessionCode: sessionCode,
+        players: playersObj,
+        playerCount: session.players.size,
+        maxPlayers: session.maxPlayers
+      });
+      
+      // Save to persistence
+      sessionManager.saveSessionToPersistence(sessionCode);
 
     } catch (error) {
       console.error('❌ Join session error:', error);
-      socket.emit('error', { message: error.message });
+      socket.emit('joinError', { message: error.message });
     }
   });
 
-  // Toggle Ready Event
+  // Toggle Ready Event (legacy support)
   socket.on('toggleReady', (data) => {
     try {
       const { sessionCode, playerName, isReady } = data;
@@ -526,6 +638,66 @@ io.on(EVENTS.CONNECTION, (socket) => {
       console.log(`${isReady ? '✅' : '⏳'} ${playerName} is ${isReady ? 'ready' : 'not ready'}`);
     } catch (error) {
       console.error('❌ Toggle ready error:', error);
+      socket.emit('error', { message: error.message });
+    }
+  });
+  
+  // Player Ready Event (new format for lobby.html)
+  socket.on('playerReady', (data) => {
+    try {
+      const { sessionCode, ready } = data;
+      const session = sessionManager.getSession(sessionCode);
+      
+      if (!session) {
+        socket.emit('error', { message: 'Session not found' });
+        return;
+      }
+      
+      // Find player by socket ID
+      const player = session.players.get(socket.id);
+      if (!player) {
+        socket.emit('error', { message: 'Player not in session' });
+        return;
+      }
+      
+      // Update ready status
+      player.state = ready ? 'ready' : 'not_ready';
+      session.lastUpdate = Date.now();
+      
+      console.log(`${ready ? '✅' : '⏳'} ${player.playerName} is ${ready ? 'ready' : 'not ready'} in ${sessionCode}`);
+      
+      // Convert players Map to object
+      const playersObj = {};
+      session.players.forEach((p, userId) => {
+        playersObj[p.playerName] = {
+          socketId: p.socketId || userId,
+          color: p.color,
+          isReady: p.state === 'ready',
+          isHost: p.isHost || userId === session.hostUserId,
+          id: userId
+        };
+      });
+      
+      // Notify all players in session
+      io.to(sessionCode).emit('playerReady', {
+        playerId: socket.id,
+        playerName: player.playerName,
+        ready: ready
+      });
+      
+      // Send session update
+      io.to(sessionCode).emit('sessionUpdate', {
+        sessionCode: sessionCode,
+        players: playersObj,
+        playerCount: session.players.size,
+        maxPlayers: session.maxPlayers
+      });
+      
+      // Save to persistence
+      sessionManager.saveSessionToPersistence(sessionCode);
+      
+    } catch (error) {
+      console.error('❌ Player ready error:', error);
       socket.emit('error', { message: error.message });
     }
   });

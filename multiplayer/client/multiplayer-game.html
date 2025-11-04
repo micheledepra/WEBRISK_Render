@@ -617,17 +617,35 @@
         setupMultiplayerListeners();
         
         // STEP 7: Initialize turn management UI
-        // Update phase progress and turn order with initial game state
+        // Update phase progress, turn order, and all visual elements with initial game state
         if (window.updateTurnUI && window.gameState) {
           setTimeout(() => {
+            console.log('🎨 Initializing multiplayer UI with game state...');
+            
+            // Update all turn UI elements
             window.updateTurnUI(
               window.gameState.turnNumber,
               window.gameState.getCurrentPlayer(),
               window.gameState.phase,
               window.gameState.players
             );
-            console.log('✅ Initial turn UI updated');
-          }, 200);
+            
+            // Force additional updates to ensure everything is synchronized
+            if (window.updateTurnHeaderPanelColor) {
+              window.updateTurnHeaderPanelColor();
+            }
+            
+            if (window.updateReinforcementPanel) {
+              window.updateReinforcementPanel();
+            }
+            
+            // Ensure territories are properly colored with opacity
+            if (window.riskGame && typeof window.riskGame.updateTerritoryColors === 'function') {
+              window.riskGame.updateTerritoryColors();
+            }
+            
+            console.log('✅ Initial turn UI fully updated with all visual elements');
+          }, 300); // Increased delay to ensure DOM is fully ready
         }
         
         // STEP 8: Hide loading screen & show HUD
@@ -781,6 +799,83 @@
 
             playersList.appendChild(item);
           });
+        };
+        
+        // Function: Update Turn Header Panel Color (from game.html lines 4887-4918)
+        window.updateTurnHeaderPanelColor = function() {
+          try {
+            if (!window.gameState) return false;
+            
+            const currentPlayer = window.gameState.getCurrentPlayer();
+            const turnHeaderPanel = document.getElementById("turn-header-panel");
+            
+            const colorManager = window.ColorManager || 
+                                (window.riskUI && window.riskUI.colorManager);
+            
+            if (turnHeaderPanel && colorManager && currentPlayer) {
+              const playerColor = colorManager.getPlayerColor(currentPlayer);
+              turnHeaderPanel.style.background = 
+                `linear-gradient(135deg, ${playerColor} 0%, ${playerColor}dd 100%)`;
+              turnHeaderPanel.style.color = "white";
+              turnHeaderPanel.style.boxShadow = `0 2px 8px ${playerColor}40`;
+              
+              console.log(`🎨 Turn header panel color: ${currentPlayer} - ${playerColor}`);
+              return true;
+            }
+            return false;
+          } catch (error) {
+            console.error("Error updating turn header panel color:", error);
+            return false;
+          }
+        };
+        
+        // Function: Update Reinforcement Panel (from game.html lines 5066-5130)
+        window.updateReinforcementPanel = function() {
+          const currentPhase = window.gameState?.phase;
+          const currentPlayer = window.gameState?.getCurrentPlayer();
+          const remainingArmies = window.gameState?.remainingArmies?.[currentPlayer] || 0;
+          
+          const counterEl = document.getElementById("reinforcement-counter");
+          const statusEl = document.getElementById("reinforcement-status");
+          const panelEl = document.getElementById("reinforcement-panel");
+          const turnHeaderPanel = document.getElementById("turn-header-panel");
+          
+          if (!counterEl || !statusEl || !panelEl) return;
+          
+          // Update counter
+          counterEl.textContent = remainingArmies;
+          counterEl.style.color = '#000000';
+          
+          // Match turn header panel styling
+          if (turnHeaderPanel) {
+            const turnHeaderBg = window.getComputedStyle(turnHeaderPanel).background;
+            panelEl.style.background = turnHeaderBg;
+            
+            const colorManager = window.ColorManager || 
+                                (window.riskUI && window.riskUI.colorManager);
+            
+            if (colorManager && currentPlayer) {
+              const playerColor = colorManager.getPlayerColor(currentPlayer);
+              panelEl.style.borderColor = playerColor;
+              panelEl.style.boxShadow = 
+                `0 6px 20px rgba(0, 0, 0, 0.25), 0 2px 8px ${playerColor}40`;
+            }
+          }
+          
+          // Update status based on phase
+          if (currentPhase === 'startup') {
+            statusEl.textContent = remainingArmies > 0 
+              ? "Initial armies to deploy" 
+              : "Initial deployment complete";
+            panelEl.classList.toggle('active', remainingArmies > 0);
+          } else if (currentPhase === 'reinforcement') {
+            statusEl.textContent = remainingArmies > 0 
+              ? "Ready to deploy reinforcements" 
+              : "Reinforcement complete";
+            panelEl.classList.toggle('active', remainingArmies > 0);
+          } else {
+            panelEl.classList.remove('active');
+          }
         };
         
         console.log('✅ Game UI functions exposed globally');
@@ -1057,6 +1152,12 @@
       }
     }
     
+    // Force update territory colors with proper opacity (crucial for multiplayer)
+    if (riskGame && typeof riskGame.updateTerritoryColors === 'function') {
+      riskGame.updateTerritoryColors();
+      console.log('  ✅ Territory colors and opacity updated');
+    }
+    
     // Store additional references (game.html pattern)
     window.turnManager = riskUI.turnManager;
     window.phaseSynchronizer = riskUI.phaseSynchronizer || window.phaseSynchronizer;
@@ -1113,6 +1214,11 @@
         // 5. Update Reinforcement Panel
         if (window.updateReinforcementPanel) {
           window.updateReinforcementPanel();
+        }
+        
+        // 6. Refresh territory colors and opacity (ensure visual consistency)
+        if (window.riskGame && typeof window.riskGame.updateTerritoryColors === 'function') {
+          window.riskGame.updateTerritoryColors();
         }
 
         console.log(`✅ Multiplayer Turn UI Updated - ${currentPhase === 'startup' ? 'Initial Setup' : `Turn ${turnNumber}`}, Player: ${currentPlayer}, Phase: ${currentPhase}`);

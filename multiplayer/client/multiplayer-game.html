@@ -678,6 +678,26 @@
         font-size: 0.85em;
       }
     }
+    
+    /* Fix for missing resource images */
+    .custom-cursor {
+      cursor: pointer !important;
+    }
+    
+    .custom-cursor img {
+      /* Fallback if image doesn't load */
+      display: none;
+    }
+    
+    /* Handle missing water texture gracefully */
+    .water-layer {
+      background: linear-gradient(135deg, #2c5f8d 0%, #1a3a52 100%) !important;
+    }
+    
+    /* Ensure map preview loads with fallback */
+    .map-preview {
+      background-color: #1a1a2e;
+    }
   </style>
 </head>
 <body>
@@ -1024,88 +1044,147 @@
     }
     
     async function loadGameContent() {
-      // Load game.html content dynamically
-      const response = await fetch('../../game.html');
-      const html = await response.text();
+      try {
+        // Load game.html content dynamically
+        const response = await fetch('../../game.html');
+        const html = await response.text();
+        
+        // Extract body content (exclude head and scripts)
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // Get game container
+        const gameContainer = doc.querySelector('.game-container');
+        if (!gameContainer) {
+          throw new Error('Game container not found in game.html');
+        }
+        
+        // Inject into game-root
+        document.getElementById('game-root').innerHTML = gameContainer.outerHTML;
+        
+        // Fix resource paths in injected content
+        fixResourcePaths();
+        
+        console.log('✅ Game content loaded with corrected paths');
+      } catch (error) {
+        console.error('❌ Failed to load game content:', error);
+        throw error;
+      }
+    }
+    
+    /**
+     * Fix relative paths in dynamically loaded content
+     */
+    function fixResourcePaths() {
+      // Fix image sources
+      document.querySelectorAll('#game-root img[src^="images/"], #game-root img[src^="res/"]').forEach(img => {
+        const src = img.getAttribute('src');
+        if (!src.includes('../../')) {
+          img.src = '../../' + src;
+          console.log('Fixed image path:', src, '→', img.src);
+        }
+      });
       
-      // Extract body content (exclude head and scripts)
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const gameBody = doc.body.innerHTML;
+      // Fix background images in inline styles
+      document.querySelectorAll('#game-root [style*="background"]').forEach(el => {
+        const style = el.getAttribute('style');
+        if (style && (style.includes('url("images/') || style.includes('url("res/') || 
+                      style.includes("url('images/") || style.includes("url('res/"))) {
+          const fixedStyle = style
+            .replace(/url\(["']?images\//g, 'url("../../images/')
+            .replace(/url\(["']?res\//g, 'url("../../res/')
+            .replace(/["']\)/g, '")'); // Normalize closing
+          el.setAttribute('style', fixedStyle);
+          console.log('Fixed background style');
+        }
+      });
       
-      // Inject into game-root
-      document.getElementById('game-root').innerHTML = gameBody;
-      
-      console.log('✅ Game content loaded');
+      console.log('✅ Resource paths corrected');
     }
     
     async function initializeGameSystems() {
-      // Get player data from session
-      const sessionPlayers = window.multiplayerSession.players;
-      const players = sessionPlayers.map(p => p.name);
-      const playerColors = sessionPlayers.map(p => p.color);
-      
-      console.log('🎮 Initializing game systems with players:');
-      sessionPlayers.forEach(p => {
-        console.log(`   ${p.name} - ${p.color} ${p.isHost ? '(HOST)' : ''}`);
-      });
-      
-      // Initialize RiskUI
-      const riskUI = new RiskUI();
-      window.riskUI = riskUI;
-      
-      riskUI.initGame(players, playerColors);
-      
-      // Initialize color manager globally
-      window.colorManager = riskUI.colorManager;
-      window.ColorManager = riskUI.colorManager;
-      
-      // Initialize combat system
-      if (typeof initializeCombatSystem !== 'undefined') {
-        initializeCombatSystem();
+      try {
+        // Get player data from session
+        const sessionPlayers = window.multiplayerSession.players;
+        const players = sessionPlayers.map(p => p.name);
+        const playerColors = sessionPlayers.map(p => p.color);
+        
+        console.log('🎮 Initializing game systems with players:');
+        sessionPlayers.forEach(p => {
+          console.log(`   ${p.name} - ${p.color} ${p.isHost ? '(HOST)' : ''}`);
+        });
+        
+        // Wait for game container to be fully rendered
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify SVG map exists
+        const svgMap = document.getElementById('risk-map');
+        if (!svgMap) {
+          console.error('❌ SVG map not found after loading game.html');
+          throw new Error('SVG map element not found');
+        }
+        console.log('✅ SVG map verified:', svgMap);
+        
+        // Initialize RiskUI
+        const riskUI = new RiskUI();
+        window.riskUI = riskUI;
+        
+        riskUI.initGame(players, playerColors);
+        
+        // Initialize color manager globally
+        window.colorManager = riskUI.colorManager;
+        window.ColorManager = riskUI.colorManager;
+        
+        // Initialize combat system
+        if (typeof initializeCombatSystem !== 'undefined') {
+          initializeCombatSystem();
+        }
+        
+        // Load game state from server if exists
+        const sessionData = window.multiplayerSession.data;
+        if (sessionData.gameState) {
+          console.log('📥 Restoring game state from server');
+          GameStateManager.restoreFromPersistence(sessionData.gameState);
+        } else {
+          console.log('🎲 New game - distributing territories');
+          // First time - distribute territories
+          riskUI.gameState.assignTerritoriesRandomly();
+        }
+        
+        // Sync phases
+        riskUI.phaseManager.syncWithGameState();
+        riskUI.updatePlayerStats();
+        
+        // Initialize map
+        const riskMap = new RiskMap(riskUI);
+        const riskGame = new RiskGame(riskUI, riskMap);
+        
+        window.gameState = riskUI.gameState;
+        window.riskMap = riskMap;
+        window.riskGame = riskGame;
+        window.phaseSynchronizer = riskUI.phaseSynchronizer;
+        window.turnManager = riskUI.turnManager;
+        
+        // Initialize army count manager
+        if (window.ArmyCountManager) {
+          riskUI.armyCountManager = new ArmyCountManager(riskUI.colorManager);
+          riskUI.setupArmyCountMapIntegration();
+          riskUI.initializeVisualsAfterMap();
+        }
+        
+        // Initialize turn management UI
+        if (window.initializeTurnManagement) {
+          window.initializeTurnManagement();
+        }
+        
+        console.log('✅ Game systems initialized');
+        console.log('   Players:', players.join(', '));
+        console.log('   Colors:', playerColors.join(', '));
+        console.log('   Current turn:', window.gameState.currentTurn);
+      } catch (error) {
+        console.error('❌ Failed to initialize game systems:', error);
+        throw error;
       }
-      
-      // Load game state from server if exists
-      const sessionData = window.multiplayerSession.data;
-      if (sessionData.gameState) {
-        console.log('📥 Restoring game state from server');
-        GameStateManager.restoreFromPersistence(sessionData.gameState);
-      } else {
-        console.log('🎲 New game - distributing territories');
-        // First time - distribute territories
-        riskUI.gameState.assignTerritoriesRandomly();
-      }
-      
-      // Sync phases
-      riskUI.phaseManager.syncWithGameState();
-      riskUI.updatePlayerStats();
-      
-      // Initialize map
-      const riskMap = new RiskMap(riskUI);
-      const riskGame = new RiskGame(riskUI, riskMap);
-      
-      window.gameState = riskUI.gameState;
-      window.riskMap = riskMap;
-      window.riskGame = riskGame;
-      window.phaseSynchronizer = riskUI.phaseSynchronizer;
-      window.turnManager = riskUI.turnManager;
-      
-      // Initialize army count manager
-      if (window.ArmyCountManager) {
-        riskUI.armyCountManager = new ArmyCountManager(riskUI.colorManager);
-        riskUI.setupArmyCountMapIntegration();
-        riskUI.initializeVisualsAfterMap();
-      }
-      
-      // Initialize turn management UI
-      if (window.initializeTurnManagement) {
-        window.initializeTurnManagement();
-      }
-      
-      console.log('✅ Game systems initialized');
-      console.log('   Players:', players.join(', '));
-      console.log('   Colors:', playerColors.join(', '));
-      console.log('   Current turn:', window.gameState.currentTurn);
     }
     
     function setupMultiplayerUI() {
@@ -1234,48 +1313,35 @@
     const MAX_PLAYER_MAPPING_RETRIES = 10;
     
     function showPlayerMapping() {
-      // Get player mapping from localStorage or multiplayerState
-      const myPlayerName = localStorage.getItem('playerName');
-      const sessionData = multiplayerClient?.sessionData;
-      const playerMapping = sessionData?.playerMapping || window.multiplayerState?.playerMapping;
+      // Get current player from multiplayerSession (set during initialization)
+      const currentPlayer = window.multiplayerSession?.currentPlayer;
       
-      console.log('🔍 Player mapping debug:', {
-        myPlayerName,
-        playerMapping,
-        sessionData,
-        multiplayerState: window.multiplayerState
-      });
-      
-      if (!myPlayerName || !playerMapping) {
+      if (!currentPlayer) {
         if (playerMappingRetries < MAX_PLAYER_MAPPING_RETRIES) {
           playerMappingRetries++;
-          console.warn(`⚠️ Missing player mapping data - retry ${playerMappingRetries}/${MAX_PLAYER_MAPPING_RETRIES}`);
-          // Retry after a delay to allow session data to load
-          setTimeout(() => showPlayerMapping(), 1000);
+          console.warn(`⚠️ Missing current player data - retry ${playerMappingRetries}/${MAX_PLAYER_MAPPING_RETRIES}`);
+          setTimeout(() => showPlayerMapping(), 500); // Reduced delay
+          return;
         } else {
           console.error('❌ Failed to load player mapping after maximum retries');
-        }
-        return;
-      }
-      
-      // Find which player number this user controls
-      let myPlayerNumber = null;
-      for (const [playerNum, name] of Object.entries(playerMapping)) {
-        if (name === myPlayerName) {
-          myPlayerNumber = playerNum;
-          break;
+          return;
         }
       }
       
-      if (!myPlayerNumber) {
-        console.warn('⚠️ Could not find player number for:', myPlayerName);
-        console.log('Available mappings:', playerMapping);
+      // Reset retry counter on success
+      playerMappingRetries = 0;
+      
+      // Find which player number this user is (based on array index)
+      const sessionPlayers = window.multiplayerSession.players;
+      const myIndex = sessionPlayers.findIndex(p => p.name === currentPlayer.name);
+      
+      if (myIndex === -1) {
+        console.warn('⚠️ Could not find player in session players list');
         return;
       }
       
-      // Get player color from gameState
-      const playerIndex = parseInt(myPlayerNumber.replace('player', '')) - 1;
-      const playerColor = window.gameState?.playerColors?.[playerIndex] || '#888888';
+      const playerNumber = myIndex + 1;
+      const playerColor = currentPlayer.color || sessionPlayers[myIndex].color;
       
       // Update badge
       const badge = document.getElementById('player-mapping-badge');
@@ -1284,9 +1350,9 @@
       
       if (badge && colorDot && text) {
         colorDot.style.backgroundColor = playerColor;
-        text.textContent = `You are ${myPlayerNumber.replace('player', 'Player ')}`;
+        text.textContent = `You are Player ${playerNumber}`;
         badge.style.display = 'flex';
-        console.log(`✅ Player mapping badge shown: ${myPlayerName} = ${myPlayerNumber} (${playerColor})`);
+        console.log(`✅ Player mapping: ${currentPlayer.name} = Player ${playerNumber} (${playerColor})`);
       }
     }
     
@@ -1424,22 +1490,32 @@
     
     function updateMapInteractivity() {
       // Get SVG map element
-      const svgMap = document.getElementById('svg-map');
+      const svgMap = document.getElementById('risk-map');
       if (!svgMap) {
         if (mapInteractivityRetries < MAX_MAP_INTERACTIVITY_RETRIES) {
           mapInteractivityRetries++;
           console.warn(`⚠️ SVG map not found - retry ${mapInteractivityRetries}/${MAX_MAP_INTERACTIVITY_RETRIES}`);
-          // Retry after game content loads
-          setTimeout(() => updateMapInteractivity(), 500);
+          setTimeout(() => updateMapInteractivity(), 200); // Reduced delay from 500ms
+          return;
         } else {
           console.error('❌ SVG map element not found after maximum retries');
+          // Try one more time with direct query
+          const mapInRoot = document.querySelector('#game-root #risk-map');
+          if (mapInRoot) {
+            console.log('✅ Found SVG map in game-root container');
+            updateMapInteractivityWithElement(mapInRoot);
+            return;
+          }
+          return;
         }
-        return;
       }
       
       // Reset retry counter on success
       mapInteractivityRetries = 0;
-      
+      updateMapInteractivityWithElement(svgMap);
+    }
+    
+    function updateMapInteractivityWithElement(svgMap) {
       // Check if it's my turn
       const isMyTurn = window.multiplayerState?.isMyTurn;
       

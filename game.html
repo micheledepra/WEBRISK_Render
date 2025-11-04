@@ -2871,234 +2871,288 @@
          ======================================== */
       
       /* Tablet Landscape & Small Desktop */
-      @media (max-width: 1024px) and (min-width: 769px) {
+      @media (max-width: 1024px) and (min-width: 769px) and (orientation: landscape) {
         .sidebar {
-          width: 280px;
-          padding: 15px;
+          width: 280px !important;
+          padding: 15px !important;
         }
 
         .game-container {
-          flex-direction: row;
+          flex-direction: row !important;
         }
       }
 
-      /* Tablet Portrait */
-      @media (max-width: 768px) and (min-width: 481px) {
-        body {
-          overflow: auto;
-        }
-
-        .game-container {
-          flex-direction: column;
-          height: auto;
-          min-height: 100vh;
-        }
-
+      /* LANDSCAPE MODE - Collapsible Sidebar */
+      @media (max-width: 1024px) and (orientation: landscape) {
         .sidebar {
-          width: 100%;
-          max-width: 100%;
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: auto;
-          max-height: 40vh;
-          padding: 15px;
-          overflow-y: auto;
-          z-index: 1000;
-          transform: translateY(calc(100% - 60px));
-          transition: transform 0.3s ease-in-out;
-          border-top: 3px solid rgba(255, 215, 0, 0.5);
-          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+          position: fixed !important;
+          left: 0 !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          width: 280px !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          transform: translateX(-100%) !important;
+          transition: transform 0.3s ease-in-out !important;
+          z-index: 9998 !important;
+          box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3) !important;
+          padding: 15px !important;
+          overflow-y: auto !important;
         }
 
         .sidebar.expanded {
-          transform: translateY(0);
+          transform: translateX(0) !important;
         }
 
+        /* Toggle button for landscape */
         .sidebar-toggle {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 60px;
-          height: 40px;
-          position: absolute;
-          top: 10px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255, 215, 0, 0.9);
-          border-radius: 20px 20px 0 0;
-          cursor: pointer;
-          font-size: 24px;
-          z-index: 10;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 50px !important;
+          height: 50px !important;
+          position: fixed !important;
+          left: 10px !important;
+          top: 50% !important;
+          transform: translateY(-50%) !important;
+          background: rgba(255, 215, 0, 0.95) !important;
+          border: 3px solid #1a1a2e !important;
+          border-radius: 50% !important;
+          cursor: pointer !important;
+          font-size: 24px !important;
+          z-index: 9999 !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .sidebar.expanded ~ .sidebar-toggle {
+          left: 290px !important;
         }
 
         .map-container {
-          height: 60vh;
-          width: 100%;
+          margin-left: 0 !important;
+          width: 100% !important;
+          height: 100vh !important;
+          position: relative !important;
         }
 
-        .turn-header-panel {
-          position: relative;
-          top: 0;
-          left: 0;
-          right: 0;
-          width: 100%;
-          margin-bottom: 10px;
+        .game-container {
+          flex-direction: row !important;
+          height: 100vh !important;
         }
 
-        /* Hide certain elements on tablet for space */
-        .phase-progress-panel {
+        /* Optimize sidebar content */
+        .sidebar * {
           font-size: 0.9em;
         }
 
         .player-panel {
-          padding: 8px;
+          padding: 8px !important;
+          margin-bottom: 8px !important;
         }
       }
 
-      /* Mobile Phone Portrait */
-      @media (max-width: 480px) {
+      /* PORTRAIT MODE - Bottom Drawer */
+      @media (max-width: 768px) and (orientation: portrait) {
         body {
           overflow: auto;
           -webkit-overflow-scrolling: touch;
         }
 
         .game-container {
-          flex-direction: column;
-          height: auto;
-          min-height: 100vh;
+          flex-direction: column !important;
+          height: 100vh !important;
         }
 
         .sidebar {
-          width: 100%;
-          max-width: 100%;
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: auto;
-          max-height: 50vh;
-          padding: 10px;
-          overflow-y: auto;
-          z-index: 1000;
-          transform: translateY(calc(100% - 50px));
-          transition: transform 0.3s ease-in-out;
-          border-top: 3px solid rgba(255, 215, 0, 0.5);
-          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+          position: fixed !important;
+          bottom: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          top: auto !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          max-height: 50vh !important;
+          height: auto !important;
+          padding: 12px !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          z-index: 9998 !important;
+          transform: translateY(calc(100% - 60px)) !important;
+          transition: transform 0.3s ease-in-out !important;
+          border-top: 3px solid rgba(255, 215, 0, 0.7) !important;
+          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3) !important;
         }
 
         .sidebar.expanded {
-          transform: translateY(0);
+          transform: translateY(0) !important;
         }
 
+        /* Pull-up indicator */
+        .sidebar::before {
+          content: '☰' !important;
+          position: absolute !important;
+          top: 15px !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          font-size: 28px !important;
+          color: #ffd700 !important;
+          z-index: 10 !important;
+          pointer-events: none !important;
+          display: block !important;
+        }
+
+        /* Hide landscape toggle in portrait */
         .sidebar-toggle {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 50px;
-          height: 35px;
-          position: absolute;
-          top: 7px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255, 215, 0, 0.9);
-          border-radius: 15px 15px 0 0;
-          cursor: pointer;
-          font-size: 20px;
-          z-index: 10;
-          box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.2);
+          display: none !important;
         }
 
         .map-container {
-          height: 50vh;
-          width: 100%;
+          width: 100% !important;
+          height: calc(50vh) !important;
+          max-height: calc(50vh) !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          margin: 0 auto !important;
+          position: relative !important;
           touch-action: pan-x pan-y pinch-zoom;
         }
 
         #risk-map {
+          max-width: 100% !important;
+          max-height: 100% !important;
+          width: auto !important;
+          height: auto !important;
           touch-action: none;
         }
 
-        /* Optimize sidebar content for mobile */
-        .turn-counter-panel {
-          font-size: 0.9em;
-          padding: 8px;
+        /* Optimize sidebar content for portrait */
+        .sidebar > * {
+          font-size: 0.92em !important;
         }
 
+        .turn-counter-panel,
         .phase-progress-panel {
-          font-size: 0.85em;
-          padding: 8px;
+          font-size: 0.88em !important;
+          padding: 8px !important;
+          margin-bottom: 8px !important;
         }
 
         .player-panel {
-          padding: 6px;
-          margin-bottom: 8px;
+          padding: 8px !important;
+          margin-bottom: 8px !important;
         }
 
         .player-info h3 {
-          font-size: 1em;
+          font-size: 1em !important;
         }
 
         .player-stats {
-          font-size: 0.85em;
+          font-size: 0.85em !important;
         }
 
         .reinforcement-panel {
-          padding: 10px;
+          padding: 10px !important;
         }
 
         .end-turn-container {
-          padding: 10px;
+          padding: 10px !important;
         }
 
         #end-turn-enhanced {
-          padding: 12px 20px;
-          font-size: 1em;
+          padding: 12px 20px !important;
+          font-size: 0.95em !important;
         }
 
-        /* Make touch targets larger */
+        /* Touch-friendly buttons */
         button, .button, a {
-          min-height: 44px;
-          min-width: 44px;
+          min-height: 44px !important;
+          min-width: 44px !important;
+          padding: 10px 16px !important;
+          touch-action: manipulation !important;
         }
 
-        /* Adjust modals for mobile */
+        /* Adjust modals for portrait */
         .modal {
           padding: 10px;
         }
 
         .modal-content {
-          width: 95%;
-          max-width: 95%;
-          max-height: 90vh;
+          width: 95% !important;
+          max-width: 95% !important;
+          max-height: 85vh !important;
           overflow-y: auto;
+          font-size: 0.95em;
         }
 
-        /* Turn header adjustments */
         .turn-header-panel {
           position: relative;
           font-size: 0.9em;
           padding: 8px;
         }
+      }
 
-        /* Mobile-specific utility class */
-        .mobile-only {
-          display: block !important;
+      /* Small phones in portrait */
+      @media (max-width: 480px) and (orientation: portrait) {
+        .sidebar {
+          transform: translateY(calc(100% - 50px)) !important;
+          max-height: 55vh !important;
+          padding: 12px 8px !important;
         }
 
-        .desktop-only {
-          display: none !important;
+        .sidebar::before {
+          font-size: 24px !important;
+          top: 12px !important;
+        }
+
+        .map-container {
+          height: calc(45vh) !important;
+          max-height: calc(45vh) !important;
+        }
+
+        .sidebar > * {
+          font-size: 0.88em !important;
+        }
+
+        .sidebar .player-panel {
+          padding: 6px !important;
+        }
+
+        button, .button {
+          font-size: 0.9em !important;
+        }
+      }
+
+      /* Extra small landscape */
+      @media (max-height: 500px) and (orientation: landscape) {
+        .sidebar {
+          width: 260px !important;
+          font-size: 0.85em;
+        }
+
+        .sidebar > * {
+          padding: 6px;
         }
       }
 
       /* Hide sidebar toggle on desktop */
-      @media (min-width: 769px) {
+      @media (min-width: 1025px) {
         .sidebar-toggle {
           display: none !important;
         }
 
         .mobile-only {
+          display: none !important;
+        }
+      }
+
+      /* Show mobile elements on mobile */
+      @media (max-width: 1024px) {
+        .mobile-only {
+          display: block !important;
+        }
+
+        .desktop-only {
           display: none !important;
         }
       }
@@ -9968,59 +10022,79 @@
       const sidebarToggle = document.getElementById('sidebar-toggle');
       
       let touchStartY = 0;
-      let touchStartX = 0;
-      let sidebarStartY = 0;
+      let touchStartTime = 0;
       let isSidebarDragging = false;
       
-      // Toggle sidebar with button
-      if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function() {
-          sidebar.classList.toggle('expanded');
-          const arrow = sidebarToggle.querySelector('span');
-          if (sidebar.classList.contains('expanded')) {
-            arrow.textContent = '▼';
-          } else {
-            arrow.textContent = '▲';
-          }
-        });
+      if (!sidebar || !sidebarToggle) {
+        console.warn('⚠️ Sidebar or toggle not found');
+        return;
       }
       
-      // Swipe gestures for sidebar
-      if (sidebar && window.innerWidth <= 768) {
-        sidebar.addEventListener('touchstart', function(e) {
-          touchStartY = e.touches[0].clientY;
-          touchStartX = e.touches[0].clientX;
-          isSidebarDragging = true;
-        }, { passive: true });
+      // Toggle sidebar with button (works for both landscape and portrait)
+      sidebarToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        sidebar.classList.toggle('expanded');
         
-        sidebar.addEventListener('touchmove', function(e) {
-          if (!isSidebarDragging) return;
-          
-          const touchY = e.touches[0].clientY;
-          const deltaY = touchY - touchStartY;
-          
-          // Only handle vertical swipes
-          if (Math.abs(deltaY) > 10) {
-            if (deltaY > 50 && sidebar.classList.contains('expanded')) {
-              // Swipe down - collapse
-              sidebar.classList.remove('expanded');
-              if (sidebarToggle) {
-                sidebarToggle.querySelector('span').textContent = '▲';
-              }
-            } else if (deltaY < -50 && !sidebar.classList.contains('expanded')) {
-              // Swipe up - expand
-              sidebar.classList.add('expanded');
-              if (sidebarToggle) {
-                sidebarToggle.querySelector('span').textContent = '▼';
-              }
-            }
+        // Update icon for landscape mode
+        if (window.matchMedia('(orientation: landscape)').matches) {
+          if (sidebar.classList.contains('expanded')) {
+            sidebarToggle.textContent = '✕';
+          } else {
+            sidebarToggle.textContent = '☰';
           }
-        }, { passive: true });
+        }
+      });
+      
+      // Portrait mode - tap on sidebar top area to expand/collapse
+      sidebar.addEventListener('touchstart', function(e) {
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }, { passive: true });
+      
+      sidebar.addEventListener('touchend', function(e) {
+        // Only in portrait mode
+        if (!window.matchMedia('(orientation: portrait)').matches) return;
         
-        sidebar.addEventListener('touchend', function() {
-          isSidebarDragging = false;
-        }, { passive: true });
-      }
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+        const diff = touchStartY - touchEndY;
+        const duration = touchEndTime - touchStartTime;
+        
+        // Get sidebar bounds
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const tapY = e.changedTouches[0].clientY - sidebarRect.top;
+        
+        // If tapped near the top (within 80px) and didn't swipe much and was quick
+        if (tapY < 80 && Math.abs(diff) < 30 && duration < 300) {
+          e.preventDefault();
+          sidebar.classList.toggle('expanded');
+          console.log('📱 Sidebar toggled via tap');
+        }
+      }, { passive: false });
+      
+      // Close sidebar when clicking outside in landscape mode
+      document.addEventListener('click', function(e) {
+        if (window.matchMedia('(max-width: 1024px) and (orientation: landscape)').matches) {
+          if (!sidebar.contains(e.target) && 
+              !sidebarToggle.contains(e.target) && 
+              sidebar.classList.contains('expanded')) {
+            sidebar.classList.remove('expanded');
+            sidebarToggle.textContent = '☰';
+          }
+        }
+      });
+      
+      // Handle orientation changes
+      window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+          // Reset sidebar state on orientation change
+          sidebar.classList.remove('expanded');
+          if (window.matchMedia('(orientation: landscape)').matches) {
+            sidebarToggle.textContent = '☰';
+          }
+          console.log('📱 Orientation changed, sidebar reset');
+        }, 100);
+      });
       
       console.log('📱 Mobile sidebar gestures initialized');
       

@@ -21,8 +21,21 @@ const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
     origin: '*',
-    methods: ['GET', 'POST']
-  }
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+  upgradeTimeout: 30000,
+  maxHttpBufferSize: 1e6,
+  allowUpgrades: true,
+  perMessageDeflate: false,
+  httpCompression: true,
+  cookie: false,
+  serveClient: false,
+  path: '/socket.io/'
 });
 
 // Initialize Session Persistence
@@ -397,7 +410,143 @@ app.get('/api/sessions/:sessionId', (req, res) => {
 
 // Socket.IO Connection Handling
 io.on(EVENTS.CONNECTION, (socket) => {
-  console.log(`🔌 Client connected: ${socket.id}`);
+  console.log(`🔌 Client connected: ${socket.id} | Transport: ${socket.conn.transport.name}`);
+
+  // Log transport upgrades
+  socket.conn.on('upgrade', (transport) => {
+    console.log(`⬆️ Transport upgraded to: ${transport.name}`);
+  });
+
+  // Create Session Event
+  socket.on('createSession', (data) => {
+    try {
+      console.log('📥 Received createSession request:', data);
+      
+      const { hostName, color, maxPlayers } = data;
+      
+      if (!hostName || !color || !maxPlayers) {
+        throw new Error('Missing required fields: hostName, color, or maxPlayers');
+      }
+      
+      // Create session with SessionManager (generates code automatically)
+      const sessionCode = sessionManager.createSession(socket.id, hostName, maxPlayers);
+      
+      // Get the session object
+      const session = sessionManager.getSession(sessionCode);
+      
+      // Update host with color
+      if (session && session.players && session.players[hostName]) {
+        session.players[hostName].color = color;
+      }
+      
+      socket.join(sessionCode);
+      
+      console.log(`🎮 Session ${sessionCode} created by ${hostName}`);
+      
+      // Send response
+      socket.emit('sessionCreated', { 
+        sessionCode,
+        session
+      });
+
+    } catch (error) {
+      console.error('❌ Create session error:', error);
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  // Join Session Event
+  socket.on('joinSession', (data) => {
+    try {
+      console.log('📥 Received joinSession request:', data);
+      
+      const { sessionCode, playerName, color } = data;
+      
+      if (!sessionCode || !playerName || !color) {
+        throw new Error('Missing required fields: sessionCode, playerName, or color');
+      }
+      
+      const session = sessionManager.joinSession(sessionCode, playerName, socket.id);
+      
+      // Update player with color
+      if (session && session.players && session.players[playerName]) {
+        session.players[playerName].color = color;
+      }
+      
+      socket.join(sessionCode);
+      
+      console.log(`👤 ${playerName} joined ${sessionCode}`);
+      
+      // Notify player
+      socket.emit('sessionJoined', { 
+        sessionCode,
+        session 
+      });
+
+      // Notify all players in session
+      io.to(sessionCode).emit('playerJoined', {
+        playerName,
+        players: session.players
+      });
+
+    } catch (error) {
+      console.error('❌ Join session error:', error);
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  // Toggle Ready Event
+  socket.on('toggleReady', (data) => {
+    try {
+      const { sessionCode, playerName, isReady } = data;
+      const session = sessionManager.getSession(sessionCode);
+      
+      if (!session) {
+        throw new Error('Session not found');
+      }
+
+      if (!session.players || !session.players[playerName]) {
+        throw new Error('Player not in session');
+      }
+
+      // Update ready status
+      session.players[playerName].isReady = isReady;
+      session.lastUpdate = Date.now();
+
+      // Save to persistence
+      sessionManager.saveSessionToPersistence(sessionCode);
+
+      // Notify all players
+      io.to(sessionCode).emit('playerReady', {
+        playerName,
+        isReady,
+        players: session.players
+      });
+
+      console.log(`${isReady ? '✅' : '⏳'} ${playerName} is ${isReady ? 'ready' : 'not ready'}`);
+    } catch (error) {
+      console.error('❌ Toggle ready error:', error);
+      socket.emit('error', { message: error.message });
+    }
+  });
+
+  // Start Game Event
+  socket.on('startGame', (data) => {
+    try {
+      const { sessionCode, initialGameState } = data;
+      const session = sessionManager.startGame(sessionCode, initialGameState);
+      
+      io.to(sessionCode).emit('gameStarted', {
+        gameState: session.gameState,
+        players: session.players
+      });
+
+      console.log(`🎮 Game started in ${sessionCode}`);
+    } catch (error) {
+      console.error('❌ Start game error:', error);
+      socket.emit('error', { message: error.message });
+    }
+  });
 
   // Join Session
   socket.on(EVENTS.SESSION_JOIN, ({ sessionId, userId, playerName }) => {
@@ -578,12 +727,43 @@ io.on(EVENTS.CONNECTION, (socket) => {
   });
 
   // Disconnect
-  socket.on(EVENTS.DISCONNECT, () => {
-    console.log(`🔌 Client disconnected: ${socket.id}`);
+  socket.on(EVENTS.DISCONNECT, (reason) => {
+    console.log(`🔌 Client disconnected: ${socket.id} | Reason: ${reason}`);
     
     if (socket.sessionId && socket.userId) {
-      handlePlayerLeave(socket.sessionId, socket.userId, socket);
+      // Mark player as disconnected instead of removing immediately
+      const session = sessionManager.getSession(socket.sessionId);
+      if (session && session.players) {
+        for (const [playerName, playerData] of Object.entries(session.players)) {
+          if (playerData.socketId === socket.id) {
+            playerData.disconnected = true;
+            playerData.disconnectedAt = Date.now();
+            
+            io.to(socket.sessionId).emit('playerDisconnected', {
+              playerName,
+              players: session.players
+            });
+            
+            console.log(`🔌 ${playerName} disconnected from ${socket.sessionId}`);
+            
+            // Remove after 5 minutes
+            setTimeout(() => {
+              const currentSession = sessionManager.getSession(socket.sessionId);
+              if (currentSession && currentSession.players[playerName]?.disconnected) {
+                handlePlayerLeave(socket.sessionId, socket.userId, socket);
+                console.log(`👋 ${playerName} removed from ${socket.sessionId} after timeout`);
+              }
+            }, 5 * 60 * 1000);
+            break;
+          }
+        }
+      }
     }
+  });
+
+  // Handle socket errors
+  socket.on('error', (error) => {
+    console.error('❌ Socket error:', socket.id, error);
   });
 });
 
@@ -641,6 +821,11 @@ setInterval(() => {
   sessionManager.cleanupOldSessions(24);
 }, 60 * 60 * 1000);
 
+// Error handling for Socket.IO engine
+io.engine.on('connection_error', (err) => {
+  console.error('❌ Connection error:', err.req?.url, err.code, err.message, err.context);
+});
+
 // Start Server
 server.listen(PORT, '0.0.0.0', () => {
   const env = process.env.NODE_ENV || 'development';
@@ -652,6 +837,7 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🌐 Environment: ${env}`);
   console.log(`🌐 Public URL: ${publicUrl}`);
   console.log(`📁 Serving files from: ${ROOT_DIR}`);
+  console.log(`🔌 Socket.IO: Websocket + Polling enabled`);
   console.log(`\n💡 Main Menu: ${publicUrl}/`);
   console.log(`💡 Single Player: ${publicUrl}/game.html`);
   console.log(`💡 Admin Panel: ${publicUrl}/admin`);

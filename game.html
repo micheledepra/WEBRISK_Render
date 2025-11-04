@@ -2870,41 +2870,195 @@
          MOBILE & TABLET RESPONSIVE LAYOUT
          ======================================== */
       
-      /* Tablet Landscape & Small Desktop */
-      @media (max-width: 1024px) and (min-width: 769px) and (orientation: landscape) {
-        .sidebar {
-          width: 280px !important;
-          padding: 15px !important;
+      /* Base mobile adjustments */
+      @media (max-width: 1024px) {
+        body {
+          overflow-x: hidden !important;
         }
 
         .game-container {
-          flex-direction: row !important;
+          width: 100vw !important;
+          height: 100vh !important;
+          overflow: hidden !important;
         }
       }
 
-      /* LANDSCAPE MODE - Collapsible Sidebar */
+      /* ==========================================
+         LANDSCAPE MODE (Horizontal - Phone Tilted)
+         Sidebar at BOTTOM
+         ========================================== */
       @media (max-width: 1024px) and (orientation: landscape) {
+        .game-container {
+          flex-direction: column !important;
+        }
+
+        .sidebar {
+          position: fixed !important;
+          left: 0 !important;
+          bottom: 0 !important;
+          right: 0 !important;
+          width: 100% !important;
+          height: 45% !important;
+          max-height: 280px !important;
+          transform: translateY(calc(100% - 50px)) !important;
+          transition: transform 0.3s ease !important;
+          z-index: 1000 !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          display: flex !important;
+          flex-direction: row !important;
+          flex-wrap: wrap !important;
+          padding: 8px 12px !important;
+          box-sizing: border-box !important;
+        }
+
+        .sidebar.open {
+          transform: translateY(0) !important;
+        }
+
+        /* Sidebar toggle button - center top in landscape */
+        .sidebar-toggle {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+          width: 50px !important;
+          height: 50px !important;
+          position: fixed !important;
+          top: 10px !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%) !important;
+          border: 3px solid #8b7355 !important;
+          border-radius: 50% !important;
+          cursor: pointer !important;
+          font-size: 24px !important;
+          color: #2c1810 !important;
+          z-index: 1001 !important;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+          transition: all 0.3s ease !important;
+        }
+
+        .sidebar-toggle.open {
+          top: auto !important;
+          bottom: calc(45% - 25px) !important;
+          background: linear-gradient(135deg, #c9302c 0%, #e74c3c 100%) !important;
+        }
+
+        /* Map container - top portion in landscape */
+        .map-container {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          height: 55% !important;
+          width: 100% !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
+
+        #risk-map {
+          max-width: 95% !important;
+          max-height: 95% !important;
+        }
+
+        /* Sidebar content - horizontal layout */
+        .sidebar > div,
+        .sidebar > section {
+          flex: 1 1 auto !important;
+          min-width: 150px !important;
+          max-width: 250px !important;
+          margin: 4px !important;
+          padding: 6px !important;
+        }
+
+        .sidebar h2,
+        .sidebar h3 {
+          font-size: 0.9em !important;
+          margin: 4px 0 !important;
+          padding: 2px 0 !important;
+        }
+
+        .sidebar p,
+        .sidebar label,
+        .sidebar span {
+          font-size: 0.85em !important;
+          line-height: 1.3 !important;
+          margin: 2px 0 !important;
+        }
+
+        .sidebar button {
+          font-size: 0.85em !important;
+          padding: 8px 12px !important;
+          min-height: 44px !important;
+          margin: 3px 2px !important;
+        }
+
+        .sidebar input,
+        .sidebar select {
+          font-size: 0.85em !important;
+          padding: 6px !important;
+          min-height: 44px !important;
+        }
+
+        .sidebar ul {
+          font-size: 0.85em !important;
+          max-height: 120px !important;
+          overflow-y: auto !important;
+        }
+
+        .sidebar li {
+          padding: 3px 6px !important;
+          font-size: 0.85em !important;
+        }
+
+        .player-panel {
+          padding: 6px !important;
+          margin: 4px !important;
+        }
+
+        .player-stats {
+          display: grid !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 4px !important;
+          font-size: 0.85em !important;
+        }
+      }
+
+      /* ==========================================
+         PORTRAIT MODE (Vertical Screen)
+         Sidebar on LEFT SIDE (collapsed by default)
+         ========================================== */
+      @media (max-width: 768px) and (orientation: portrait) {
+        .game-container {
+          flex-direction: row !important;
+          height: 100vh !important;
+        }
+
         .sidebar {
           position: fixed !important;
           left: 0 !important;
           top: 0 !important;
           bottom: 0 !important;
-          width: 280px !important;
+          width: 85% !important;
+          max-width: 320px !important;
           height: 100vh !important;
-          max-height: 100vh !important;
           transform: translateX(-100%) !important;
-          transition: transform 0.3s ease-in-out !important;
-          z-index: 9998 !important;
-          box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3) !important;
-          padding: 15px !important;
+          transition: transform 0.3s ease !important;
+          z-index: 1000 !important;
           overflow-y: auto !important;
+          overflow-x: hidden !important;
+          display: flex !important;
+          flex-direction: column !important;
+          padding: 12px !important;
+          box-sizing: border-box !important;
         }
 
-        .sidebar.expanded {
+        .sidebar.open {
           transform: translateX(0) !important;
         }
 
-        /* Toggle button for landscape */
+        /* Sidebar toggle button - left center in portrait */
         .sidebar-toggle {
           display: flex !important;
           align-items: center !important;
@@ -2915,107 +3069,52 @@
           left: 10px !important;
           top: 50% !important;
           transform: translateY(-50%) !important;
-          background: rgba(255, 215, 0, 0.95) !important;
-          border: 3px solid #1a1a2e !important;
+          background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%) !important;
+          border: 3px solid #8b7355 !important;
           border-radius: 50% !important;
           cursor: pointer !important;
           font-size: 24px !important;
-          z-index: 9999 !important;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+          color: #2c1810 !important;
+          z-index: 1001 !important;
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+          transition: all 0.3s ease !important;
         }
 
-        .sidebar.expanded ~ .sidebar-toggle {
-          left: 290px !important;
+        .sidebar-toggle.open {
+          left: calc(85% + 10px) !important;
+          background: linear-gradient(135deg, #c9302c 0%, #e74c3c 100%) !important;
         }
 
-        .map-container {
-          margin-left: 0 !important;
-          width: 100% !important;
-          height: 100vh !important;
-          position: relative !important;
-        }
-
-        .game-container {
-          flex-direction: row !important;
-          height: 100vh !important;
-        }
-
-        /* Optimize sidebar content */
-        .sidebar * {
-          font-size: 0.9em;
-        }
-
-        .player-panel {
-          padding: 8px !important;
-          margin-bottom: 8px !important;
-        }
-      }
-
-      /* PORTRAIT MODE - Bottom Drawer */
-      @media (max-width: 768px) and (orientation: portrait) {
-        body {
-          overflow: auto;
-          -webkit-overflow-scrolling: touch;
-        }
-
-        .game-container {
-          flex-direction: column !important;
-          height: 100vh !important;
-        }
-
-        .sidebar {
+        /* Overlay for closing sidebar */
+        .sidebar-overlay {
+          display: none !important;
           position: fixed !important;
-          bottom: 0 !important;
+          top: 0 !important;
           left: 0 !important;
           right: 0 !important;
-          top: auto !important;
-          width: 100% !important;
-          max-width: 100% !important;
-          max-height: 50vh !important;
-          height: auto !important;
-          padding: 12px !important;
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-          z-index: 9998 !important;
-          transform: translateY(calc(100% - 60px)) !important;
-          transition: transform 0.3s ease-in-out !important;
-          border-top: 3px solid rgba(255, 215, 0, 0.7) !important;
-          box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3) !important;
+          bottom: 0 !important;
+          background: rgba(0, 0, 0, 0.5) !important;
+          z-index: 999 !important;
         }
 
-        .sidebar.expanded {
-          transform: translateY(0) !important;
-        }
-
-        /* Pull-up indicator */
-        .sidebar::before {
-          content: '☰' !important;
-          position: absolute !important;
-          top: 15px !important;
-          left: 50% !important;
-          transform: translateX(-50%) !important;
-          font-size: 28px !important;
-          color: #ffd700 !important;
-          z-index: 10 !important;
-          pointer-events: none !important;
+        .sidebar-overlay.active {
           display: block !important;
         }
 
-        /* Hide landscape toggle in portrait */
-        .sidebar-toggle {
-          display: none !important;
-        }
-
+        /* Map container - full screen in portrait */
         .map-container {
+          position: fixed !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
+          bottom: 0 !important;
           width: 100% !important;
-          height: calc(50vh) !important;
-          max-height: calc(50vh) !important;
+          height: 100vh !important;
           display: flex !important;
           align-items: center !important;
           justify-content: center !important;
-          margin: 0 auto !important;
-          position: relative !important;
-          touch-action: pan-x pan-y pinch-zoom;
+          padding: 60px 10px 10px 10px !important;
+          box-sizing: border-box !important;
         }
 
         #risk-map {
@@ -3023,121 +3122,119 @@
           max-height: 100% !important;
           width: auto !important;
           height: auto !important;
-          touch-action: none;
         }
 
-        /* Optimize sidebar content for portrait */
-        .sidebar > * {
-          font-size: 0.92em !important;
-        }
-
-        .turn-counter-panel,
-        .phase-progress-panel {
-          font-size: 0.88em !important;
+        /* Sidebar content - vertical stack */
+        .sidebar > div,
+        .sidebar > section {
+          width: 100% !important;
+          margin: 6px 0 !important;
           padding: 8px !important;
-          margin-bottom: 8px !important;
+        }
+
+        .sidebar h2,
+        .sidebar h3 {
+          font-size: 1em !important;
+          margin: 6px 0 !important;
+          padding: 4px 0 !important;
+        }
+
+        .sidebar p,
+        .sidebar label,
+        .sidebar span {
+          font-size: 0.9em !important;
+          line-height: 1.4 !important;
+          margin: 3px 0 !important;
+        }
+
+        .sidebar button {
+          font-size: 0.9em !important;
+          padding: 10px 14px !important;
+          min-height: 44px !important;
+          margin: 4px 0 !important;
+          width: 100% !important;
+        }
+
+        .sidebar input,
+        .sidebar select {
+          font-size: 0.9em !important;
+          padding: 8px !important;
+          min-height: 44px !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+        }
+
+        .sidebar ul {
+          font-size: 0.9em !important;
+          max-height: 200px !important;
+          overflow-y: auto !important;
+        }
+
+        .sidebar li {
+          padding: 4px 8px !important;
+          font-size: 0.9em !important;
         }
 
         .player-panel {
           padding: 8px !important;
-          margin-bottom: 8px !important;
-        }
-
-        .player-info h3 {
-          font-size: 1em !important;
+          margin: 6px 0 !important;
         }
 
         .player-stats {
-          font-size: 0.85em !important;
-        }
-
-        .reinforcement-panel {
-          padding: 10px !important;
-        }
-
-        .end-turn-container {
-          padding: 10px !important;
-        }
-
-        #end-turn-enhanced {
-          padding: 12px 20px !important;
-          font-size: 0.95em !important;
-        }
-
-        /* Touch-friendly buttons */
-        button, .button, a {
-          min-height: 44px !important;
-          min-width: 44px !important;
-          padding: 10px 16px !important;
-          touch-action: manipulation !important;
-        }
-
-        /* Adjust modals for portrait */
-        .modal {
-          padding: 10px;
-        }
-
-        .modal-content {
-          width: 95% !important;
-          max-width: 95% !important;
-          max-height: 85vh !important;
-          overflow-y: auto;
-          font-size: 0.95em;
-        }
-
-        .turn-header-panel {
-          position: relative;
-          font-size: 0.9em;
-          padding: 8px;
-        }
-      }
-
-      /* Small phones in portrait */
-      @media (max-width: 480px) and (orientation: portrait) {
-        .sidebar {
-          transform: translateY(calc(100% - 50px)) !important;
-          max-height: 55vh !important;
-          padding: 12px 8px !important;
-        }
-
-        .sidebar::before {
-          font-size: 24px !important;
-          top: 12px !important;
-        }
-
-        .map-container {
-          height: calc(45vh) !important;
-          max-height: calc(45vh) !important;
-        }
-
-        .sidebar > * {
-          font-size: 0.88em !important;
-        }
-
-        .sidebar .player-panel {
-          padding: 6px !important;
-        }
-
-        button, .button {
+          display: flex !important;
+          flex-direction: column !important;
+          gap: 6px !important;
           font-size: 0.9em !important;
         }
       }
 
-      /* Extra small landscape */
-      @media (max-height: 500px) and (orientation: landscape) {
+      /* Small phones - extra compact */
+      @media (max-width: 480px) and (orientation: portrait) {
         .sidebar {
-          width: 260px !important;
-          font-size: 0.85em;
+          width: 90% !important;
+          max-width: 280px !important;
         }
 
-        .sidebar > * {
-          padding: 6px;
+        .sidebar h2,
+        .sidebar h3 {
+          font-size: 0.95em !important;
+        }
+
+        .sidebar p,
+        .sidebar label,
+        .sidebar span,
+        .sidebar button,
+        .sidebar input,
+        .sidebar ul,
+        .sidebar li {
+          font-size: 0.88em !important;
+        }
+      }
+
+      /* Extra small landscape phones */
+      @media (max-height: 500px) and (orientation: landscape) {
+        .sidebar {
+          max-height: 220px !important;
+        }
+
+        .sidebar h2,
+        .sidebar h3 {
+          font-size: 0.85em !important;
+        }
+
+        .sidebar button {
+          padding: 6px 10px !important;
+          min-height: 40px !important;
         }
       }
 
       /* Hide sidebar toggle on desktop */
       @media (min-width: 1025px) {
         .sidebar-toggle {
+          display: none !important;
+        }
+
+        .sidebar-overlay {
           display: none !important;
         }
 
@@ -10015,88 +10112,78 @@
     <script>
     (function() {
       // ═══════════════════════════════════════════════════════
-      // MOBILE SIDEBAR TOGGLE & SWIPE GESTURES
+      // MOBILE SIDEBAR TOGGLE - SINGLE BUTTON FOR BOTH ORIENTATIONS
       // ═══════════════════════════════════════════════════════
+      // Landscape (horizontal phone): Sidebar at BOTTOM, toggle at TOP-CENTER
+      // Portrait (vertical phone): Sidebar on LEFT, toggle at LEFT-CENTER
       
       const sidebar = document.querySelector('.sidebar');
       const sidebarToggle = document.getElementById('sidebar-toggle');
-      
-      let touchStartY = 0;
-      let touchStartTime = 0;
-      let isSidebarDragging = false;
+      const sidebarOverlay = document.querySelector('.sidebar-overlay');
       
       if (!sidebar || !sidebarToggle) {
         console.warn('⚠️ Sidebar or toggle not found');
         return;
       }
       
-      // Toggle sidebar with button (works for both landscape and portrait)
-      sidebarToggle.addEventListener('click', function(e) {
-        e.stopPropagation();
+      // Single toggle function for both orientations
+      function toggleSidebar() {
         sidebar.classList.toggle('expanded');
         
-        // Update icon for landscape mode
-        if (window.matchMedia('(orientation: landscape)').matches) {
-          if (sidebar.classList.contains('expanded')) {
-            sidebarToggle.textContent = '✕';
-          } else {
-            sidebarToggle.textContent = '☰';
-          }
+        // Update button icon
+        if (sidebar.classList.contains('expanded')) {
+          sidebarToggle.textContent = '✕';
+          sidebarToggle.style.background = 'rgba(220, 53, 69, 0.9)';
+          if (sidebarOverlay) sidebarOverlay.style.display = 'block';
+        } else {
+          sidebarToggle.textContent = '☰';
+          sidebarToggle.style.background = 'rgba(212, 175, 55, 0.9)';
+          if (sidebarOverlay) sidebarOverlay.style.display = 'none';
         }
+        
+        console.log('📱 Sidebar toggled:', sidebar.classList.contains('expanded') ? 'OPEN' : 'CLOSED');
+      }
+      
+      // Button click handler
+      sidebarToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleSidebar();
       });
       
-      // Portrait mode - tap on sidebar top area to expand/collapse
-      sidebar.addEventListener('touchstart', function(e) {
-        touchStartY = e.touches[0].clientY;
-        touchStartTime = Date.now();
-      }, { passive: true });
+      // Close on overlay click (optional background tap)
+      if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', function() {
+          if (sidebar.classList.contains('expanded')) {
+            toggleSidebar();
+          }
+        });
+      }
       
-      sidebar.addEventListener('touchend', function(e) {
-        // Only in portrait mode
-        if (!window.matchMedia('(orientation: portrait)').matches) return;
-        
-        const touchEndY = e.changedTouches[0].clientY;
-        const touchEndTime = Date.now();
-        const diff = touchStartY - touchEndY;
-        const duration = touchEndTime - touchStartTime;
-        
-        // Get sidebar bounds
-        const sidebarRect = sidebar.getBoundingClientRect();
-        const tapY = e.changedTouches[0].clientY - sidebarRect.top;
-        
-        // If tapped near the top (within 80px) and didn't swipe much and was quick
-        if (tapY < 80 && Math.abs(diff) < 30 && duration < 300) {
-          e.preventDefault();
-          sidebar.classList.toggle('expanded');
-          console.log('📱 Sidebar toggled via tap');
-        }
-      }, { passive: false });
-      
-      // Close sidebar when clicking outside in landscape mode
+      // Close sidebar when clicking outside
       document.addEventListener('click', function(e) {
-        if (window.matchMedia('(max-width: 1024px) and (orientation: landscape)').matches) {
+        if (window.matchMedia('(max-width: 1024px)').matches) {
           if (!sidebar.contains(e.target) && 
               !sidebarToggle.contains(e.target) && 
               sidebar.classList.contains('expanded')) {
-            sidebar.classList.remove('expanded');
-            sidebarToggle.textContent = '☰';
+            toggleSidebar();
           }
         }
       });
       
-      // Handle orientation changes
+      // Handle orientation changes - reset sidebar to closed state
       window.addEventListener('orientationchange', function() {
         setTimeout(function() {
-          // Reset sidebar state on orientation change
-          sidebar.classList.remove('expanded');
-          if (window.matchMedia('(orientation: landscape)').matches) {
+          if (sidebar.classList.contains('expanded')) {
+            sidebar.classList.remove('expanded');
             sidebarToggle.textContent = '☰';
+            sidebarToggle.style.background = 'rgba(212, 175, 55, 0.9)';
+            if (sidebarOverlay) sidebarOverlay.style.display = 'none';
           }
-          console.log('📱 Orientation changed, sidebar reset');
+          console.log('📱 Orientation changed, sidebar reset to closed');
         }, 100);
       });
       
-      console.log('📱 Mobile sidebar gestures initialized');
+      console.log('📱 Mobile sidebar toggle initialized (Landscape=Bottom, Portrait=Left)');
       
       // ═══════════════════════════════════════════════════════
       // PINCH-TO-ZOOM REMOVED - NOW HANDLED BY RiskMap.js

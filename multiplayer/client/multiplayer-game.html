@@ -1135,6 +1135,9 @@
         window.colorManager = riskUI.colorManager;
         window.ColorManager = riskUI.colorManager;
         
+        // ✅ FIX: Set gameState globally BEFORE combat system
+        window.gameState = riskUI.gameState;
+        
         // Initialize combat system
         if (typeof initializeCombatSystem !== 'undefined') {
           initializeCombatSystem();
@@ -1145,10 +1148,23 @@
         if (sessionData.gameState) {
           console.log('📥 Restoring game state from server');
           GameStateManager.restoreFromPersistence(sessionData.gameState);
+          
+          // ✅ FIX: Restore current turn from saved state
+          if (sessionData.currentPlayerName) {
+            const playerIndex = players.indexOf(sessionData.currentPlayerName);
+            if (playerIndex !== -1) {
+              window.gameState.currentTurn = playerIndex;
+              console.log(`✅ Restored current turn: ${sessionData.currentPlayerName} (index ${playerIndex})`);
+            }
+          }
         } else {
           console.log('🎲 New game - distributing territories');
           // First time - distribute territories
           riskUI.gameState.assignTerritoriesRandomly();
+          
+          // ✅ FIX: Set initial turn to first player
+          window.gameState.currentTurn = 0;
+          console.log(`✅ Set initial turn: ${players[0]} (index 0)`);
         }
         
         // Sync phases
@@ -1159,7 +1175,7 @@
         const riskMap = new RiskMap(riskUI);
         const riskGame = new RiskGame(riskUI, riskMap);
         
-        window.gameState = riskUI.gameState;
+        // ✅ FIX: Set all globals in correct order
         window.riskMap = riskMap;
         window.riskGame = riskGame;
         window.phaseSynchronizer = riskUI.phaseSynchronizer;
@@ -1177,10 +1193,19 @@
           window.initializeTurnManagement();
         }
         
+        // ✅ FIX: Update multiplayer state with current turn
+        const currentPlayerIndex = window.gameState.currentTurn;
+        if (currentPlayerIndex !== undefined && currentPlayerIndex >= 0) {
+          window.multiplayerState.currentPlayerName = players[currentPlayerIndex];
+          window.multiplayerState.isMyTurn = 
+            window.multiplayerState.currentPlayerName === window.multiplayerState.playerName;
+          console.log(`✅ Multiplayer state synced - current: ${window.multiplayerState.currentPlayerName}, isMyTurn: ${window.multiplayerState.isMyTurn}`);
+        }
+        
         console.log('✅ Game systems initialized');
         console.log('   Players:', players.join(', '));
         console.log('   Colors:', playerColors.join(', '));
-        console.log('   Current turn:', window.gameState.currentTurn);
+        console.log('   Current turn:', window.gameState.currentTurn, '(' + players[window.gameState.currentTurn] + ')');
       } catch (error) {
         console.error('❌ Failed to initialize game systems:', error);
         throw error;
@@ -1469,7 +1494,20 @@
         if (sessionData && sessionData.players[currentPlayer]) {
           playerEl.style.color = sessionData.players[currentPlayer].color;
         }
+      } else {
+        // ✅ FIX: Show fallback based on gameState if available
+        if (window.gameState && window.gameState.currentTurn !== undefined) {
+          const playerIndex = window.gameState.currentTurn;
+          const players = window.multiplayerSession?.players;
+          if (players && players[playerIndex]) {
+            playerEl.textContent = players[playerIndex].name;
+            playerEl.style.color = players[playerIndex].color;
+          }
+        }
       }
+      
+      // Update player list dots as well
+      updatePlayerList();
     }
     
     function updateWaitingOverlay() {

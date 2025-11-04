@@ -1,32 +1,508 @@
 /**
  * MultiplayerGameAdapter - Adapts single-player Risk game for multiplayer
- * Intercepts game actions and syncs with server
+ * Bridges multiplayer session data to existing single-player game structures
+ * WITHOUT duplicating UI functions - leverages existing turn management
  */
 
 class MultiplayerGameAdapter {
-  constructor(client, gameState, turnManager) {
+  constructor(client, riskGame) {
     this.client = client;
-    this.gameState = gameState;
-    this.turnManager = turnManager;
+    this.game = riskGame;
+    this.gameState = riskGame?.gameState;
+    this.turnManager = riskGame?.turnManager;
+    this.riskUI = riskGame?.riskUI;
+    this.phaseManager = riskGame?.phaseManager;
+    
     this.isInitialized = false;
     this.originalMethods = {};
+    this.sessionId = null;
+    this.userId = null;
+    this.userToPlayerMap = new Map(); // Maps userId → playerName
+    this.playerToUserMap = new Map(); // Maps playerName → userId
     
     console.log('🎮 MultiplayerGameAdapter initialized');
   }
+  
+  /**
+   * Initialize game with session data
+   * Maps lobby users → game players for existing turn management
+   */
+  async initializeGame(sessionData) {
+    console.log('🚀 Initializing multiplayer game with session:', sessionData);
+    
+    this.sessionId = sessionData.sessionCode || sessionData.sessionId;
+    this.userId = this.client.userId;
+    
+    // Extract users from session (lobby names and colors)
+    const users = Object.entries(sessionData.players || {}).map(([name, data]) => ({
+      userId: data.userId || data.socketId || data.id,
+      name: name,
+      color: data.color,
+      isHost: data.isHost || false
+    }));
+    
+    console.log('👥 Session users:', users);
+    
+    // Map users to game player names (use lobby names directly)
+    const playerNames = users.map(u => u.name);
+    const playerColors = users.map(u => u.color);
+    
+    // Create bidirectional mapping
+    users.forEach((user) => {
+      this.userToPlayerMap.set(user.userId, user.name);
+      this.playerToUserMap.set(user.name, user.userId);
+    });
+    
+    console.log('🗺️ User→Player mapping:', Array.from(this.userToPlayerMap.entries()));
+    
+    // Initialize game with existing RiskUI structure
+    // This leverages ALL existing turn management UI
+    if (this.riskUI && this.riskUI.initGame) {
+      this.riskUI.initGame(playerNames, playerColors);
+    }
+    
+    // Store reference to current user's player name
+    const myPlayerName = this.userToPlayerMap.get(this.userId);
+    window.multiplayerState.myPlayerName = myPlayerName;
+    
+    console.log('✅ My player name:', myPlayerName);
+    
+    // Sync initial game state
+    if (sessionData.gameState) {
+      await this.syncGameState(sessionData.gameState);
+    }
+    
+    // Setup turn management for multiplayer
+    this.setupMultiplayerTurnManagement();
+    
+    console.log('✅ Game initialized with player mapping');
+  }
+
+  
+  /**
+   * Setup multiplayer-specific turn management
+   * Extends existing single-player turn system
+   */
+  setupMultiplayerTurnManagement() {
+    if (!this.gameState) {
+      console.error('❌ GameState not available for turn management');
+      return;
+    }
+    
+    // Intercept existing turn advancement
+    if (this.gameState.advanceToNextPlayer) {
+      const originalAdvanceTurn = this.gameState.advanceToNextPlayer.bind(this.gameState);
+      
+      this.gameState.advanceToNextPlayer = () => {
+        if (!this.checkIsMyTurn()) {
+          console.log('⏭️ Not my turn, blocking local advance');
+          this.showNotification("It's not your turn!", 'warning');
+          return;
+        }
+        
+        // Allow local advance, then sync to server
+        originalAdvanceTurn();
+        this.client.emitEndTurn(this.sessionId);
+      };
+    }
+    
+    // Intercept phase transitions
+    if (this.phaseManager && this.phaseManager.endCurrentPhase) {
+      const originalEndPhase = this.phaseManager.endCurrentPhase.bind(this.phaseManager);
+      
+      this.phaseManager.endCurrentPhase = (options) => {
+        if (!this.checkIsMyTurn()) {
+          this.showNotification("It's not your turn!", 'warning');
+          return;
+        }
+        
+        // Allow local phase end, then sync
+        originalEndPhase(options);
+        this.client.emitPhaseComplete(this.sessionId, this.gameState.phase);
+      };
+    }
+    
+    // Update turn controls to show user names (already done via initGame)
+    this.updateTurnControls();
+    
+    console.log('✅ Multiplayer turn management active');
+  }
+  
+  /**
+   * Check if current turn belongs to this user
+   */
+  checkIsMyTurn() {
+    if (!this.gameState) return false;
+    
+    const currentPlayerName = this.gameState.getCurrentPlayer();
+    const currentUserId = this.playerToUserMap.get(currentPlayerName);
+    const isMyTurn = currentUserId === this.userId;
+    
+    // Sync to global state for UI
+    window.multiplayerState.isMyTurn = isMyTurn;
+    window.multiplayerState.currentPlayerName = currentPlayerName;
+    
+    return isMyTurn;
+  }
+  
+  /**
+   * Update turn controls based on whose turn it is
+   * Disables/enables existing UI without duplicating it
+   */
+  updateTurnControls() {
+    const isMyTurn = this.checkIsMyTurn();
+    
+    // Disable/enable phase buttons for spectators
+    const phaseButtons = document.querySelectorAll(
+      '.end-turn-btn, .skip-phase-btn, .end-phase-btn, [data-phase-action], button[onclick*="endTurn"], button[onclick*="skipPhase"]'
+    );
+    
+    phaseButtons.forEach(btn => {
+      btn.disabled = !isMyTurn;
+      btn.style.opacity = isMyTurn ? '1' : '0.5';
+      btn.style.cursor = isMyTurn ? 'pointer' : 'not-allowed';
+      
+      if (!isMyTurn) {
+        btn.title = `Wait for ${window.multiplayerState.currentPlayerName}'s turn`;
+      } else {
+        btn.title = '';
+      }
+    });
+    
+    // Update waiting overlay (existing multiplayer HUD)
+    this.updateWaitingOverlay(!isMyTurn);
+    
+    // Update turn indicator (reuse existing single-player UI)
+    this.updateTurnIndicator();
+    
+    console.log(isMyTurn ? '✅ Your turn - controls enabled' : '⏳ Spectating - controls disabled');
+  }
+  
+  /**
+   * Update existing turn indicator (single-player UI)
+   * No duplication - just updates existing elements
+   */
+  updateTurnIndicator() {
+    if (!this.gameState) return;
+    
+    const currentPlayerName = this.gameState.getCurrentPlayer();
+    const isMyTurn = this.checkIsMyTurn();
+    
+    // Update player name display (existing element from game.html)
+    const playerNameEl = document.querySelector('.current-player-name, .turn-player-name, #current-player-name');
+    if (playerNameEl) {
+      playerNameEl.textContent = currentPlayerName;
+      playerNameEl.style.color = isMyTurn ? '#4caf50' : '#ffd700';
+      playerNameEl.style.fontWeight = isMyTurn ? 'bold' : 'normal';
+    }
+    
+    // Update turn status message (existing element)
+    const turnStatusEl = document.querySelector('.turn-status, .phase-indicator, #turn-status');
+    if (turnStatusEl) {
+      turnStatusEl.textContent = isMyTurn ? '🟢 YOUR TURN' : `⏳ ${currentPlayerName}'s Turn`;
+    }
+    
+    // Update player list highlighting (existing element from game.html)
+    const playerItems = document.querySelectorAll('.player-turn-item, [data-player-name]');
+    playerItems.forEach(item => {
+      const playerName = item.dataset.playerName || item.textContent.trim();
+      item.classList.toggle('current-turn', playerName === currentPlayerName);
+      item.classList.toggle('my-turn', playerName === window.multiplayerState.myPlayerName);
+    });
+    
+    // Update multiplayer HUD player name
+    const hudPlayerEl = document.getElementById('hud-current-player');
+    if (hudPlayerEl) {
+      hudPlayerEl.textContent = currentPlayerName;
+      hudPlayerEl.style.color = isMyTurn ? '#4caf50' : '#ffd700';
+    }
+  }
+  
+  /**
+   * Update waiting overlay (multiplayer HUD)
+   */
+  updateWaitingOverlay(isWaiting) {
+    const overlay = document.getElementById('waiting-overlay');
+    if (overlay) {
+      overlay.classList.toggle('active', isWaiting);
+      
+      const playerNameEl = document.getElementById('waiting-player-name');
+      if (playerNameEl && isWaiting) {
+        playerNameEl.textContent = `${window.multiplayerState.currentPlayerName} is playing...`;
+      }
+    }
+  }
+  
+  /**
+   * Sync game state from server
+   * Updates existing game structures (no duplication)
+   */
+  async syncGameState(gameState) {
+    console.log('🔄 Syncing game state from server:', gameState);
+    
+    if (!this.gameState) {
+      console.error('❌ GameState not available for sync');
+      return;
+    }
+    
+    // Update territories (existing GameState structure)
+    if (gameState.territories) {
+      Object.entries(gameState.territories).forEach(([territoryId, data]) => {
+        const territory = this.gameState.territories.get(territoryId);
+        if (territory) {
+          // Map owner userId → playerName
+          const ownerName = this.userToPlayerMap.get(data.owner) || data.owner;
+          territory.owner = ownerName;
+          territory.armies = data.armies;
+        }
+      });
+    }
+    
+    // Update current player (existing GameState)
+    if (gameState.currentPlayer !== undefined) {
+      const currentPlayerName = this.userToPlayerMap.get(gameState.currentPlayer) || 
+                                 this.gameState.players[gameState.currentPlayer];
+      
+      // Find player index by name
+      const playerIndex = this.gameState.players.indexOf(currentPlayerName);
+      if (playerIndex !== -1) {
+        this.gameState.currentPlayerIndex = playerIndex;
+      }
+    }
+    
+    // Update phase (existing PhaseManager)
+    if (gameState.phase && this.phaseManager) {
+      this.phaseManager.currentPhase = gameState.phase;
+    }
+    
+    // Update turn number (use round counter for multiplayer)
+    if (gameState.turnNumber !== undefined) {
+      const playerCount = this.gameState.players.length;
+      const roundNumber = Math.floor(gameState.turnNumber / playerCount) + 1;
+      
+      this.gameState.turnNumber = gameState.turnNumber;
+      
+      // Update turn counter display (existing UI element)
+      const turnCounterEl = document.querySelector('.turn-counter, [data-turn-number], #turn-number');
+      if (turnCounterEl) {
+        turnCounterEl.textContent = `Round ${roundNumber}`;
+        turnCounterEl.title = `Turn ${gameState.turnNumber} (Round ${roundNumber} of gameplay)`;
+      }
+    }
+    
+    // Re-render map with updated state (existing RiskMap)
+    if (this.game.riskMap && this.game.riskMap.updateAllTerritories) {
+      this.game.riskMap.updateAllTerritories();
+    }
+    
+    // Update turn controls for new state
+    this.updateTurnControls();
+    
+    console.log('✅ Game state synced');
+  }
+  
+  /**
+   * Handle turn change from server
+   */
+  handleTurnChange(data) {
+    console.log('🔄 Turn changed:', data);
+    
+    if (!this.gameState) return;
+    
+    // Map userId → playerName
+    const newPlayerName = this.userToPlayerMap.get(data.currentPlayerId) || data.currentPlayerName;
+    
+    // Update game state (existing structure)
+    const playerIndex = this.gameState.players.indexOf(newPlayerName);
+    if (playerIndex !== -1) {
+      this.gameState.currentPlayerIndex = playerIndex;
+    }
+    
+    // Update phase if provided
+    if (data.phase && this.phaseManager) {
+      this.phaseManager.currentPhase = data.phase;
+    }
+    
+    // Update turn number (round counter)
+    if (data.turnNumber !== undefined) {
+      this.gameState.turnNumber = data.turnNumber;
+      
+      const playerCount = this.gameState.players.length;
+      const roundNumber = Math.floor(data.turnNumber / playerCount) + 1;
+      
+      const turnCounterEl = document.querySelector('.turn-counter, [data-turn-number], #turn-number');
+      if (turnCounterEl) {
+        turnCounterEl.textContent = `Round ${roundNumber}`;
+        turnCounterEl.title = `Turn ${data.turnNumber} (Round ${roundNumber} of gameplay)`;
+      }
+    }
+    
+    // Update UI controls (existing functions)
+    this.updateTurnControls();
+    
+    // Show notification
+    const isMyTurn = this.checkIsMyTurn();
+    if (isMyTurn) {
+      this.showNotification(`Your turn! Phase: ${data.phase || 'Deploy'}`, 'success');
+    } else {
+      this.showNotification(`${newPlayerName}'s turn`, 'info');
+    }
+  }
+  
+  /**
+   * Handle player disconnection
+   * Auto-skip with notification
+   */
+  handlePlayerDisconnected(data) {
+    console.log('🔌 Player disconnected:', data);
+    
+    const playerName = this.userToPlayerMap.get(data.userId) || data.playerName;
+    
+    // Show notification
+    this.showNotification(`${playerName} disconnected - skipping their turn`, 'warning');
+    
+    // Mark player as disconnected (existing GameState structure)
+    if (this.gameState) {
+      const playerIndex = this.gameState.players.indexOf(playerName);
+      if (playerIndex !== -1) {
+        // Add disconnected flag to player
+        if (!this.gameState.playerStates) {
+          this.gameState.playerStates = {};
+        }
+        this.gameState.playerStates[playerName] = { disconnected: true };
+      }
+    }
+    
+    // If it was their turn, server will advance automatically
+    // Just update UI
+    this.updateTurnControls();
+  }
+  
+  /**
+   * Handle player reconnection
+   */
+  handlePlayerReconnected(data) {
+    const playerName = this.userToPlayerMap.get(data.userId) || data.playerName;
+    this.showNotification(`${playerName} reconnected`, 'success');
+    
+    // Remove disconnected flag
+    if (this.gameState && this.gameState.playerStates?.[playerName]) {
+      this.gameState.playerStates[playerName].disconnected = false;
+    }
+  }
+  
+  /**
+   * Show notification (reuse existing notification system)
+   */
+  showNotification(message, type = 'info') {
+    // Try existing notification systems
+    if (this.riskUI && this.riskUI.showNotification) {
+      this.riskUI.showNotification(message, type);
+    } else if (window.showNotification) {
+      window.showNotification(message, type);
+    } else {
+      // Fallback: console log
+      const icon = type === 'success' ? '✅' : type === 'warning' ? '⚠️' : type === 'error' ? '❌' : 'ℹ️';
+      console.log(`${icon} ${message}`);
+    }
+  }
+  
+  /**
+   * Intercept game actions for validation
+   */
+  setupActionInterceptors() {
+    if (!this.game) return;
+    
+    // Attack action
+    if (this.game.handleAttack) {
+      const originalAttack = this.game.handleAttack.bind(this.game);
+      this.game.handleAttack = (...args) => {
+        if (!this.checkIsMyTurn()) {
+          this.showNotification("It's not your turn!", 'warning');
+          return;
+        }
+        return originalAttack(...args);
+      };
+    }
+
+    // Reinforce action
+    if (this.game.handleReinforce) {
+      const originalReinforce = this.game.handleReinforce.bind(this.game);
+      this.game.handleReinforce = (...args) => {
+        if (!this.checkIsMyTurn()) {
+          this.showNotification("It's not your turn!", 'warning');
+          return;
+        }
+        return originalReinforce(...args);
+      };
+    }
+
+    // Fortify action
+    if (this.game.handleFortify) {
+      const originalFortify = this.game.handleFortify.bind(this.game);
+      this.game.handleFortify = (...args) => {
+        if (!this.checkIsMyTurn()) {
+          this.showNotification("It's not your turn!", 'warning');
+          return;
+        }
+        return originalFortify(...args);
+      };
+    }
+
+    console.log('✅ Game action interceptors active');
+  }
+  
+  /**
+   * Register all multiplayer event listeners
+   */
+  registerListeners() {
+    if (!this.client || !this.client.socket) {
+      console.error('❌ MultiplayerClient not available');
+      return;
+    }
+
+    // Turn change
+    this.client.socket.on('turnStart', (data) => {
+      this.handleTurnChange(data);
+    });
+
+    // Game state sync
+    this.client.socket.on('gameStateUpdate', (data) => {
+      this.syncGameState(data.gameState || data);
+    });
+
+    // Player disconnection
+    this.client.socket.on('playerDisconnected', (data) => {
+      this.handlePlayerDisconnected(data);
+    });
+
+    // Player reconnection
+    this.client.socket.on('playerReconnected', (data) => {
+      this.handlePlayerReconnected(data);
+    });
+
+    console.log('✅ Multiplayer listeners registered');
+  }
 
   /**
-   * Initialize multiplayer hooks
+   * Initialize multiplayer hooks (legacy compatibility)
    */
   async initialize() {
     if (this.isInitialized) {
       return;
     }
 
-    // Setup event listeners
+    // Setup event listeners (legacy)
     this.setupEventListeners();
     
-    // Intercept game methods
+    // Intercept game methods (legacy)
     this.interceptGameMethods();
+    
+    // Register new listeners
+    this.registerListeners();
+    
+    // Setup action interceptors
+    this.setupActionInterceptors();
     
     // Request initial sync (only if connected and session exists)
     if (this.client.socket && this.client.sessionId) {
@@ -36,7 +512,7 @@ class MultiplayerGameAdapter {
     }
     
     this.isInitialized = true;
-    console.log('✅ Multiplayer adapter ready');
+    console.log('✅ Multiplayer adapter ready (legacy mode)');
   }
 
   /**

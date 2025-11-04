@@ -299,6 +299,46 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
     }
     
+    /* Turn Controls - Enhanced for multiplayer */
+    .turn-counter {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #ffd700;
+      padding: 10px;
+      background: rgba(255, 215, 0, 0.1);
+      border-radius: 5px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .turn-counter:hover {
+      background: rgba(255, 215, 0, 0.2);
+      cursor: help;
+    }
+    
+    /* Disabled button states for spectators */
+    button:disabled {
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
+      filter: grayscale(50%);
+    }
+    
+    button:disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    
+    /* Player turn indicators */
+    .player-turn-item.current-turn {
+      background: rgba(76, 175, 80, 0.2);
+      border-left: 3px solid #4caf50;
+      font-weight: bold;
+    }
+    
+    .player-turn-item.my-turn {
+      background: rgba(255, 215, 0, 0.1);
+    }
+    
     /* Mobile responsive adjustments */
     @media (max-width: 768px) {
       #multiplayer-hud {
@@ -507,62 +547,66 @@
         window.multiplayerState.isConnected = true;
         console.log('✅ Connected to server');
         
-        updateLoadingMessage('Loading session data...');
+        updateLoadingMessage('Joining session...');
         
-        // STEP 3: Get session data
-        const sessionData = await requestSessionData(window.multiplayerState.sessionId);
-        console.log('📊 Session data received:', sessionData);
-        
-        // Store session data
-        window.multiplayerSession = {
-          code: sessionData.sessionId,
-          players: Object.entries(sessionData.players).map(([name, data]) => ({
-            name: name,
-            color: data.color,
-            socketId: data.socketId,
-            userId: data.userId,
-            isHost: data.isHost
-          })),
-          currentPlayer: null,
-          state: sessionData.state
-        };
-        
-        // Find current player
-        const mySocketId = multiplayerClient.socket.id;
-        const currentPlayerEntry = Object.entries(sessionData.players).find(
-          ([name, data]) => data.socketId === mySocketId || data.userId === window.multiplayerState.userId
-        );
-        
-        if (currentPlayerEntry) {
-          window.multiplayerSession.currentPlayer = {
-            name: currentPlayerEntry[0],
-            ...currentPlayerEntry[1]
-          };
-          console.log('✅ Current player:', window.multiplayerSession.currentPlayer);
-        }
+        // STEP 3: Join session and get session data
+        const sessionData = await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Session join timeout')), 10000);
+          
+          multiplayerClient.socket.once('sessionData', (data) => {
+            clearTimeout(timeout);
+            console.log('📊 Session data received:', data);
+            resolve(data);
+          });
+          
+          multiplayerClient.socket.emit('joinSession', {
+            sessionCode: window.multiplayerState.sessionId,
+            playerName: window.multiplayerState.playerName,
+            userId: window.multiplayerState.userId
+          });
+        });
         
         updateLoadingMessage('Initializing game systems...');
         
-        // STEP 4: Initialize game systems using session player data
-        await initializeGameSystems();
+        // STEP 4: Wait for game objects to be ready
+        await waitForGame();
+        console.log('✅ Game objects ready:', {
+          riskUI: !!window.riskUI,
+          gameState: !!window.gameState,
+          riskMap: !!window.riskMap,
+          riskGame: !!window.riskGame
+        });
         
-        updateLoadingMessage('Connecting multiplayer adapter...');
+        updateLoadingMessage('Setting up multiplayer...');
         
-        // STEP 5: Initialize multiplayer adapter (bridge layer)
-        gameAdapter = new MultiplayerGameAdapter(
-          multiplayerClient,
-          window.gameState,
-          window.riskUI
-        );
+        // STEP 5: Initialize game adapter with session data
+        // This maps lobby users → game players using existing structures
+        gameAdapter = new MultiplayerGameAdapter(multiplayerClient, window.riskGame);
         window.gameAdapter = gameAdapter;
         
-        await gameAdapter.initialize();
+        // Initialize game with user→player mapping
+        await gameAdapter.initializeGame({
+          sessionCode: sessionData.sessionId,
+          sessionId: sessionData.sessionId,
+          players: sessionData.players,
+          gameState: sessionData.gameState
+        });
         
-        // STEP 6: Setup multiplayer UI overlay
+        // Setup action interceptors
+        gameAdapter.setupActionInterceptors();
+        
+        // Register multiplayer listeners
+        gameAdapter.registerListeners();
+        
+        console.log('✅ Multiplayer adapter ready');
+        
+        updateLoadingMessage('Finalizing...');
+        
+        // STEP 6: Setup multiplayer UI overlays
         setupMultiplayerUI();
         
-        // STEP 7: Setup event listeners
-        setupMultiplayerListeners();
+        // Register multiplayer event listeners
+        registerMultiplayerListeners();
         
         // STEP 8: Hide loading screen & show HUD
         hideLoadingScreen();
@@ -570,8 +614,8 @@
         document.getElementById('multiplayer-hud').classList.add('active');
         
         console.log('✅ Multiplayer game fully initialized!');
-        console.log('   Session:', window.multiplayerSession.code);
-        console.log('   Players:', window.multiplayerSession.players.map(p => p.name).join(', '));
+        console.log(`   Session: ${window.multiplayerState.sessionId}`);
+        console.log(`   My Player: ${window.multiplayerState.myPlayerName}`);
         
       } catch (error) {
         console.error('❌ Multiplayer initialization error:', error);
@@ -699,8 +743,38 @@
     }
     
     /**
+     * Wait for game objects to be available
+     * Polls until window.riskGame and core objects exist
+     */
+    async function waitForGame() {
+      const maxAttempts = 50;
+      let attempts = 0;
+      
+      while (attempts < maxAttempts) {
+        if (window.riskGame || (window.riskUI && window.gameState && window.riskMap)) {
+          // Ensure riskGame object exists with all components
+          if (!window.riskGame) {
+            window.riskGame = {
+              riskUI: window.riskUI,
+              gameState: window.gameState,
+              riskMap: window.riskMap,
+              turnManager: window.turnManager,
+              phaseManager: window.phaseManager
+            };
+          }
+          return true;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+      }
+      
+      throw new Error('Game objects failed to initialize');
+    }
+    
+    /**
      * Initialize game systems with multiplayer session players
-     * Maps: Multiplayer Users → Game Players
+     * DEPRECATED: Now handled by MultiplayerGameAdapter.initializeGame()
      */
     async function initializeGameSystems() {
       try {

@@ -1,0 +1,35 @@
+{
+  "sessionId": "WCI145",
+  "hostUserId": "U7HEhwmrDYdu7kCDAAAN",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1762264574980,
+  "startedAt": 1762264610432,
+  "savedAt": "2025-11-04T13:56:50.434Z",
+  "timestamp": 1762264610434,
+  "players": {
+    "U7HEhwmrDYdu7kCDAAAN": {
+      "userId": "U7HEhwmrDYdu7kCDAAAN",
+      "playerName": "fasxzcz",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1762264574980,
+      "color": "red",
+      "isHost": true
+    },
+    "Y8q5ZSaC38lhBitiAAAP": {
+      "userId": "Y8q5ZSaC38lhBitiAAAP",
+      "playerName": "WCI145",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "blue",
+      "isHost": false,
+      "joinedAt": 1762264585395
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

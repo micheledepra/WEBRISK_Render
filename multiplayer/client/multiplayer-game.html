@@ -898,15 +898,20 @@
           console.warn('⚠️ Could not find current player by socket ID');
         }
         
-        updateLoadingMessage('Joining session...');
+        updateLoadingMessage('Connecting to game...');
         
-        // Join session with player name
-        const joinResult = await multiplayerClient.joinSession(
-          sessionCode,
-          window.multiplayerState.playerName || 'Player'
-        );
-        
-        console.log('✅ Joined session:', joinResult);
+        // ✅ FIXED: Don't call joinSession for games already in progress
+        // The session data request already connected us to the game
+        if (sessionData.state !== 'playing') {
+          // Only join if game hasn't started yet
+          const joinResult = await multiplayerClient.joinSession(
+            sessionCode,
+            window.multiplayerState.playerName || 'Player'
+          );
+          console.log('✅ Joined session:', joinResult);
+        } else {
+          console.log('✅ Connected to game in progress');
+        }
         
         updateLoadingMessage('Loading game state...');
         

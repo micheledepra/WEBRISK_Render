@@ -34,7 +34,7 @@ const io = socketIO(server, {
   perMessageDeflate: false,
   httpCompression: true,
   cookie: false,
-  serveClient: false,
+  serveClient: true,  // ✅ FIXED: Changed from false to true
   path: '/socket.io/'
 });
 

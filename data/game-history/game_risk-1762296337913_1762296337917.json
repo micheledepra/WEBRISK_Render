@@ -1,16 +1,16 @@
 {
-  "gameId": "risk-1762295430647",
-  "timestamp": 1762295430647,
-  "savedAt": "2025-11-04T22:30:30.658Z",
+  "gameId": "risk-1762296337913",
+  "timestamp": 1762296337913,
+  "savedAt": "2025-11-04T22:45:37.917Z",
   "phase": "startup",
   "currentPlayer": "Player 1",
-  "turnNumber": 1,
+  "turnNumber": 2,
   "players": {
     "Player 1": {
       "name": "Player 1",
-      "territories": 21,
-      "totalArmies": 21,
-      "armies": 21,
+      "territories": 11,
+      "totalArmies": 11,
+      "armies": 11,
       "continentBonus": 0,
       "remainingArmies": 19,
       "color": "#ff4444",
@@ -18,24 +18,44 @@
     },
     "Player 2": {
       "name": "Player 2",
-      "territories": 21,
-      "totalArmies": 21,
-      "armies": 21,
+      "territories": 11,
+      "totalArmies": 11,
+      "armies": 11,
       "continentBonus": 0,
       "remainingArmies": 19,
       "color": "#4444ff",
+      "isCurrentPlayer": false
+    },
+    "Player 3": {
+      "name": "Player 3",
+      "territories": 10,
+      "totalArmies": 10,
+      "armies": 10,
+      "continentBonus": 0,
+      "remainingArmies": 20,
+      "color": "#44ff44",
+      "isCurrentPlayer": false
+    },
+    "Player 4": {
+      "name": "Player 4",
+      "territories": 10,
+      "totalArmies": 10,
+      "armies": 10,
+      "continentBonus": 0,
+      "remainingArmies": 20,
+      "color": "#ffff44",
       "isCurrentPlayer": false
     }
   },
   "territories": {
     "alaska": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "north-america",
       "displayName": "alaska"
     },
     "northwest territory": {
-      "owner": "Player 1",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "north-america",
       "displayName": "northwest territory"
@@ -47,13 +67,13 @@
       "displayName": "greenland"
     },
     "alberta": {
-      "owner": "Player 1",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "north-america",
       "displayName": "alberta"
     },
     "ontario": {
-      "owner": "Player 1",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "north-america",
       "displayName": "ontario"
@@ -83,61 +103,61 @@
       "displayName": "central america"
     },
     "venezuela": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "south-america",
       "displayName": "venezuela"
     },
     "brazil": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "south-america",
       "displayName": "brazil"
     },
     "peru": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "south-america",
       "displayName": "peru"
     },
     "argentina": {
-      "owner": "Player 1",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "south-america",
       "displayName": "argentina"
     },
     "iceland": {
-      "owner": "Player 1",
+      "owner": "Player 2",
       "armies": 1,
       "continent": "europe",
       "displayName": "iceland"
     },
     "scandinavia": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "europe",
       "displayName": "scandinavia"
     },
     "great britain": {
-      "owner": "Player 1",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "europe",
       "displayName": "great britain"
     },
     "ukraine": {
-      "owner": "Player 1",
+      "owner": "Player 2",
       "armies": 1,
       "continent": "europe",
       "displayName": "ukraine"
     },
     "northern europe": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "europe",
       "displayName": "northern europe"
     },
     "western europe": {
-      "owner": "Player 2",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "europe",
       "displayName": "western europe"
@@ -149,55 +169,55 @@
       "displayName": "southern europe"
     },
     "north africa": {
-      "owner": "Player 2",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "africa",
       "displayName": "north africa"
     },
     "egypt": {
-      "owner": "Player 2",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "africa",
       "displayName": "egypt"
     },
     "east africa": {
-      "owner": "Player 1",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "africa",
       "displayName": "east africa"
     },
     "congo": {
-      "owner": "Player 1",
+      "owner": "Player 2",
       "armies": 1,
       "continent": "africa",
       "displayName": "congo"
     },
     "madagascar": {
-      "owner": "Player 2",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "africa",
       "displayName": "madagascar"
     },
     "south africa": {
-      "owner": "Player 1",
+      "owner": "Player 2",
       "armies": 1,
       "continent": "africa",
       "displayName": "south africa"
     },
     "ural": {
-      "owner": "Player 2",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "asia",
       "displayName": "ural"
     },
     "siberia": {
-      "owner": "Player 2",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "asia",
       "displayName": "siberia"
     },
     "yakutsk": {
-      "owner": "Player 1",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "asia",
       "displayName": "yakutsk"
@@ -209,13 +229,13 @@
       "displayName": "kamchatka"
     },
     "irkutsk": {
-      "owner": "Player 1",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "asia",
       "displayName": "irkutsk"
     },
     "japan": {
-      "owner": "Player 1",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "asia",
       "displayName": "japan"
@@ -227,7 +247,7 @@
       "displayName": "mongolia"
     },
     "china": {
-      "owner": "Player 1",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "asia",
       "displayName": "china"
@@ -239,43 +259,43 @@
       "displayName": "afghanistan"
     },
     "middle east": {
-      "owner": "Player 2",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "asia",
       "displayName": "middle east"
     },
     "india": {
-      "owner": "Player 1",
+      "owner": "Player 2",
       "armies": 1,
       "continent": "asia",
       "displayName": "india"
     },
     "siam": {
-      "owner": "Player 1",
+      "owner": "Player 2",
       "armies": 1,
       "continent": "asia",
       "displayName": "siam"
     },
     "indonesia": {
-      "owner": "Player 2",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "australia",
       "displayName": "indonesia"
     },
     "new guinea": {
-      "owner": "Player 1",
+      "owner": "Player 3",
       "armies": 1,
       "continent": "australia",
       "displayName": "new guinea"
     },
     "western australia": {
-      "owner": "Player 2",
+      "owner": "Player 1",
       "armies": 1,
       "continent": "australia",
       "displayName": "western australia"
     },
     "eastern australia": {
-      "owner": "Player 2",
+      "owner": "Player 4",
       "armies": 1,
       "continent": "australia",
       "displayName": "eastern australia"
@@ -284,10 +304,10 @@
   "statistics": {
     "totalBattles": 0,
     "totalArmiesDeployed": 0,
-    "gameStartTime": "2025-11-04T22:30:30.094Z",
-    "gameDuration": 553
+    "gameStartTime": "2025-11-04T22:45:36.670Z",
+    "gameDuration": 1243
   },
   "version": "1.0",
   "dataSource": "event-driven",
-  "lastUpdate": 1762295430647
+  "lastUpdate": 1762296337913
 }

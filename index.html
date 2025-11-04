@@ -160,6 +160,25 @@
             overflow: hidden;
         }
 
+        /* Single Player button with background image */
+        .mode-button:nth-child(1) {
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+                url('images/sp image.avif') center center / cover no-repeat;
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.9),
+                0 0 8px rgba(0, 0, 0, 0.8),
+                0 0 12px rgba(0, 0, 0, 0.6);
+            padding: 0.95rem 4rem;
+        }
+
+        .mode-button:nth-child(1):hover {
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('images/sp image.avif') center center / cover no-repeat;
+            filter: brightness(1.1);
+        }
+
         .mode-button::before {
             content: '';
             position: absolute;
@@ -187,11 +206,21 @@
         }
 
         .mode-button.multiplayer {
-            background: linear-gradient(135deg, #2196F3, #1976D2);
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+                url('images/mp image.webp') center center / cover no-repeat;
+            text-shadow: 
+                2px 2px 4px rgba(0, 0, 0, 0.9),
+                0 0 8px rgba(0, 0, 0, 0.8),
+                0 0 12px rgba(0, 0, 0, 0.6);
+            padding: 0.95rem 4rem;
         }
 
         .mode-button.multiplayer:hover {
-            background: linear-gradient(135deg, #1976D2, #1565C0);
+            background: 
+                linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('images/mp image.webp') center center / cover no-repeat;
+            filter: brightness(1.1);
         }
 
         .mode-description {

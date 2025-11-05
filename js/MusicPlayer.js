@@ -9,6 +9,9 @@
  */
 class MusicPlayer {
   constructor(musicFolder = 'res/Music/Classic/', startTrack = null) {
+    // Use configured base path or default for game.html compatibility
+    this.basePath = window.MUSIC_BASE_PATH || 'res/Music/';
+    
     // Music library organized by folder
     this.musicLibrary = {
       'Classic': [
@@ -149,9 +152,9 @@ class MusicPlayer {
       const trackData = this.playlist[index];
       const folder = trackData.folder;
       const trackName = trackData.track;
-      // Build path with proper encoding - encode each component separately
-      // to preserve path structure while handling special characters
-      const trackPath = `res/Music/${encodeURIComponent(folder)}/${encodeURIComponent(trackName)}`;
+      // Build path with configurable base path for game.html/multiplayer compatibility
+      // Use basePath (configured or default) + folder + track
+      const trackPath = `${this.basePath}${encodeURIComponent(folder)}/${encodeURIComponent(trackName)}`;
       this.audio.src = trackPath;
       console.log('Loaded track:', trackName, 'from', folder);
     }

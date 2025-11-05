@@ -578,59 +578,120 @@
         // Since we loaded game.html without its inline scripts, we need to create the objects ourselves
         await initializeGameObjects();
         
-        console.log('✅ Game objects initialized:', {
-          riskUI: !!window.riskUI,
-          gameState: !!window.gameState,
-          riskMap: !!window.riskMap,
-          riskGame: !!window.riskGame
+        // STEP 5: Verify GameState is ready (Fix 2 - GameState Timing)
+        const gameState = window.gameState || window.riskUI?.gameState;
+        if (!gameState) {
+          throw new Error('GameState not available after initialization');
+        }
+        
+        console.log('✅ GameState verified:', {
+          players: gameState.players,
+          currentPlayer: gameState.getCurrentPlayer(),
+          phase: gameState.phase
         });
+        
+        updateLoadingMessage('Mapping players...');
+        
+        // STEP 6: Map Firebase users to game players (Fix 1 - User→Player Mapping)
+        const userMapping = sessionData.users || [];
+        const gamePlayers = gameState.players || [];
+        
+        console.log('👥 Mapping users to players:', {
+          users: userMapping,
+          gamePlayers: gamePlayers,
+          myUserId: window.multiplayerState.userId
+        });
+        
+        // Create mapping: userId → playerName
+        const userToPlayerMap = {};
+        userMapping.forEach((user, index) => {
+          if (index < gamePlayers.length) {
+            userToPlayerMap[user.userId] = gamePlayers[index];
+            console.log(`  📌 ${user.name} (${user.userId}) → Player: ${gamePlayers[index]}`);
+          }
+        });
+        
+        // Find my player name
+        const myPlayerName = userToPlayerMap[window.multiplayerState.userId];
+        if (!myPlayerName) {
+          console.error('❌ Could not map userId to player name!', {
+            userId: window.multiplayerState.userId,
+            mapping: userToPlayerMap
+          });
+          throw new Error('Player mapping failed - could not find your player');
+        }
+        
+        console.log('✅ My player name:', myPlayerName);
+        
+        // Store player mapping
+        window.multiplayerState.playerName = myPlayerName;
+        window.multiplayerState.myPlayerName = myPlayerName;
+        window.multiplayerState.userToPlayerMap = userToPlayerMap;
+        
+        // Determine if it's my turn
+        const currentPlayer = gameState.getCurrentPlayer();
+        window.multiplayerState.isMyTurn = (currentPlayer === myPlayerName);
+        window.multiplayerState.currentPlayerName = currentPlayer;
+        
+        console.log('🎯 Turn status:', {
+          currentPlayer: currentPlayer,
+          myPlayer: myPlayerName,
+          isMyTurn: window.multiplayerState.isMyTurn
+        });
+        
+        updateLoadingMessage('Initializing Combat System...');
+        
+        // STEP 7: Initialize Combat System in sequence (Fix 3 - Combat Sequencing)
+        await initializeCombatSystem();
+        console.log('✅ Combat System ready');
         
         updateLoadingMessage('Setting up multiplayer...');
         
-        // STEP 5: Initialize game adapter with session data
-        // This maps lobby users → game players using existing structures
-        gameAdapter = new MultiplayerGameAdapter(multiplayerClient, window.riskGame);
-        window.gameAdapter = gameAdapter;
+        // STEP 8: Initialize multiplayer adapter WITH gameState and player mapping
+        gameAdapter = new MultiplayerGameAdapter(
+          multiplayerClient,
+          window.multiplayerState.sessionId,
+          window.multiplayerState.userId,
+          myPlayerName,
+          userToPlayerMap
+        );
         
-        // Initialize game with user→player mapping
-        await gameAdapter.initializeGame({
-          sessionCode: sessionData.sessionId,
-          sessionId: sessionData.sessionId,
-          players: sessionData.players,
-          gameState: sessionData.gameState
+        // Initialize with existing game state
+        await gameAdapter.initialize({
+          gameState: gameState,
+          riskUI: window.riskUI,
+          turnManager: window.turnManager || window.riskUI.turnManager,
+          phaseManager: window.riskUI.phaseManager
         });
         
-        // Setup action interceptors
-        gameAdapter.setupActionInterceptors();
-        
-        // Register multiplayer listeners
-        gameAdapter.registerListeners();
-        
+        window.gameAdapter = gameAdapter;
         console.log('✅ Multiplayer adapter ready');
         
         updateLoadingMessage('Finalizing...');
         
-        // STEP 6: Setup multiplayer UI overlays
+        // STEP 9: Setup multiplayer UI overlays
         setupMultiplayerUI();
+        console.log('✅ Multiplayer UI ready');
         
-        // Register multiplayer event listeners
+        // STEP 10: Register event listeners
         setupMultiplayerListeners();
+        console.log('✅ Multiplayer listeners registered');
         
-        // STEP 7: Initialize turn management UI
-        // Update phase progress, turn order, and all visual elements with initial game state
-        if (window.updateTurnUI && window.gameState) {
+        // STEP 11: Initial UI sync
+        updatePlayerList();
+        updateTurnIndicator();
+        updateWaitingOverlay();
+        
+        // Update turn UI with initial state
+        if (window.updateTurnUI) {
           setTimeout(() => {
-            console.log('🎨 Initializing multiplayer UI with game state...');
-            
-            // Update all turn UI elements
             window.updateTurnUI(
-              window.gameState.turnNumber,
-              window.gameState.getCurrentPlayer(),
-              window.gameState.phase,
-              window.gameState.players
+              gameState.turnNumber,
+              gameState.getCurrentPlayer(),
+              gameState.phase,
+              gameState.players
             );
             
-            // Force additional updates to ensure everything is synchronized
             if (window.updateTurnHeaderPanelColor) {
               window.updateTurnHeaderPanelColor();
             }
@@ -639,23 +700,23 @@
               window.updateReinforcementPanel();
             }
             
-            // Ensure territories are properly colored with opacity
             if (window.riskGame && typeof window.riskGame.updateTerritoryColors === 'function') {
               window.riskGame.updateTerritoryColors();
             }
             
-            console.log('✅ Initial turn UI fully updated with all visual elements');
-          }, 300); // Increased delay to ensure DOM is fully ready
+            console.log('✅ Initial turn UI fully updated');
+          }, 300);
         }
         
-        // STEP 8: Hide loading screen & show HUD
+        // STEP 12: Hide loading screen & show HUD
         hideLoadingScreen();
         document.body.classList.add('multiplayer-active');
         document.getElementById('multiplayer-hud').classList.add('active');
         
         console.log('✅ Multiplayer game fully initialized!');
         console.log(`   Session: ${window.multiplayerState.sessionId}`);
-        console.log(`   My Player: ${window.multiplayerState.myPlayerName}`);
+        console.log(`   My Player: ${myPlayerName}`);
+        console.log(`   Is My Turn: ${window.multiplayerState.isMyTurn}`);
         
       } catch (error) {
         console.error('❌ Multiplayer initialization error:', error);
@@ -1250,6 +1311,259 @@
       console.log('✅ Multiplayer turn UI hooks installed');
     }
     
+    // ============================================
+    // TURN HANDLING FUNCTIONS
+    // ============================================
+    
+    /**
+     * Handle End Turn button click
+     * ENHANCED: Fully preserves game.html turn flow + multiplayer sync
+     */
+    window.handleEndTurn = function() {
+      console.log('🔄 End Turn button clicked');
+      
+      try {
+        // Get current game state
+        const gameState = window.gameState || window.riskUI?.gameState;
+        const turnManager = window.turnManager || window.riskUI?.turnManager;
+        const phaseManager = window.riskUI?.phaseManager;
+        
+        if (!gameState || !turnManager) {
+          console.error('❌ GameState or TurnManager not available');
+          return;
+        }
+        
+        const currentPhase = gameState.phase;
+        const currentPlayer = gameState.getCurrentPlayer();
+        
+        console.log(`📊 Current state: ${currentPlayer} - ${currentPhase}`);
+        
+        // In multiplayer, check if it's our turn
+        if (window.multiplayerState && !window.multiplayerState.isMyTurn) {
+          console.warn('⚠️ Not your turn!');
+          showNotification('Not your turn!', 'warning');
+          return;
+        }
+        
+        // ============================================
+        // PHASE-SPECIFIC VALIDATION (from game.html)
+        // ============================================
+        
+        // DRAFT phase - must place all armies
+        if (currentPhase === 'draft') {
+          const unplacedArmies = gameState.getUnplacedArmies(currentPlayer);
+          if (unplacedArmies > 0) {
+            showNotification(`You must place all ${unplacedArmies} armies before ending turn!`, 'warning');
+            console.warn(`⚠️ Cannot end draft: ${unplacedArmies} armies remaining`);
+            return;
+          }
+        }
+        
+        // ATTACK phase - check for card eligibility
+        if (currentPhase === 'attack') {
+          const conqueredThisTurn = gameState.conqueredTerritoryThisTurn;
+          console.log(`🎯 Conquered territory this turn: ${conqueredThisTurn}`);
+          
+          // Card eligibility is tracked internally, no blocking needed
+        }
+        
+        // FORTIFY phase - can end freely
+        if (currentPhase === 'fortify') {
+          console.log('🏰 Fortify phase ending (optional action)');
+        }
+        
+        // ============================================
+        // CAPTURE CURRENT STATE FOR MULTIPLAYER SYNC
+        // ============================================
+        
+        const stateBefore = {
+          phase: currentPhase,
+          player: currentPlayer,
+          turnNumber: gameState.turnNumber,
+          territories: captureTerritoriesState()
+        };
+        
+        // ============================================
+        // ADVANCE PHASE (game.html pattern)
+        // ============================================
+        
+        turnManager.advancePhase();
+        
+        // ============================================
+        // SYNC PHASE MANAGER (crucial for game.html compatibility)
+        // ============================================
+        
+        if (phaseManager) {
+          phaseManager.syncWithGameState();
+        }
+        
+        // Update UI
+        if (window.riskUI) {
+          window.riskUI.updatePlayerStats();
+        }
+        
+        // Update turn UI display
+        if (window.updateTurnUI) {
+          window.updateTurnUI(
+            gameState.turnNumber,
+            gameState.getCurrentPlayer(),
+            gameState.phase,
+            gameState.players
+          );
+        }
+        
+        // ============================================
+        // MULTIPLAYER SYNCHRONIZATION
+        // ============================================
+        
+        const stateAfter = {
+          phase: gameState.phase,
+          player: gameState.getCurrentPlayer(),
+          turnNumber: gameState.turnNumber,
+          territories: captureTerritoriesState()
+        };
+        
+        // Send complete state change to server
+        if (window.gameAdapter) {
+          window.gameAdapter.sendAction({
+            type: 'turnAdvance',
+            stateBefore: stateBefore,
+            stateAfter: stateAfter,
+            timestamp: Date.now()
+          });
+          
+          console.log(`✅ Turn advanced and synced: ${stateAfter.player} - ${stateAfter.phase}`);
+        }
+        
+        // Update multiplayer UI
+        if (stateAfter.player !== stateBefore.player) {
+          // Turn changed to different player
+          const isMyTurn = stateAfter.player === window.multiplayerState.playerName;
+          window.multiplayerState.isMyTurn = isMyTurn;
+          window.multiplayerState.currentPlayerName = stateAfter.player;
+          
+          updateTurnIndicator();
+          updateWaitingOverlay();
+        }
+        
+      } catch (error) {
+        console.error('❌ Error handling end turn:', error);
+        showNotification('Error advancing turn', 'error');
+      }
+    };
+    
+    /**
+     * Capture current territories state for sync
+     */
+    function captureTerritoriesState() {
+      const gameState = window.gameState || window.riskUI?.gameState;
+      if (!gameState || !gameState.territories) return {};
+      
+      const territoriesState = {};
+      gameState.territories.forEach((territory, name) => {
+        territoriesState[name] = {
+          owner: territory.owner,
+          armies: territory.armies
+        };
+      });
+      
+      return territoriesState;
+    }
+    
+    /**
+     * Handle incoming turn advance from other players
+     * Called by MultiplayerGameAdapter when receiving turnAdvance action
+     */
+    window.handleRemoteTurnAdvance = function(data) {
+      console.log('📥 Receiving remote turn advance:', data);
+      
+      try {
+        const gameState = window.gameState || window.riskUI?.gameState;
+        const turnManager = window.turnManager || window.riskUI?.turnManager;
+        const phaseManager = window.riskUI?.phaseManager;
+        
+        if (!gameState || !turnManager) {
+          console.error('❌ Cannot apply remote turn advance: GameState not ready');
+          return;
+        }
+        
+        // Apply territory state changes
+        if (data.stateAfter.territories) {
+          Object.entries(data.stateAfter.territories).forEach(([name, state]) => {
+            const territory = gameState.territories.get(name);
+            if (territory) {
+              territory.owner = state.owner;
+              territory.armies = state.armies;
+            }
+          });
+        }
+        
+        // Update game state
+        gameState.phase = data.stateAfter.phase;
+        gameState.currentPlayerIndex = gameState.players.indexOf(data.stateAfter.player);
+        gameState.turnNumber = data.stateAfter.turnNumber;
+        
+        // Sync phase manager
+        if (phaseManager) {
+          phaseManager.syncWithGameState();
+        }
+        
+        // Update UI
+        if (window.riskUI) {
+          window.riskUI.updatePlayerStats();
+        }
+        
+        if (window.updateTurnUI) {
+          window.updateTurnUI(
+            gameState.turnNumber,
+            gameState.getCurrentPlayer(),
+            gameState.phase,
+            gameState.players
+          );
+        }
+        
+        // Update territory visuals
+        if (window.riskGame && typeof window.riskGame.updateTerritoryColors === 'function') {
+          window.riskGame.updateTerritoryColors();
+        }
+        
+        // Update multiplayer state
+        const isMyTurn = data.stateAfter.player === window.multiplayerState.playerName;
+        window.multiplayerState.isMyTurn = isMyTurn;
+        window.multiplayerState.currentPlayerName = data.stateAfter.player;
+        
+        updateTurnIndicator();
+        updateWaitingOverlay();
+        
+        console.log(`✅ Remote turn advance applied: ${data.stateAfter.player} - ${data.stateAfter.phase}`);
+        
+      } catch (error) {
+        console.error('❌ Error applying remote turn advance:', error);
+      }
+    };
+    
+    /**
+     * Show notification message
+     */
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = 'copy-notification show';
+      notification.textContent = message;
+      
+      if (type === 'warning') {
+        notification.style.background = '#ff9800';
+      } else if (type === 'error') {
+        notification.style.background = '#f44336';
+      }
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+      }, 2000);
+    }
+    
     console.log('✅ All game objects initialized successfully!');
     console.log('   riskUI:', typeof window.riskUI);
     console.log('   gameState:', typeof window.gameState);
@@ -1267,7 +1581,58 @@
     ));
     throw error;
   }
-}    /**
+}
+    
+    /**
+     * Initialize Combat System in sequence (Fix 3)
+     * Ensures all dependencies are ready before combat initialization
+     */
+    async function initializeCombatSystem() {
+      return new Promise((resolve) => {
+        // Verify dependencies
+        if (typeof CombatIntegration === 'undefined') {
+          console.error('❌ CombatIntegration not loaded');
+          resolve(false);
+          return;
+        }
+        
+        if (!window.riskUI || !window.riskUI.gameState) {
+          console.error('❌ RiskUI or GameState not available for Combat System');
+          resolve(false);
+          return;
+        }
+        
+        // Ensure attack modal elements exist
+        ensureAttackModalElements();
+        
+        // Initialize combat with slight delay to ensure DOM is ready
+        setTimeout(() => {
+          try {
+            if (typeof initializeCombatSystem !== 'undefined' && window.initializeCombatSystemOriginal) {
+              const combatInitialized = window.initializeCombatSystemOriginal();
+              if (combatInitialized) {
+                console.log('✅ Combat System initialized successfully');
+                resolve(true);
+              } else {
+                console.warn('⚠️ Combat System initialization returned false');
+                resolve(false);
+              }
+            } else {
+              // Fallback: manually initialize
+              const combat = new CombatIntegration(window.riskUI);
+              window.combatSystem = combat;
+              console.log('✅ Combat System initialized successfully (fallback)');
+              resolve(true);
+            }
+          } catch (error) {
+            console.error('❌ Error initializing Combat System:', error);
+            resolve(false);
+          }
+        }, 150);
+      });
+    }
+    
+    /**
      * Pre-initialize attack modal elements
      * From game.html - ensures critical DOM elements exist before game initialization
      */

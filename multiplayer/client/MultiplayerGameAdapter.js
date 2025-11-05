@@ -5,95 +5,144 @@
  */
 
 class MultiplayerGameAdapter {
-  constructor(client, riskGame) {
+  constructor(client, sessionId, userId, playerName, userToPlayerMap) {
     this.client = client;
-    this.game = riskGame;
-    this.gameState = riskGame?.gameState;
-    this.turnManager = riskGame?.turnManager;
-    this.riskUI = riskGame?.riskUI;
-    this.phaseManager = riskGame?.phaseManager;
+    this.sessionId = sessionId;
+    this.userId = userId;
+    this.playerName = playerName;
+    this.userToPlayerMap = userToPlayerMap || {};
+    
+    // Will be set in initialize()
+    this.gameState = null;
+    this.riskUI = null;
+    this.turnManager = null;
+    this.phaseManager = null;
     
     this.isInitialized = false;
     this.originalMethods = {};
-    this.sessionId = null;
-    this.userId = null;
-    this.userToPlayerMap = new Map(); // Maps userId → playerName
-    this.playerToUserMap = new Map(); // Maps playerName → userId
+    this.playerToUserMap = {};
+    
+    // Create reverse mapping
+    Object.entries(this.userToPlayerMap).forEach(([userId, playerName]) => {
+      this.playerToUserMap[playerName] = userId;
+    });
     
     console.log('🎮 MultiplayerGameAdapter initialized');
   }
   
   /**
-   * Initialize game with session data
-   * Maps lobby users → game players for existing turn management
+   * Initialize the adapter with game references
+   * FIXED: Accepts pre-initialized gameState and proper player mapping
    */
-  async initializeGame(sessionData) {
-    console.log('🚀 Initializing multiplayer game with session:', sessionData);
-    
-    this.sessionId = sessionData.sessionCode || sessionData.sessionId;
-    
-    // Get userId from localStorage (set by lobby) or client
-    this.userId = localStorage.getItem('risk_userId') || 
-                  this.client.userId || 
-                  window.multiplayerState?.userId;
-    
-    console.log('🆔 Using userId:', this.userId);
-    
-    // Extract users from session (lobby names and colors)
-    const users = Object.entries(sessionData.players || {}).map(([name, data]) => ({
-      userId: data.userId || data.socketId || data.id,
-      name: name,
-      color: data.color,
-      isHost: data.isHost || false
-    }));
-    
-    console.log('👥 Session users:', users);
-    
-    // Map users to game player names (use lobby names directly)
-    const playerNames = users.map(u => u.name);
-    const playerColors = users.map(u => u.color);
-    
-    // Create bidirectional mapping
-    users.forEach((user) => {
-      this.userToPlayerMap.set(user.userId, user.name);
-      this.playerToUserMap.set(user.name, user.userId);
+  async initialize(gameRefs) {
+    console.log('🚀 Initializing multiplayer game with session:', {
+      sessionId: this.sessionId,
+      userId: this.userId,
+      playerName: this.playerName,
+      userToPlayerMap: this.userToPlayerMap
     });
     
-    console.log('🗺️ User→Player mapping:', Array.from(this.userToPlayerMap.entries()));
+    // Store references
+    this.gameState = gameRefs.gameState;
+    this.riskUI = gameRefs.riskUI;
+    this.turnManager = gameRefs.turnManager;
+    this.phaseManager = gameRefs.phaseManager;
     
-    // Initialize game with existing RiskUI structure
-    // This leverages ALL existing turn management UI
-    if (this.riskUI && this.riskUI.initGame) {
-      this.riskUI.initGame(playerNames, playerColors);
+    // Verify critical references
+    if (!this.gameState) {
+      console.error('❌ GameState not provided to adapter!');
+      throw new Error('GameState is required for multiplayer adapter');
     }
     
-    // Store reference to current user's player name
-    const myPlayerName = this.userToPlayerMap.get(this.userId);
-    window.multiplayerState.myPlayerName = myPlayerName;
+    console.log('✅ Game references stored:', {
+      gameState: !!this.gameState,
+      riskUI: !!this.riskUI,
+      turnManager: !!this.turnManager,
+      phaseManager: !!this.phaseManager
+    });
     
-    console.log('✅ My player name:', myPlayerName);
-    console.log('   My userId:', this.userId);
-    
-    // Sync initial game state
-    if (sessionData.gameState) {
-      await this.syncGameState(sessionData.gameState);
+    // Verify player name mapping
+    if (!this.playerName || this.playerName === 'undefined') {
+      console.error('❌ Invalid player name!', {
+        playerName: this.playerName,
+        userId: this.userId,
+        mapping: this.userToPlayerMap
+      });
+      throw new Error('Player name not properly mapped');
     }
     
-    // Setup turn management for multiplayer
+    console.log('✅ Player mapping verified:', {
+      myPlayer: this.playerName,
+      currentPlayer: this.gameState.getCurrentPlayer(),
+      allPlayers: this.gameState.players
+    });
+    
+    // Setup turn management
     this.setupMultiplayerTurnManagement();
-    
     console.log('✅ Game initialized with player mapping');
+    
+    // Intercept game actions
+    this.interceptGameActions();
+    console.log('✅ Game action interceptors active');
+    
+    // Register multiplayer event listeners
+    this.registerMultiplayerListeners();
+    console.log('✅ Multiplayer listeners registered');
+    
+    this.isInitialized = true;
+    return true;
+  }
+
+  /**
+   * DEPRECATED - Kept for backward compatibility
+   */
+  async initializeGame(sessionData) {
+    console.warn('⚠️ initializeGame() is deprecated, use initialize() instead');
+    return this.initialize({
+      gameState: window.gameState,
+      riskUI: window.riskUI,
+      turnManager: window.turnManager,
+      phaseManager: window.riskUI?.phaseManager
+    });
   }
 
   
   /**
    * Setup multiplayer-specific turn management
    * Extends existing single-player turn system
+   * FIXED: Only runs when GameState is available
    */
   setupMultiplayerTurnManagement() {
     if (!this.gameState) {
       console.error('❌ GameState not available for turn management');
       return;
+    }
+    
+    console.log('🎮 Setting up multiplayer turn management');
+    
+    // Store original advancePhase if available
+    if (this.turnManager && typeof this.turnManager.advancePhase === 'function') {
+      const originalAdvancePhase = this.turnManager.advancePhase.bind(this.turnManager);
+      
+      // Intercept phase advancement
+      this.turnManager.advancePhase = () => {
+        console.log('🔄 Intercepting phase advance');
+        
+        // Check if it's current player's turn
+        const currentPlayer = this.gameState.getCurrentPlayer();
+        if (currentPlayer !== this.playerName) {
+          console.warn('⚠️ Not your turn! Current:', currentPlayer, 'You:', this.playerName);
+          return;
+        }
+        
+        // Execute original phase advance
+        originalAdvancePhase();
+        
+        // Broadcast state change
+        this.broadcastGameState('phaseAdvance');
+      };
+      
+      console.log('✅ Phase advancement intercepted');
     }
     
     // Intercept existing turn advancement
@@ -309,6 +358,33 @@ class MultiplayerGameAdapter {
   }
   
   /**
+   * Broadcast game state to other players
+   */
+  broadcastGameState(action) {
+    if (!this.client || !this.client.socket) {
+      console.error('❌ Client not available for broadcast');
+      return;
+    }
+    
+    if (!this.gameState) {
+      console.error('❌ GameState not available for broadcast');
+      return;
+    }
+    
+    const stateData = {
+      action: action,
+      sessionId: this.sessionId,
+      currentPlayer: this.gameState.getCurrentPlayer(),
+      phase: this.gameState.phase,
+      turnNumber: this.gameState.turnNumber,
+      timestamp: Date.now()
+    };
+    
+    console.log('📤 Broadcasting game state:', stateData);
+    this.client.socket.emit('gameStateUpdate', stateData);
+  }
+  
+  /**
    * Handle turn change from server
    */
   handleTurnChange(data) {
@@ -416,6 +492,14 @@ class MultiplayerGameAdapter {
   
   /**
    * Intercept game actions for validation
+   * Alias for setupActionInterceptors()
+   */
+  interceptGameActions() {
+    return this.setupActionInterceptors();
+  }
+  
+  /**
+   * Intercept game actions for validation
    */
   setupActionInterceptors() {
     if (!this.game) return;
@@ -457,6 +541,14 @@ class MultiplayerGameAdapter {
     }
 
     console.log('✅ Game action interceptors active');
+  }
+  
+  /**
+   * Register all multiplayer event listeners
+   * Alias for registerListeners()
+   */
+  registerMultiplayerListeners() {
+    return this.registerListeners();
   }
   
   /**

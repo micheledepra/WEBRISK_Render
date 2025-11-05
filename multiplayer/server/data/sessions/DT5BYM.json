@@ -1,0 +1,22 @@
+{
+  "sessionId": "DT5BYM",
+  "hostUserId": "XfN-Si9KYEL_wRWOAAAV",
+  "maxPlayers": 2,
+  "state": "waiting",
+  "createdAt": 1762374625392,
+  "savedAt": "2025-11-05T20:30:25.393Z",
+  "timestamp": 1762374625393,
+  "players": {
+    "XfN-Si9KYEL_wRWOAAAV": {
+      "userId": "XfN-Si9KYEL_wRWOAAAV",
+      "playerName": "ipopiomo",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "not_ready",
+      "joinedAt": 1762374625392
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

@@ -84,6 +84,16 @@ app.use(express.static(ROOT_DIR, {
     if (path.endsWith('.svg')) {
       res.setHeader('Content-Type', 'image/svg+xml');
     }
+    // Fix MIME types for audio files
+    if (path.endsWith('.mp3')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+    }
+    if (path.endsWith('.ogg')) {
+      res.setHeader('Content-Type', 'audio/ogg');
+    }
+    if (path.endsWith('.wav')) {
+      res.setHeader('Content-Type', 'audio/wav');
+    }
   }
 }));
 app.use(express.json());

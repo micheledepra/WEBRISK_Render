@@ -297,10 +297,10 @@ class FortificationManager {
     
     // Dispatch events for dashboard system
     document.dispatchEvent(new CustomEvent('armyCountChanged', {
-      detail: { territoryId: sourceId, armyCount: sourceTerritory.armies, source: 'FortificationManager' }
+      detail: { territoryId: this.selectedSourceTerritory, armyCount: sourceTerritory.armies, source: 'FortificationManager' }
     }));
     document.dispatchEvent(new CustomEvent('armyCountChanged', {
-      detail: { territoryId: destinationId, armyCount: destinationTerritory.armies, source: 'FortificationManager' }
+      detail: { territoryId: this.selectedDestinationTerritory, armyCount: destinationTerritory.armies, source: 'FortificationManager' }
     }));
 
     // Mark fortification as used
@@ -330,6 +330,9 @@ class FortificationManager {
     if (window.riskUI && window.riskUI.colorManager) {
       window.riskUI.colorManager.refreshAllTerritories(this.gameState);
     }
+    
+    // 💾 AUTO-SAVE: Save state after fortification
+    this.gameState.saveToSession();
 
     // Clear selection and close modal
     this.clearSelection();

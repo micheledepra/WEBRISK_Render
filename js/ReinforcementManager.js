@@ -189,6 +189,9 @@ class ReinforcementManager {
         }
         
         this.updateReinforcementDisplay();
+        
+        // 💾 AUTO-SAVE: Save state after deployment
+        this.gameState.saveToSession();
 
         // During startup phase, advance to next player only if current player has no armies left
         if (currentPhase === 'startup' && this.gameState.remainingArmies[currentPlayer] === 0) {

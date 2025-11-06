@@ -2,12 +2,46 @@ class GameState {
     static SESSION_KEY = 'risk_game_state';
     
     constructor(players, colors = []) {
-        // Try to restore existing game state
+        // ✅ STEP 1: Try to restore existing game state FIRST
         const savedState = GameState.loadFromSession();
-        if (savedState) {
-            Object.assign(this, savedState);
+        if (savedState && savedState.territories && Object.keys(savedState.territories).length > 0) {
+            console.log('♻️ RESTORING saved game state from sessionStorage...');
+            console.log(`   📍 ${Object.keys(savedState.territories).length} territories preserved`);
+            console.log(`   🎯 Turn ${savedState.turnNumber}, Phase: ${savedState.phase}`);
+            console.log(`   👥 Current player: ${savedState.players[savedState.currentPlayerIndex]}`);
+            
+            // ⚠️ CRITICAL FIX: Manually restore each property to maintain prototype chain
+            this.players = savedState.players;
+            this.territories = savedState.territories;
+            this.currentPlayerIndex = savedState.currentPlayerIndex;
+            this.phase = savedState.phase;
+            this.turnNumber = savedState.turnNumber;
+            this.armiesPerTurn = savedState.armiesPerTurn;
+            this.reinforcements = savedState.reinforcements;
+            this.remainingArmies = savedState.remainingArmies;
+            this.playerColors = savedState.playerColors;
+            this.continentBonuses = savedState.continentBonuses || {
+                'north-america': 5,
+                'south-america': 2,
+                'europe': 5,
+                'africa': 3,
+                'asia': 7,
+                'australia': 2
+            };
+            this.initialDeploymentComplete = savedState.initialDeploymentComplete || false;
+            this.lastUpdate = savedState.lastUpdate || Date.now();
+            
+            // ✅ FIX: Mark as restored game (not new) - THIS PREVENTS RE-RANDOMIZATION
+            this.isNewGame = false;
+            
+            // ⚠️ CRITICAL: Skip territory randomization - territories already assigned
+            console.log('✅ Game state restored - territories NOT re-randomized');
             return;
         }
+
+        // ❌ STEP 2: Only runs if NO saved state exists - FRESH GAME
+        console.log('🎲 FIRST-TIME INITIALIZATION - Creating new game...');
+        console.log(`   👥 ${players.length} players: ${players.join(', ')}`);
 
         // Initialize new game state
         this.players = players;
@@ -53,11 +87,14 @@ class GameState {
 
         // Initialize remaining armies with initial army counts according to official Risk rules
         const initialArmies = this.getInitialArmies(players.length);
-        console.log(`Initializing game with ${players.length} players - ${initialArmies} armies per player`);
+        console.log(`   🎖️ Each player receives ${initialArmies} initial armies`);
         this.players.forEach(player => {
             this.remainingArmies[player] = initialArmies;
             this.reinforcements[player] = 0; // No reinforcements until regular turns begin
         });
+        
+        // ⚠️ CRITICAL: Mark this as a fresh initialization
+        this.isNewGame = true;
     }
 
     getDefaultColor(index) {
@@ -131,6 +168,20 @@ class GameState {
     }
 
     assignTerritoriesRandomly() {
+        // ⚠️ CRITICAL: Skip if this is a restored game
+        if (this.isNewGame === false) {
+            console.log('⏭️ Skipping territory assignment - game was restored from save');
+            return;
+        }
+        
+        // ⚠️ CRITICAL: Skip if territories already assigned
+        const assignedTerritories = Object.values(this.territories).filter(t => t.owner !== null).length;
+        if (assignedTerritories > 0) {
+            console.log('⏭️ Skipping territory assignment - territories already assigned');
+            return;
+        }
+        
+        console.log('🎲 Randomizing territory assignments (first-time only)...');
         const territories = Object.keys(this.territories);
         const shuffled = [...territories].sort(() => Math.random() - 0.5);
         
@@ -170,11 +221,15 @@ class GameState {
             }
         }, 100);
         
-        console.log('Territory assignment complete:');
+        console.log('✅ Territory assignment complete:');
         this.players.forEach(player => {
             const territories = this.getTerritoriesOwnedByPlayer(player).length;
-            console.log(`${player}: ${territories} territories, ${this.remainingArmies[player]} armies to deploy`);
+            console.log(`   ${player}: ${territories} territories, ${this.remainingArmies[player]} armies to deploy`);
         });
+        
+        // 💾 AUTO-SAVE: Save state immediately after territory assignment
+        this.saveToSession();
+        console.log('💾 Initial game state saved to sessionStorage');
     }
 
     calculateInitialArmies(playerCount) {
@@ -199,6 +254,9 @@ class GameState {
         document.dispatchEvent(new CustomEvent('playerChanged', {
             detail: { oldPlayer, newPlayer, turnComplete, source: 'GameState.nextPlayer' }
         }));
+        
+        // 💾 AUTO-SAVE: Save state after player change
+        this.saveToSession();
         
         // Return object with player and turn completion info
         return {
@@ -387,6 +445,7 @@ class GameState {
             playerColors: this.playerColors,
             continentBonuses: this.continentBonuses,
             initialDeploymentComplete: this.initialDeploymentComplete,
+            isNewGame: false, // ✅ Always false when saving (game has been initialized)
             lastUpdate: Date.now()
         };
         sessionStorage.setItem(GameState.SESSION_KEY, JSON.stringify(state));

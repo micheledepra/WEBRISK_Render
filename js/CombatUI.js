@@ -1627,6 +1627,11 @@ class CombatUI {
       document.dispatchEvent(new CustomEvent('territoryChanged', {
         detail: { territoryId, newOwner, source: 'CombatUI' }
       }));
+      
+      // 💾 AUTO-SAVE: Save state after territory ownership change
+      if (window.gameState && typeof window.gameState.saveToSession === 'function') {
+        window.gameState.saveToSession();
+      }
     }
 
     return updated;

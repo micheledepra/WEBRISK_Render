@@ -623,22 +623,26 @@
         // Find this client's player index in the session
         const myPlayerIndex = sessionPlayers.findIndex(p => p.id === client.userId);
         
-        // Store data in SAME format as singleplayer (sessionStorage for game.html)
+        // ═══════════════════════════════════════════════════════════════
+        // UNIFIED PLAYER DATA STORAGE - Consistent across refreshes
+        // ═══════════════════════════════════════════════════════════════
+        
+        // Primary storage: sessionStorage (survives page navigation, NOT browser close)
         sessionStorage.setItem('riskPlayers', JSON.stringify(allPlayerNames));
         sessionStorage.setItem('riskPlayerColors', JSON.stringify(allPlayerColors));
         sessionStorage.setItem('numPlayers', playerCount.toString());
+        sessionStorage.setItem('riskGameMode', 'multiplayer');
+        sessionStorage.setItem('riskSessionCode', currentSession);
         
-        // ALSO store in localStorage for cross-tab access (dashboard compatibility)
+        // Backup storage: localStorage (survives browser close for reconnection)
         localStorage.setItem('riskPlayers', JSON.stringify(allPlayerNames));
         localStorage.setItem('riskPlayerColors', JSON.stringify(allPlayerColors));
-        
-        // Store multiplayer-specific data
-        localStorage.setItem('gameMode', 'multiplayer');
+        localStorage.setItem('riskGameMode', 'multiplayer');
         localStorage.setItem('multiplayerSession', currentSession);
         localStorage.setItem('multiplayerPlayerIndex', myPlayerIndex.toString());
         localStorage.setItem('multiplayerUserId', client.userId);
         
-        // Store individual player info (backward compatibility)
+        // Individual player info (for reconnection)
         localStorage.setItem('lastPlayerName', currentPlayerName);
         localStorage.setItem('lastSessionCode', currentSession);
         localStorage.setItem('lastPlayerColor', currentPlayerColor);
@@ -653,12 +657,27 @@
           session: currentSession,
           userId: client.userId,
           gameMode: 'multiplayer',
-          storedIn: ['sessionStorage', 'localStorage']
+          storedIn: ['sessionStorage (primary)', 'localStorage (backup)']
         });
+        
+        // Build URL with full player data (redundant but ensures compatibility)
+        const params = new URLSearchParams();
+        params.set('session', currentSession);
+        params.set('players', playerCount.toString());
+        
+        // Add each player to URL as additional fallback
+        allPlayerNames.forEach((name, index) => {
+          params.set(`player${index + 1}`, name);
+          params.set(`color${index + 1}`, allPlayerColors[index]);
+        });
+        
+        const gameUrl = `../../game.html?${params.toString()}`;
+        console.log('🎮 Starting game with URL:', gameUrl);
+        console.log('📦 Primary data in: sessionStorage.riskPlayers');
         
         showSuccessMessage('Game starting in 2 seconds...');
         setTimeout(() => {
-          window.location.href = `../../game.html?session=${currentSession}`;
+          window.location.href = gameUrl;
         }, 2000);
       });
 

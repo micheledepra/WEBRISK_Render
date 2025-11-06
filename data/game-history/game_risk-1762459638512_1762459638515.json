@@ -1,0 +1,293 @@
+{
+  "gameId": "risk-1762459638512",
+  "timestamp": 1762459638512,
+  "savedAt": "2025-11-06T20:07:18.515Z",
+  "phase": "startup",
+  "currentPlayer": "mpdoq",
+  "turnNumber": 0,
+  "players": {
+    "mpdoq": {
+      "name": "mpdoq",
+      "territories": 21,
+      "totalArmies": 21,
+      "armies": 21,
+      "continentBonus": 0,
+      "remainingArmies": 19,
+      "color": "red",
+      "isCurrentPlayer": true
+    },
+    "7KG9AA1asdasd": {
+      "name": "7KG9AA1asdasd",
+      "territories": 21,
+      "totalArmies": 21,
+      "armies": 21,
+      "continentBonus": 0,
+      "remainingArmies": 19,
+      "color": "green",
+      "isCurrentPlayer": false
+    }
+  },
+  "territories": {
+    "alaska": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "alaska"
+    },
+    "northwest territory": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "northwest territory"
+    },
+    "greenland": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "greenland"
+    },
+    "alberta": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "alberta"
+    },
+    "ontario": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "ontario"
+    },
+    "quebec": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "quebec"
+    },
+    "western united states": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "western united states"
+    },
+    "eastern united states": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "eastern united states"
+    },
+    "central america": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "central america"
+    },
+    "venezuela": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "venezuela"
+    },
+    "brazil": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "brazil"
+    },
+    "peru": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "peru"
+    },
+    "argentina": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "argentina"
+    },
+    "iceland": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "iceland"
+    },
+    "scandinavia": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "scandinavia"
+    },
+    "great britain": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "great britain"
+    },
+    "ukraine": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "ukraine"
+    },
+    "northern europe": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "northern europe"
+    },
+    "western europe": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "western europe"
+    },
+    "southern europe": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "southern europe"
+    },
+    "north africa": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "north africa"
+    },
+    "egypt": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "egypt"
+    },
+    "east africa": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "east africa"
+    },
+    "congo": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "congo"
+    },
+    "madagascar": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "madagascar"
+    },
+    "south africa": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "south africa"
+    },
+    "ural": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "ural"
+    },
+    "siberia": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "siberia"
+    },
+    "yakutsk": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "yakutsk"
+    },
+    "kamchatka": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "kamchatka"
+    },
+    "irkutsk": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "irkutsk"
+    },
+    "japan": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "japan"
+    },
+    "mongolia": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "mongolia"
+    },
+    "china": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "china"
+    },
+    "afghanistan": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "afghanistan"
+    },
+    "middle east": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "middle east"
+    },
+    "india": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "india"
+    },
+    "siam": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "siam"
+    },
+    "indonesia": {
+      "owner": "mpdoq",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "indonesia"
+    },
+    "new guinea": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "new guinea"
+    },
+    "western australia": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "western australia"
+    },
+    "eastern australia": {
+      "owner": "7KG9AA1asdasd",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "eastern australia"
+    }
+  },
+  "statistics": {
+    "totalBattles": 0,
+    "totalArmiesDeployed": 0,
+    "gameStartTime": "2025-11-06T20:07:14.168Z",
+    "gameDuration": 4344
+  },
+  "version": "1.0",
+  "dataSource": "event-driven",
+  "lastUpdate": 1762459638512
+}

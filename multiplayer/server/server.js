@@ -119,275 +119,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Admin Dashboard
+// Admin Dashboard - Serve new admin.html
 app.get('/admin', (req, res) => {
-  const sessions = sessionManager.getAllSessions();
-  const activeSessions = sessions.filter(s => s.state !== 'completed');
-  
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Risk Server Admin</title>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-          padding: 20px; 
-          background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-          color: #eee;
-          min-height: 100vh;
-        }
-        .container { max-width: 1200px; margin: 0 auto; }
-        h1 { 
-          color: #ffd700; 
-          text-align: center; 
-          margin-bottom: 30px;
-          font-size: 2.5em;
-          text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-        .stats-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-          gap: 20px;
-          margin-bottom: 30px;
-        }
-        .stat-card { 
-          background: linear-gradient(135deg, #16213e 0%, #0f3460 100%);
-          padding: 20px; 
-          border-radius: 10px;
-          border-left: 4px solid #ffd700;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        .stat-value { 
-          font-size: 2.5em; 
-          color: #0f3; 
-          font-weight: bold;
-          margin: 10px 0;
-        }
-        .stat-label { 
-          color: #aaa; 
-          font-size: 0.9em;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-        }
-        .status { color: #0f3; font-size: 1.2em; }
-        .status::before { 
-          content: '●'; 
-          margin-right: 8px;
-          animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-        .url-box {
-          background: rgba(15, 243, 0, 0.1);
-          padding: 20px;
-          border: 2px solid #0f3;
-          border-radius: 10px;
-          margin: 20px 0;
-          text-align: center;
-        }
-        .url-box h3 { color: #0f3; margin-bottom: 15px; }
-        .url-box a {
-          color: #0f3;
-          font-size: 1.3em;
-          word-break: break-all;
-          text-decoration: none;
-          font-weight: bold;
-        }
-        .url-box a:hover { text-decoration: underline; }
-        .session-card {
-          background: #0f3460;
-          padding: 15px;
-          margin: 10px 0;
-          border-radius: 8px;
-          border-left: 4px solid #e94560;
-        }
-        .session-header {
-          font-size: 1.2em;
-          color: #ffd700;
-          margin-bottom: 10px;
-        }
-        .session-info { 
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-          gap: 10px;
-          color: #ccc;
-        }
-        .buttons {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-          flex-wrap: wrap;
-          margin: 20px 0;
-        }
-        button { 
-          background: linear-gradient(135deg, #e94560 0%, #ff6b81 100%);
-          color: white; 
-          padding: 12px 24px; 
-          border: none; 
-          cursor: pointer;
-          border-radius: 5px;
-          font-size: 1em;
-          font-weight: bold;
-          transition: all 0.3s;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        button:hover { 
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .btn-primary { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); }
-        .section {
-          background: rgba(22, 33, 62, 0.5);
-          padding: 20px;
-          border-radius: 10px;
-          margin: 20px 0;
-        }
-        .section h2 {
-          color: #ffd700;
-          margin-bottom: 15px;
-          font-size: 1.5em;
-        }
-        .empty-state {
-          text-align: center;
-          padding: 40px;
-          color: #666;
-          font-style: italic;
-        }
-        .footer {
-          text-align: center;
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid rgba(255,255,255,0.1);
-          color: #666;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <h1>🎲 Risk Multiplayer Server</h1>
-        
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Server Status</div>
-            <div class="status">Running</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Active Sessions</div>
-            <div class="stat-value" id="sessionCount">${activeSessions.length}</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Connected Players</div>
-            <div class="stat-value" id="playerCount">0</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Uptime</div>
-            <div class="stat-value" id="uptime">${Math.floor(process.uptime())}s</div>
-          </div>
-        </div>
+  res.sendFile(path.join(__dirname, '../client/admin.html'));
+});
 
-        <div class="url-box">
-          <h3>🌐 Share This URL With Friends</h3>
-          <a id="publicUrl" href="/" target="_blank">${process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`}</a>
-          <p style="margin-top: 10px; color: #888; font-size: 0.9em;">
-            Players connect here to join games
-          </p>
-        </div>
-
-        <div class="buttons">
-          <button class="btn-primary" onclick="window.location.href='/multiplayer/client/lobby.html'">
-            🎮 Launch Game Lobby
-          </button>
-          <button onclick="refreshStatus()">🔄 Refresh Status</button>
-        </div>
-
-        <div class="section">
-          <h2>🎮 Active Game Sessions</h2>
-          <div id="sessionList">
-            ${activeSessions.length === 0 ? '<div class="empty-state">No active games - waiting for players to create sessions</div>' : ''}
-          </div>
-        </div>
-
-        <div class="footer">
-          <p>Risk Multiplayer Server v1.0.0</p>
-          <p>Environment: ${process.env.NODE_ENV || 'development'} | Port: ${PORT}</p>
-        </div>
-      </div>
-
-      <script>
-        function formatUptime(seconds) {
-          const hours = Math.floor(seconds / 3600);
-          const minutes = Math.floor((seconds % 3600) / 60);
-          const secs = Math.floor(seconds % 60);
-          if (hours > 0) return hours + 'h ' + minutes + 'm';
-          if (minutes > 0) return minutes + 'm ' + secs + 's';
-          return secs + 's';
-        }
-
-        function updateSessions(sessions) {
-          const listEl = document.getElementById('sessionList');
-          
-          if (!sessions || sessions.length === 0) {
-            listEl.innerHTML = '<div class="empty-state">No active games</div>';
-            return;
-          }
-
-          const html = sessions.map(session => {
-            const players = session.players || [];
-            return \`
-              <div class="session-card">
-                <div class="session-header">Session: \${session.sessionId}</div>
-                <div class="session-info">
-                  <div><strong>Players:</strong> \${players.length}/\${session.maxPlayers}</div>
-                  <div><strong>Status:</strong> \${session.state}</div>
-                  <div><strong>Host:</strong> \${session.hostUserId}</div>
-                  <div><strong>Turn:</strong> #\${session.turnNumber || 0}</div>
-                </div>
-              </div>
-            \`;
-          }).join('');
-          
-          listEl.innerHTML = html;
-        }
-
-        function refreshStatus() {
-          fetch('/api/health')
-            .then(r => r.json())
-            .then(data => {
-              document.getElementById('uptime').textContent = formatUptime(data.uptime);
-              document.getElementById('sessionCount').textContent = data.sessions;
-            })
-            .catch(err => console.error('Error fetching health:', err));
-
-          fetch('/api/sessions')
-            .then(r => r.json())
-            .then(data => {
-              if (data.sessions) {
-                const activeSessions = data.sessions.filter(s => s.state !== 'completed');
-                updateSessions(activeSessions);
-                document.getElementById('sessionCount').textContent = activeSessions.length;
-                
-                // Count total players
-                const totalPlayers = activeSessions.reduce((sum, s) => sum + (s.players?.length || 0), 0);
-                document.getElementById('playerCount').textContent = totalPlayers;
-              }
-            })
-            .catch(err => console.error('Error fetching sessions:', err));
-        }
-
-        // Initial load
-        refreshStatus();
-        
-        // Auto-refresh every 5 seconds
-        setInterval(refreshStatus, 5000);
-      </script>
-    </body>
-    </html>
-  `);
+// Alternative admin URL
+app.get('/admin.html', (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/admin.html'));
 });
 
 // API endpoint to get all sessions
@@ -1279,6 +1018,182 @@ io.on(EVENTS.CONNECTION, (socket) => {
   socket.on('error', (error) => {
     console.error('❌ Socket error:', socket.id, error);
   });
+
+  // ============================================================
+  // Admin Panel Socket Handlers
+  // ============================================================
+
+  // Admin: Get all sessions
+  socket.on('adminGetSessions', () => {
+    try {
+      console.log('📊 Admin: Request for session data');
+      const allSessions = sessionManager.getAllSessions();
+      
+      // Format sessions for admin panel
+      const formattedSessions = {};
+      allSessions.forEach(session => {
+        const sessionCode = session.sessionId || session.code;
+        formattedSessions[sessionCode] = {
+          code: sessionCode,
+          sessionCode: sessionCode,
+          status: session.state || 'waiting',
+          maxPlayers: session.maxPlayers || 6,
+          hostName: session.hostPlayerName || session.hostUserId,
+          createdAt: session.createdAt || Date.now(),
+          players: {}
+        };
+        
+        // Convert players Map to object
+        if (session.players && session.players instanceof Map) {
+          session.players.forEach((player, userId) => {
+            formattedSessions[sessionCode].players[player.playerName || userId] = {
+              id: userId,
+              socketId: player.socketId,
+              color: player.color,
+              isReady: player.ready || false,
+              isHost: userId === session.hostUserId
+            };
+          });
+        } else if (session.players && typeof session.players === 'object') {
+          formattedSessions[sessionCode].players = session.players;
+        }
+      });
+      
+      socket.emit('adminSessionData', { sessions: formattedSessions });
+      console.log('✅ Admin: Sent session data for', allSessions.length, 'sessions');
+    } catch (error) {
+      console.error('❌ Admin: Error getting sessions:', error);
+      socket.emit('error', { message: 'Failed to get session data' });
+    }
+  });
+
+  // Admin: End specific session
+  socket.on('adminEndSession', ({ sessionCode }) => {
+    try {
+      console.log('⛔ Admin: Request to end session:', sessionCode);
+      const session = sessionManager.getSession(sessionCode);
+      
+      if (!session) {
+        console.log('❌ Admin: Session not found:', sessionCode);
+        socket.emit('error', { message: 'Session not found: ' + sessionCode });
+        return;
+      }
+      
+      console.log('✅ Admin: Session found, notifying players...');
+      
+      // Notify all players in the session
+      io.to(sessionCode).emit('sessionEnded', {
+        sessionCode,
+        reason: 'Admin ended the session'
+      });
+      
+      // Remove players from the session room
+      if (session.players && session.players instanceof Map) {
+        session.players.forEach((player) => {
+          const playerSocket = io.sockets.sockets.get(player.socketId);
+          if (playerSocket) {
+            playerSocket.leave(sessionCode);
+          }
+        });
+      }
+      
+      // Delete the session from SessionManager's Map
+      sessionManager.sessions.delete(sessionCode);
+      
+      // Delete from persistence
+      if (sessionManager.persistence) {
+        sessionManager.persistence.deleteSession(sessionCode);
+      }
+      
+      // Confirm to admin
+      socket.emit('sessionEnded', { sessionCode });
+      console.log('✅ Admin: Session ended successfully:', sessionCode);
+    } catch (error) {
+      console.error('❌ Admin: Error ending session:', error);
+      socket.emit('error', { message: 'Failed to end session: ' + error.message });
+    }
+  });
+
+  // Admin: End all sessions
+  socket.on('adminEndAllSessions', () => {
+    try {
+      console.log('⛔ Admin: Request to end all sessions');
+      const allSessions = sessionManager.getAllSessions();
+      let count = 0;
+      
+      allSessions.forEach(session => {
+        const sessionCode = session.sessionId || session.code;
+        
+        console.log(`⛔ Ending session: ${sessionCode}`);
+        
+        // Notify players
+        io.to(sessionCode).emit('sessionEnded', {
+          sessionCode,
+          reason: 'Admin ended all sessions'
+        });
+        
+        // Remove players from room
+        if (session.players && session.players instanceof Map) {
+          session.players.forEach((player) => {
+            const playerSocket = io.sockets.sockets.get(player.socketId);
+            if (playerSocket) {
+              playerSocket.leave(sessionCode);
+            }
+          });
+        }
+        
+        // Delete session from Map
+        sessionManager.sessions.delete(sessionCode);
+        
+        // Delete from persistence
+        if (sessionManager.persistence) {
+          sessionManager.persistence.deleteSession(sessionCode);
+        }
+        
+        count++;
+      });
+      
+      console.log(`✅ Admin: Ended ${count} sessions`);
+      socket.emit('adminSessionData', { sessions: {} });
+    } catch (error) {
+      console.error('❌ Admin: Error ending all sessions:', error);
+      socket.emit('error', { message: 'Failed to end all sessions: ' + error.message });
+    }
+  });
+
+  // Admin: Kick inactive players
+  socket.on('adminKickInactive', () => {
+    try {
+      console.log('👢 Admin: Kicking inactive players');
+      const allSessions = sessionManager.getAllSessions();
+      let kickedCount = 0;
+      
+      allSessions.forEach(session => {
+        if (!session.players || !(session.players instanceof Map)) return;
+        
+        const now = Date.now();
+        const inactiveTimeout = 5 * 60 * 1000; // 5 minutes
+        
+        session.players.forEach((player, userId) => {
+          const lastActive = player.lastActivity || player.joinedAt || 0;
+          if (now - lastActive > inactiveTimeout) {
+            console.log(`👢 Kicking inactive player: ${player.playerName}`);
+            handlePlayerLeave(session.sessionId, userId, socket);
+            kickedCount++;
+          }
+        });
+      });
+      
+      console.log(`✅ Admin: Kicked ${kickedCount} inactive players`);
+      socket.emit('adminSessionData', { sessions: sessionManager.getAllSessions() });
+    } catch (error) {
+      console.error('❌ Admin: Error kicking inactive players:', error);
+      socket.emit('error', { message: 'Failed to kick inactive players' });
+    }
+  });
+
+  // End of Admin Panel Socket Handlers
+  // ============================================================
 });
 
 // Helper Functions

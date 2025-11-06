@@ -600,26 +600,60 @@
       });
 
       client.socket.on('gameStarting', (data) => {
-        console.log('Game starting:', data);
+        console.log('🎮 Game starting:', data);
         
-        // Store player info for the game page to use
+        // Clear any old game data first
+        sessionStorage.removeItem('riskPlayers');
+        sessionStorage.removeItem('riskPlayerColors');
+        sessionStorage.removeItem('numPlayers');
+        localStorage.removeItem('riskPlayers');
+        localStorage.removeItem('riskPlayerColors');
+        localStorage.removeItem('lastPlayerName');
+        localStorage.removeItem('lastSessionCode');
+        localStorage.removeItem('lastPlayerColor');
+        localStorage.removeItem('multiplayerPlayers');
+        localStorage.removeItem('multiplayerColors');
+        console.log('🗑️ Cleared all old game data');
+        
+        // Extract ALL player data from session
+        const allPlayerNames = sessionPlayers.map(p => p.name);
+        const allPlayerColors = sessionPlayers.map(p => p.color);
+        const playerCount = sessionPlayers.length;
+        
+        // Find this client's player index in the session
+        const myPlayerIndex = sessionPlayers.findIndex(p => p.id === client.userId);
+        
+        // Store data in SAME format as singleplayer (sessionStorage for game.html)
+        sessionStorage.setItem('riskPlayers', JSON.stringify(allPlayerNames));
+        sessionStorage.setItem('riskPlayerColors', JSON.stringify(allPlayerColors));
+        sessionStorage.setItem('numPlayers', playerCount.toString());
+        
+        // ALSO store in localStorage for cross-tab access (dashboard compatibility)
+        localStorage.setItem('riskPlayers', JSON.stringify(allPlayerNames));
+        localStorage.setItem('riskPlayerColors', JSON.stringify(allPlayerColors));
+        
+        // Store multiplayer-specific data
+        localStorage.setItem('gameMode', 'multiplayer');
+        localStorage.setItem('multiplayerSession', currentSession);
+        localStorage.setItem('multiplayerPlayerIndex', myPlayerIndex.toString());
+        localStorage.setItem('multiplayerUserId', client.userId);
+        
+        // Store individual player info (backward compatibility)
         localStorage.setItem('lastPlayerName', currentPlayerName);
         localStorage.setItem('lastSessionCode', currentSession);
         localStorage.setItem('lastPlayerColor', currentPlayerColor);
         
-        // Store ALL players and colors for game initialization
-        const playerNames = sessionPlayers.map(p => p.name);
-        const playerColors = sessionPlayers.map(p => p.color);
-        localStorage.setItem('multiplayerPlayers', JSON.stringify(playerNames));
-        localStorage.setItem('multiplayerColors', JSON.stringify(playerColors));
-        
-        console.log('✅ Stored player info for game:', {
-          name: currentPlayerName,
+        console.log('✅ Stored complete player data for game.html:', {
+          allPlayers: allPlayerNames,
+          allColors: allPlayerColors,
+          playerCount: playerCount,
+          myIndex: myPlayerIndex,
+          myName: currentPlayerName,
+          myColor: currentPlayerColor,
           session: currentSession,
-          color: currentPlayerColor,
-          userId: localStorage.getItem('risk_userId'),
-          allPlayers: playerNames,
-          allColors: playerColors
+          userId: client.userId,
+          gameMode: 'multiplayer',
+          storedIn: ['sessionStorage', 'localStorage']
         });
         
         showSuccessMessage('Game starting in 2 seconds...');
@@ -837,10 +871,22 @@
       const name = document.getElementById('createName').value.trim();
       const maxPlayers = parseInt(document.getElementById('createPlayerCount').value);
       
-      // Clear old session data before creating new game
+      // Clear ALL old game data before creating new session
+      sessionStorage.removeItem('riskPlayers');
+      sessionStorage.removeItem('riskPlayerColors');
+      sessionStorage.removeItem('numPlayers');
+      localStorage.removeItem('riskPlayers');
+      localStorage.removeItem('riskPlayerColors');
+      localStorage.removeItem('gameMode');
+      localStorage.removeItem('multiplayerSession');
+      localStorage.removeItem('multiplayerPlayerIndex');
+      localStorage.removeItem('multiplayerUserId');
       localStorage.removeItem('lastPlayerName');
       localStorage.removeItem('lastSessionCode');
-      console.log('🗑️ Cleared old session data');
+      localStorage.removeItem('lastPlayerColor');
+      localStorage.removeItem('multiplayerPlayers');
+      localStorage.removeItem('multiplayerColors');
+      console.log('🗑️ Cleared ALL old game and session data');
       
       // Validation
       const nameError = validateName(name);
@@ -888,10 +934,22 @@
       const name = document.getElementById('joinName').value.trim();
       const sessionCode = document.getElementById('joinCode').value.trim().toUpperCase();
       
-      // Clear old session data before joining new game
+      // Clear ALL old game data before joining new session
+      sessionStorage.removeItem('riskPlayers');
+      sessionStorage.removeItem('riskPlayerColors');
+      sessionStorage.removeItem('numPlayers');
+      localStorage.removeItem('riskPlayers');
+      localStorage.removeItem('riskPlayerColors');
+      localStorage.removeItem('gameMode');
+      localStorage.removeItem('multiplayerSession');
+      localStorage.removeItem('multiplayerPlayerIndex');
+      localStorage.removeItem('multiplayerUserId');
       localStorage.removeItem('lastPlayerName');
       localStorage.removeItem('lastSessionCode');
-      console.log('🗑️ Cleared old session data');
+      localStorage.removeItem('lastPlayerColor');
+      localStorage.removeItem('multiplayerPlayers');
+      localStorage.removeItem('multiplayerColors');
+      console.log('🗑️ Cleared ALL old game and session data');
       
       // Validation
       const nameError = validateName(name);

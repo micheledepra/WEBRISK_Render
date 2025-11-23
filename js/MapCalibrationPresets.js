@@ -6,6 +6,8 @@ const MapCalibrationPresets = {
     // Desktop/Laptop presets (1024px and above)
     desktop: {
         waterLayer: { offsetX: -97, offsetY: -66, scale: 1.22, opacity: 0.92 },
+        eyeballFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
+        sidebarFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
         mapLayer: { offsetX: -131, offsetY: -105, scale: 1.25, opacity: 0.92 },
         territoryLayer: { offsetX: -180, offsetY: -129, scale: 0.5, opacity: 1.0 },
         solidified: true,
@@ -18,6 +20,8 @@ const MapCalibrationPresets = {
     // Tablet presets (768px - 1023px)
     tablet: {
         waterLayer: { offsetX: 0, offsetY: -50, scale: 1.1, opacity: 0.85 },
+        eyeballFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
+        sidebarFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
         mapLayer: { offsetX: 0, offsetY: -50, scale: 1.1, opacity: 0.85 },
         territoryLayer: { offsetX: 0, offsetY: -50, scale: 1.1, opacity: 1.0 },
         solidified: true,
@@ -30,6 +34,8 @@ const MapCalibrationPresets = {
     // Mobile presets (below 768px)
     mobile: {
         waterLayer: { offsetX: -13, offsetY: 39, scale: 1.29, opacity: 0.85 },
+        eyeballFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
+        sidebarFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
         mapLayer: { offsetX: -47, offsetY: -9, scale: 1.3, opacity: 0.85 },
         territoryLayer: { offsetX: -99, offsetY: -34, scale: 0.52, opacity: 1.0 },
         solidified: true,

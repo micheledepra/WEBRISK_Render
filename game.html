@@ -101,56 +101,6 @@
         position: relative;
       }
 
-      /* Sidebar Styles */
-      .sidebar {
-        width: 320px;
-        position: relative;
-        padding: 20px;
-        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-        display: flex;
-        flex-direction: column;
-        z-index: 2;
-        overflow-y: auto;
-        flex-shrink: 0;
-      }
-
-      /* Sidebar background layer with vignette effect */
-      .sidebar::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-image: url('res/ui/gameScreenElements/LeftPanel/wood1.png');
-        background-size: 100% 100%;
-        background-position: center center;
-        background-repeat: no-repeat;
-        opacity: 0.85;
-        z-index: -1;
-      }
-
-      /* Vignette overlay - dynamic radial gradient */
-      .sidebar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: radial-gradient(
-          ellipse at center,
-          rgba(0, 0, 0, 0) 0%,
-          rgba(0, 0, 0, 0) 30%,
-          rgba(0, 0, 0, 0.15) 60%,
-          rgba(0, 0, 0, 0.4) 100%
-        );
-        pointer-events: none;
-        z-index: -1;
-        animation: vignetteSubtle 8s ease-in-out infinite alternate;
-        filter: blur(2px);
-      }
-
       @keyframes vignetteSubtle {
         0% {
           opacity: 0.7;
@@ -171,10 +121,10 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        position: fixed;
-        top: 40px;
+        position: absolute;
+        top: 65px;
         left: 340px;
-        z-index: 1000;
+        z-index: 9999;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.15);
         transition: all 0.3s ease;
       }
@@ -806,9 +756,13 @@
 
       /* Controls */
       .controls {
-        margin-top: 20px;
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        right: 20px;
         padding-top: 10px;
         border-top: 2px solid #eee;
+        z-index: 9999;
       }
 
       .btn {
@@ -2071,7 +2025,7 @@
         text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
       }
 
-      /* Attack Button in Sidebar */
+      /* Attack Button */
       #attack-button-container .attack-btn {
         width: 100%;
         background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
@@ -2161,18 +2115,19 @@
          TURN MANAGEMENT UI - Enhanced
          ======================================== */
 
-      /* Turn Counter Panel (First element in sidebar) */
+      /* Turn Counter Panel */
       .turn-counter-panel {
         background-image: url('images/rugged map.png');
         background-size: 100%;
         background-position: center; 
         color: rgba(0, 0, 0, 0.979);
         padding: 2px 15px;
-        position: relative;
+        position: absolute;
+        top: 20px;
+        left: 20px;
         border: 3px solid;
         border-color: #691b05a5 #8b3010 #4a1504 #6b2108;
         border-radius: 3px;
-        margin-bottom: 15px;
         box-shadow: 
           0 2px 8px rgba(102, 126, 234, 0.3),
           inset 0 1px 2px rgba(0, 0, 0, 0.4),
@@ -2180,9 +2135,9 @@
         text-align: left;
         font-size: 1em;
         font-weight: 300;
-        position: relative;
         filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.3));
         width: fit-content;
+        z-index: 9999;
       }
       
       .turn-counter-panel::before {
@@ -2222,12 +2177,12 @@
         margin-left: 5px;
       }
 
-      /* Turn Header Panel (Now outside sidebar, below reinforcement panel) */
+      /* Turn Header Panel */
       .turn-header-panel {
-        position: fixed;
+        position: absolute;
         left: 340px;
         top: 19px;
-        z-index: 1000;
+        z-index: 9999;
         background: linear-gradient(135deg, #667eea37 0%, #764ba24c 100%);
         color: white;
         padding: 5px 15px;
@@ -2258,11 +2213,16 @@
         border: 3px solid #410e02bc;
         border-radius: 8px;
         padding: 12px;
-        margin-bottom: 15px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        position: relative;
+        position: absolute;
+        top: 70px;
+        left: 20px;
+        right: 20px;
         overflow: hidden;
         opacity: 0.85;
+        z-index: 9999;
+        width: 250px;
+        height: 100px;
       }
 
       /* Reflection effect shader for phase progress panel */
@@ -2299,15 +2259,15 @@
       }
 
       .phase-progress-header {
-        font-size: 0.95em;
+        font-size: 0.80em;
         text-transform: uppercase;
         letter-spacing: 2px;
         color: #000000;
-        margin-bottom: 8px;
-        font-weight: 350;
+        margin-bottom: 2px;
+        font-weight: 320;
         text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
         background: rgba(255, 255, 255, 0.05);
-        padding: 8px 12px;
+        padding: 6px 8px;
         border-radius: 6px;
         backdrop-filter: blur(0.5px);
         text-align: center;
@@ -2315,8 +2275,8 @@
 
       .phase-progress-bar {
         display: flex;
-        gap: 4px;
-        margin-bottom: 10px;
+        gap: 6px;
+        margin-bottom: 4px;
       }
 
       .phase-segment {
@@ -2327,8 +2287,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.80em;
-        font-weight: 200;
+        font-size: 0.60em;
+        font-weight: 150;
         color: #666;
         position: relative;
         overflow: hidden;
@@ -2386,10 +2346,15 @@
         border: 3px solid #410e02bc;
         border-radius: 8px;
         padding: 10px;
-        margin-bottom: 15px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        position: relative;
+        position: absolute;
+        top: 190px;
+        left: 20px;
+        right: 20px;
         overflow: hidden;
+        z-index: 9999;
+        width: 250px;
+        height: auto;
       }
 
       /* Reflection effect shader for players turn order */
@@ -2597,11 +2562,18 @@
 
       /* Phase Completion Messages */
       .phase-completion-notice {
-        padding: 8px;
-        border-radius: 4px;
-        font-size: 0.8em;
-        margin-bottom: 10px;
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 0.9em;
         display: none;
+        text-align: center;
+        z-index: 10000;
+        min-width: 300px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
 
       .phase-completion-notice.show {
@@ -2626,33 +2598,6 @@
         border-left: 3px solid #4caf50;
       }
 
-      /* Skip Phase Button */
-      .skip-phase-button {
-        width: 100%;
-        padding: 10px;
-        background: #ffc107;
-        color: #333;
-        border: none;
-        border-radius: 4px;
-        font-size: 0.85em;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-bottom: 8px;
-      }
-
-      .skip-phase-button:hover:not(:disabled) {
-        background: #ffb300;
-        transform: translateY(-1px);
-      }
-
-      .skip-phase-button:disabled {
-        background: #ccc;
-        color: #666;
-        cursor: not-allowed;
-        opacity: 0.5;
-      }
-
       /* Phase Skip Animation */
       @keyframes fadeInOut {
         0%,
@@ -2673,14 +2618,19 @@
         background-repeat: no-repeat;
         border: 3px solid #410e02bc;
         border-radius: 8px;
-        margin-bottom: 15px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        position: relative;
+        position: absolute;
+        bottom: 120px;
+        left: 20px;
+        right: 20px;
         overflow: hidden;
+        z-index: 9999;
+        width: 250px;
+        height: 50px;
       }
 
       /* Reflection effect shader for phase control panel */
@@ -2717,9 +2667,9 @@
       }
 
       .end-turn-button-enhanced {
-        width: 100%;
+        width: 150px;
         padding: 14px 20px;
-        font-size: 16px;
+        font-size: 12px;
         font-weight: 600;
         border: none;
         border-radius: 8px;
@@ -2779,36 +2729,6 @@
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5), 0 0 30px rgba(0, 0, 0, 0.3);
         transform: scale(1.05);
         filter: drop-shadow(0 0 12px rgba(0, 0, 0, 0.2));
-      }
-
-      /* Save Game Button */
-      .save-game-button {
-        padding: 12px 24px;
-        font-size: 16px;
-        font-weight: bold;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 10px;
-        width: 100%;
-        font-family: 'Mechfire', Arial, sans-serif;
-        background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
-        color: white;
-        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
-      }
-
-      .save-game-button:hover:not(:disabled) {
-        background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-        transform: translateY(-2px);
-      }
-
-      .save-game-button:disabled {
-        background: #cccccc;
-        cursor: not-allowed;
-        opacity: 0.6;
       }
 
       /* Save Game Modal */
@@ -3016,6 +2936,33 @@
         box-shadow: 0 6px 20px rgba(33, 150, 243, 0.5);
       }
 
+      .mobile-nav-button.ui-calibration-button {
+        background: linear-gradient(270deg, #9C27B0 0%, #BA68C8 100%);
+        border-color: rgba(156, 39, 176, 0.5);
+      }
+
+      .mobile-nav-button.ui-calibration-button:hover {
+        background: linear-gradient(135deg, #BA68C8 0%, #9C27B0 100%);
+        box-shadow: 0 6px 20px rgba(156, 39, 176, 0.5);
+      }
+
+      .mobile-nav-button.save-game-nav-button {
+        background: linear-gradient(270deg, #4caf50 0%, #45a049 100%);
+        border-color: rgba(76, 175, 80, 0.5);
+      }
+
+      .mobile-nav-button.save-game-nav-button:hover {
+        background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.5);
+      }
+
+      .mobile-nav-button.save-game-nav-button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+        box-shadow: none;
+      }
+
       /* Responsive adjustments */
       @media (max-width: 768px) {
         .mobile-nav-buttons {
@@ -3061,63 +3008,10 @@
 
       /* ==========================================
          LANDSCAPE MODE (Horizontal - Phone Tilted)
-         Sidebar at BOTTOM
          ========================================== */
       @media (max-width: 1024px) and (orientation: landscape) {
         .game-container {
           flex-direction: column !important;
-        }
-
-        .sidebar {
-          position: fixed !important;
-          left: 0 !important;
-          bottom: 0 !important;
-          right: 0 !important;
-          width: 100% !important;
-          height: 45% !important;
-          max-height: 280px !important;
-          transform: translateY(calc(100% - 50px)) !important;
-          transition: transform 0.3s ease !important;
-          z-index: 1000 !important;
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-          display: flex !important;
-          flex-direction: row !important;
-          flex-wrap: wrap !important;
-          padding: 8px 12px !important;
-          box-sizing: border-box !important;
-        }
-
-        .sidebar.open {
-          transform: translateY(0) !important;
-        }
-
-        /* Sidebar toggle button - center top in landscape */
-        .sidebar-toggle {
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          width: 50px !important;
-          height: 50px !important;
-          position: fixed !important;
-          top: 10px !important;
-          left: 50% !important;
-          transform: translateX(-50%) !important;
-          background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%) !important;
-          border: 3px solid #8b7355 !important;
-          border-radius: 50% !important;
-          cursor: pointer !important;
-          font-size: 24px !important;
-          color: #2c1810 !important;
-          z-index: 1001 !important;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .sidebar-toggle.open {
-          top: auto !important;
-          bottom: calc(45% - 25px) !important;
-          background: linear-gradient(135deg, #c9302c 0%, #e74c3c 100%) !important;
         }
 
         /* Map container - top portion in landscape */
@@ -3136,56 +3030,6 @@
         #risk-map {
           max-width: 95% !important;
           max-height: 95% !important;
-        }
-
-        /* Sidebar content - horizontal layout */
-        .sidebar > div,
-        .sidebar > section {
-          flex: 1 1 auto !important;
-          min-width: 150px !important;
-          max-width: 250px !important;
-          margin: 4px !important;
-          padding: 6px !important;
-        }
-
-        .sidebar h2,
-        .sidebar h3 {
-          font-size: 0.9em !important;
-          margin: 4px 0 !important;
-          padding: 2px 0 !important;
-        }
-
-        .sidebar p,
-        .sidebar label,
-        .sidebar span {
-          font-size: 0.85em !important;
-          line-height: 1.3 !important;
-          margin: 2px 0 !important;
-        }
-
-        .sidebar button {
-          font-size: 0.85em !important;
-          padding: 8px 12px !important;
-          min-height: 44px !important;
-          margin: 3px 2px !important;
-        }
-
-        .sidebar input,
-        .sidebar select {
-          font-size: 0.85em !important;
-          padding: 6px !important;
-          min-height: 44px !important;
-        }
-
-        .sidebar ul {
-          font-size: 0.85em !important;
-          max-height: 120px !important;
-          overflow-y: auto !important;
-        }
-
-        .sidebar li {
-          padding: 3px 6px !important;
-          font-size: 0.85em !important;
         }
 
         .player-panel {
@@ -3209,72 +3053,6 @@
         .game-container {
           flex-direction: row !important;
           height: 100vh !important;
-        }
-
-        .sidebar {
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          bottom: 0 !important;
-          width: 85% !important;
-          max-width: 320px !important;
-          height: 100vh !important;
-          transform: translateX(-100%) !important;
-          transition: transform 0.3s ease !important;
-          z-index: 1000 !important;
-          overflow-y: auto !important;
-          overflow-x: hidden !important;
-          display: flex !important;
-          flex-direction: column !important;
-          padding: 12px !important;
-          box-sizing: border-box !important;
-        }
-
-        .sidebar.open {
-          transform: translateX(0) !important;
-        }
-
-        /* Sidebar toggle button - left center in portrait */
-        .sidebar-toggle {
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-          width: 50px !important;
-          height: 50px !important;
-          position: fixed !important;
-          left: 10px !important;
-          top: 50% !important;
-          transform: translateY(-50%) !important;
-          background: linear-gradient(135deg, #d4af37 0%, #f4d03f 100%) !important;
-          border: 3px solid #8b7355 !important;
-          border-radius: 50% !important;
-          cursor: pointer !important;
-          font-size: 24px !important;
-          color: #2c1810 !important;
-          z-index: 1001 !important;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
-          transition: all 0.3s ease !important;
-        }
-
-        .sidebar-toggle.open {
-          left: calc(85% + 10px) !important;
-          background: linear-gradient(135deg, #c9302c 0%, #e74c3c 100%) !important;
-        }
-
-        /* Overlay for closing sidebar */
-        .sidebar-overlay {
-          display: none !important;
-          position: fixed !important;
-          top: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          bottom: 0 !important;
-          background: rgba(0, 0, 0, 0.5) !important;
-          z-index: 999 !important;
-        }
-
-        .sidebar-overlay.active {
-          display: block !important;
         }
 
         /* Map container - full screen in portrait */
@@ -3301,55 +3079,6 @@
         }
 
         /* Sidebar content - vertical stack */
-        .sidebar > div,
-        .sidebar > section {
-          width: 100% !important;
-          margin: 6px 0 !important;
-          padding: 8px !important;
-        }
-
-        .sidebar h2,
-        .sidebar h3 {
-          font-size: 1em !important;
-          margin: 6px 0 !important;
-          padding: 4px 0 !important;
-        }
-
-        .sidebar p,
-        .sidebar label,
-        .sidebar span {
-          font-size: 0.9em !important;
-          line-height: 1.4 !important;
-          margin: 3px 0 !important;
-        }
-
-        .sidebar button {
-          font-size: 0.9em !important;
-          padding: 10px 14px !important;
-          min-height: 44px !important;
-          margin: 4px 0 !important;
-          width: 100% !important;
-        }
-
-        .sidebar input,
-        .sidebar select {
-          font-size: 0.9em !important;
-          padding: 8px !important;
-          min-height: 44px !important;
-          width: 100% !important;
-          box-sizing: border-box !important;
-        }
-
-        .sidebar ul {
-          font-size: 0.9em !important;
-          max-height: 200px !important;
-          overflow-y: auto !important;
-        }
-
-        .sidebar li {
-          padding: 4px 8px !important;
-          font-size: 0.9em !important;
-        }
 
         .player-panel {
           padding: 8px !important;
@@ -3366,54 +3095,14 @@
 
       /* Small phones - extra compact */
       @media (max-width: 480px) and (orientation: portrait) {
-        .sidebar {
-          width: 90% !important;
-          max-width: 280px !important;
-        }
-
-        .sidebar h2,
-        .sidebar h3 {
-          font-size: 0.95em !important;
-        }
-
-        .sidebar p,
-        .sidebar label,
-        .sidebar span,
-        .sidebar button,
-        .sidebar input,
-        .sidebar ul,
-        .sidebar li {
-          font-size: 0.88em !important;
-        }
       }
 
       /* Extra small landscape phones */
       @media (max-height: 500px) and (orientation: landscape) {
-        .sidebar {
-          max-height: 220px !important;
-        }
-
-        .sidebar h2,
-        .sidebar h3 {
-          font-size: 0.85em !important;
-        }
-
-        .sidebar button {
-          padding: 6px 10px !important;
-          min-height: 40px !important;
-        }
       }
 
-      /* Hide sidebar toggle on desktop */
+      /* Hide toggle on desktop */
       @media (min-width: 1025px) {
-        .sidebar-toggle {
-          display: none !important;
-        }
-
-        .sidebar-overlay {
-          display: none !important;
-        }
-
         .mobile-only {
           display: none !important;
         }
@@ -3623,15 +3312,11 @@
       <a href="Stats/dashboard.html" class="mobile-nav-button dashboard-nav-button" title="Open Dashboard" target="_blank" rel="noopener">📊</a>
       <button class="mobile-nav-button music-button" id="mobile-music-button" title="Open Music Manager (N)">🎵</button>
       <button class="mobile-nav-button sizing-button" id="mobile-sizing-button" title="Open Map Calibration (C)">🔧</button>
+      <button class="mobile-nav-button ui-calibration-button" id="mobile-ui-calibration-button" title="Open UI Position Calibration (X)">🎯</button>
+      <button class="mobile-nav-button save-game-nav-button" id="mobile-save-game-button" title="Save Game (only at beginning of turn)">💾</button>
     </div>
 
     <div class="game-container">
-      <div class="sidebar">
-        <!-- Mobile Sidebar Toggle -->
-        <div class="sidebar-toggle mobile-only" id="sidebar-toggle" title="Tap to expand/collapse">
-          <span>▲</span>
-        </div>
-
         <!-- 1. Turn Counter (NEW - First Element) -->
         <div class="turn-counter-panel" id="turn-counter-panel">
           <span class="turn-prefix"> Turn: </span><span class="turn-number" id="turn-number-display">1</span>
@@ -3665,22 +3350,6 @@
           >
             Next Phase
           </button>
-          <button 
-            class="skip-phase-button" 
-            id="skip-phase-button"
-            onclick="window.handleSkipPhase()"
-            style="display: none"
-          >
-            ⏭️ Skip This Phase
-          </button>
-          <button 
-            class="save-game-button" 
-            id="save-game-button"
-            onclick="window.openSaveGameModal()"
-            title="Save Game (only at beginning of turn)"
-          >
-            💾 Save Game
-          </button>
         </div>
 
         <!-- 6. Original Player Info (Hidden but preserved for compatibility) -->
@@ -3695,15 +3364,7 @@
           </div>
         </div>
 
-        <!-- 7. Ready to Deploy Panel (BOTTOM) -->
-        <div class="reinforcement-panel" id="reinforcement-panel">
-          <div class="reinforcement-counter" id="reinforcement-counter">0</div>
-          <div class="reinforcement-info" id="reinforcement-info">
-            <div class="reinforcement-status" id="reinforcement-status">Ready to deploy</div>
-          </div>
-        </div>
-
-        <!-- Attack Button in Sidebar (appears when valid attacking territory is selected) -->
+        <!-- Attack Button (appears when valid attacking territory is selected) -->
         <div
           id="attack-button-container"
           style="display: none; margin-bottom: 20px"
@@ -3941,448 +3602,6 @@
           </div>
         </div>
 
-        <!-- Unit Transfer Modal -->
-        <div id="unit-transfer-modal" class="modal">
-          <div class="modal-content unit-transfer-modal-content">
-            <div class="transfer-header">
-              <h3>🏆 Territory Conquered!</h3>
-              <p class="conquest-message">
-                Choose how many armies to move to your new territory
-              </p>
-            </div>
-
-            <div class="transfer-info">
-              <div class="transfer-territories">
-                <div class="transfer-territory source">
-                  <div class="territory-label">FROM</div>
-                  <div class="territory-name" id="transfer-source-name">
-                    Attacking Territory
-                  </div>
-                  <div class="territory-armies" id="transfer-source-armies">
-                    0 armies
-                  </div>
-                </div>
-                <div class="transfer-arrow">➡️</div>
-                <div class="transfer-territory destination">
-                  <div class="territory-label">TO (CONQUERED)</div>
-                  <div class="territory-name" id="transfer-destination-name">
-                    Conquered Territory
-                  </div>
-                  <div
-                    class="territory-armies"
-                    id="transfer-destination-armies"
-                  >
-                    1 army (minimum)
-                  </div>
-                </div>
-              </div>
-
-              <div class="transfer-constraints">
-                <p><strong>Transfer Rules:</strong></p>
-                <ul>
-                  <li>Minimum 1 army must move to conquered territory</li>
-                  <li>At least 1 army must remain in attacking territory</li>
-                  <li id="transfer-range">You can transfer 1-0 armies</li>
-                </ul>
-              </div>
-
-              <div class="transfer-controls">
-                <label for="transfer-slider">Armies to Transfer:</label>
-                <div class="transfer-input-group">
-                  <div class="slider-container">
-                    <input
-                      type="range"
-                      id="transfer-slider"
-                      min="1"
-                      max="1"
-                      value="1"
-                      aria-label="Armies to Transfer - drag slider to select amount"
-                      title="Drag slider to select number of armies to transfer"
-                      class="transfer-slider"
-                    />
-                    <div class="slider-labels">
-                      <span>1</span>
-                      <span id="slider-max-label">1</span>
-                    </div>
-                  </div>
-                  <div class="direct-input">
-                    <label for="transfer-input">Or type directly:</label>
-                    <div class="transfer-number-input">
-                      <button
-                        type="button"
-                        aria-label="Decrease transfer armies"
-                        title="Decrease armies to transfer"
-                        onclick="window.adjustTransferArmies(-1)"
-                      >
-                        −
-                      </button>
-                      <input
-                        type="number"
-                        id="transfer-input"
-                        min="1"
-                        max="1"
-                        value="1"
-                        aria-label="Transfer armies - enter amount directly"
-                        title="Enter number of armies to transfer"
-                      />
-                      <button
-                        type="button"
-                        aria-label="Increase transfer armies"
-                        title="Increase armies to transfer"
-                        onclick="window.adjustTransferArmies(1)"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="transfer-preview">
-                <h4>Result Preview:</h4>
-                <div class="transfer-result">
-                  <div class="result-item">
-                    <span id="preview-source-name">Attacking Territory</span>:
-                    <span id="preview-source-armies">0 armies remaining</span>
-                  </div>
-                  <div class="result-item">
-                    <span id="preview-destination-name"
-                      >Conquered Territory</span
-                    >:
-                    <span id="preview-destination-armies">1 army total</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="transfer-error">
-                <p id="transfer-error-message" class="error-message"></p>
-              </div>
-
-              <div class="transfer-actions">
-                <button class="secondary-btn" id="use-minimum-btn">
-                  Use Minimum (1 army)
-                </button>
-                <button class="primary-btn" id="confirm-transfer-btn">
-                  Confirm Transfer
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Attack Modal Window -->
-        <div id="attack-modal" class="modal">
-          <div class="modal-content attack-modal-content">
-            <div class="attack-header">
-              <h3>⚔️ Attack Phase</h3>
-              <button class="close-btn" onclick="window.closeAttackModal()">
-                ×
-              </button>
-            </div>
-
-            <div class="attack-info">
-              <div class="attack-status" id="attack-modal-status">
-                Select territories to attack
-              </div>
-            </div>
-
-            <!-- Step 1: Territory Selection Display -->
-            <div class="attack-selection" id="attack-modal-selection">
-              <div class="attack-territory">
-                <div class="territory-label">🗡️ Attacking From</div>
-                <div class="territory-name" id="attack-modal-attacking-name">
-                  -
-                </div>
-                <div
-                  class="territory-armies"
-                  id="attack-modal-attacking-armies"
-                >
-                  0 armies
-                </div>
-              </div>
-              <div class="attack-vs">VS</div>
-              <div class="defend-territory">
-                <div class="territory-label">🛡️ Defending</div>
-                <div class="territory-name" id="attack-modal-defending-name">
-                  Select target
-                </div>
-                <div
-                  class="territory-armies"
-                  id="attack-modal-defending-armies"
-                >
-                  0 armies
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 2: Direct Army Input Controls -->
-            <div
-              class="army-input"
-              id="attack-modal-army-input"
-              style="
-                display: none;
-                background: rgba(255, 255, 255, 0.9);
-                border-radius: 8px;
-                padding: 15px;
-                margin: 15px 0;
-                border: 1px solid rgba(0, 0, 0, 0.1);
-              "
-            >
-              <div
-                style="
-                  margin-bottom: 10px;
-                  text-align: center;
-                  font-weight: bold;
-                  color: #333;
-                "
-              >
-                Enter armies remaining after battle
-              </div>
-              <div class="army-controls" style="margin-bottom: 15px">
-                <label
-                  style="
-                    display: block;
-                    margin-bottom: 5px;
-                    font-weight: 600;
-                    color: #2196f3;
-                  "
-                  >Attacker Remaining Armies:</label
-                >
-                <div style="display: flex; align-items: center; gap: 8px">
-                  <button
-                    type="button"
-                    aria-label="Decrease attacker armies"
-                    title="Decrease attacker armies"
-                    style="
-                      width: 36px;
-                      height: 36px;
-                      border: 1px solid #ced4da;
-                      background: #fff;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-size: 18px;
-                      font-weight: bold;
-                    "
-                    onclick="const attackerInput = document.getElementById('attack-modal-attacker-armies-input'); if(parseInt(attackerInput.value) > parseInt(attackerInput.min)) attackerInput.value = parseInt(attackerInput.value) - 1;"
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    id="attack-modal-attacker-armies-input"
-                    min="1"
-                    title="Attacker remaining armies after battle"
-                    placeholder="Enter attacker armies"
-                    aria-label="Attacker remaining armies after battle"
-                    style="
-                      flex: 1;
-                      height: 36px;
-                      text-align: center;
-                      border: 2px solid #2196f3;
-                      border-radius: 4px;
-                      font-size: 16px;
-                      font-weight: bold;
-                    "
-                    class="army-input-field"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Increase attacker armies"
-                    title="Increase attacker armies"
-                    style="
-                      width: 36px;
-                      height: 36px;
-                      border: 1px solid #ced4da;
-                      background: #fff;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-size: 18px;
-                      font-weight: bold;
-                    "
-                    onclick="const attackerInput2 = document.getElementById('attack-modal-attacker-armies-input'); if(parseInt(attackerInput2.value) < parseInt(attackerInput2.max)) attackerInput2.value = parseInt(attackerInput2.value) + 1;"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
-              <div class="army-controls">
-                <label
-                  style="
-                    display: block;
-                    margin-bottom: 5px;
-                    font-weight: 600;
-                    color: #f44336;
-                  "
-                  >Defender Remaining Armies:</label
-                >
-                <div style="display: flex; align-items: center; gap: 8px">
-                  <button
-                    type="button"
-                    aria-label="Decrease defender armies"
-                    title="Decrease defender armies"
-                    style="
-                      width: 36px;
-                      height: 36px;
-                      border: 1px solid #ced4da;
-                      background: #fff;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-size: 18px;
-                      font-weight: bold;
-                    "
-                    onclick="const defenderInput = document.getElementById('attack-modal-defender-armies-input'); if(parseInt(defenderInput.value) > parseInt(defenderInput.min)) defenderInput.value = parseInt(defenderInput.value) - 1;"
-                  >
-                    −
-                  </button>
-                  <input
-                    type="number"
-                    id="attack-modal-defender-armies-input"
-                    min="0"
-                    title="Defender remaining armies after battle"
-                    placeholder="Enter defender armies"
-                    aria-label="Defender remaining armies after battle"
-                    style="
-                      flex: 1;
-                      height: 36px;
-                      text-align: center;
-                      border: 2px solid #f44336;
-                      border-radius: 4px;
-                      font-size: 16px;
-                      font-weight: bold;
-                    "
-                    class="army-input-field"
-                  />
-                  <button
-                    type="button"
-                    aria-label="Increase defender armies"
-                    title="Increase defender armies"
-                    style="
-                      width: 36px;
-                      height: 36px;
-                      border: 1px solid #ced4da;
-                      background: #fff;
-                      border-radius: 4px;
-                      cursor: pointer;
-                      font-size: 18px;
-                      font-weight: bold;
-                    "
-                    onclick="const defenderInput2 = document.getElementById('attack-modal-defender-armies-input'); if(parseInt(defenderInput2.value) < parseInt(defenderInput2.max)) defenderInput2.value = parseInt(defenderInput2.value) + 1;"
-                  >
-                    +
-                  </button>
-                </div>
-                <div
-                  style="
-                    margin-top: 8px;
-                    font-size: 0.8em;
-                    color: #666;
-                    font-style: italic;
-                  "
-                >
-                  Set to 0 to conquer the territory
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 3: Attack Execution Button -->
-            <!-- Event listener attached by CombatUI.initializeEventListeners() - no inline onclick needed -->
-            <button
-              class="attack-btn"
-              id="attack-modal-execute"
-              style="display: none"
-            >
-              ⚔️ COMMENCE BATTLE!
-            </button>
-
-            <!-- Step 4: Combat Results Display -->
-            <div
-              class="combat-results"
-              id="attack-modal-results"
-              style="display: none"
-            >
-              <h5>⚔️ Battle Results</h5>
-              <div class="losses-display">
-                <div class="losses-group">
-                  <div><strong>Attacker Losses</strong></div>
-                  <div
-                    class="losses-display"
-                    id="attack-modal-attacker-losses"
-                  ></div>
-                </div>
-                <div class="losses-group">
-                  <div><strong>Defender Losses</strong></div>
-                  <div
-                    class="losses-display"
-                    id="attack-modal-defender-losses"
-                  ></div>
-                </div>
-              </div>
-              <div class="battle-result" id="attack-modal-battle-result"></div>
-
-              <!-- Step 5: Post-Combat Decisions -->
-              <!-- Event listeners attached by CombatUI.initializeEventListeners() - no inline onclick needed -->
-              <div class="attack-options" style="margin-top: 15px">
-                <button
-                  class="attack-btn"
-                  id="attack-modal-continue"
-                  style="display: none; background: #28a745"
-                >
-                  ⚔️ Continue Attack
-                </button>
-                <button
-                  class="attack-btn"
-                  id="attack-modal-end"
-                  style="background: #6c757d"
-                >
-                  ✋ End Attack
-                </button>
-              </div>
-            </div>
-
-            <!-- Reset Attack Button -->
-            <button
-              class="attack-btn"
-              id="attack-modal-reset"
-              onclick="window.resetAttackState()"
-              style="
-                display: none;
-                background: #ffc107;
-                color: #000;
-                margin-top: 10px;
-              "
-            >
-              🔄 Select New Territories
-            </button>
-          </div>
-        </div>
-
-        <!-- Target Selection Modal (for keyboard navigation) -->
-        <div id="target-selection-modal" class="modal" style="display: none;">
-          <div class="modal-content target-selection-modal-content">
-            <div class="attack-header">
-              <h3>⚔️ Select Attack Target</h3>
-              <button class="close-btn" onclick="window.closeTargetSelectionModal()">×</button>
-            </div>
-
-            <div class="attacking-territory-display">
-              <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Attacking from:</div>
-              <div class="territory-name" id="target-modal-attacking-name">-</div>
-              <div class="territory-armies" id="target-modal-attacking-armies">0 armies</div>
-            </div>
-
-            <div style="text-align: center; margin-bottom: 10px; font-weight: bold; color: #333;">
-              Select target territory:
-            </div>
-            <div style="text-align: center; margin-bottom: 15px; font-size: 0.85em; color: #666;">
-              Use ↑↓ arrow keys to navigate, Enter to select
-            </div>
-
-            <div class="target-list" id="target-list">
-              <!-- Target territories will be populated here -->
-            </div>
-          </div>
-        </div>
-
         <!-- Music Manager Modal -->
         <div id="musicManagerModal">
           <div class="music-manager-container">
@@ -4416,12 +3635,19 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Turn Header Panel (Moved outside sidebar, below reinforcement panel) -->
+      <!-- Turn Header Panel -->
       <div class="turn-header-panel" id="turn-header-panel">
         <div class="current-player-display">
           <span id="current-player-name-header">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Reinforcement Panel -->
+      <div class="reinforcement-panel" id="reinforcement-panel">
+        <div class="reinforcement-counter" id="reinforcement-counter">0</div>
+        <div class="reinforcement-info" id="reinforcement-info">
+          <div class="reinforcement-status" id="reinforcement-status">Ready to deploy</div>
         </div>
       </div>
 
@@ -4506,6 +3732,20 @@
             </rect>
           </g>
           
+          <!-- LAYER 1.5: Ornate Frame (decorative overlay for water layer) -->
+          <g id="eyeball-frame-container" transform="translate(0, 0) scale(1)" opacity="1">
+            <!-- SVG Frame Image -->
+            <image 
+              href="res/maps/frame1.svg" 
+              x="0" 
+              y="0" 
+              width="1920" 
+              height="1080" 
+              preserveAspectRatio="xMidYMid meet"
+              style="pointer-events: none;"
+            />
+          </g>
+          
           <!-- LAYER 2: World Map Background (independently controllable) -->
           <g id="map-layer-container" transform="translate(0, 0) scale(1)">
             <rect width="1920" height="1080" fill="url(#world-map-bg)" opacity="0.85" />
@@ -4554,6 +3794,441 @@
       </div>
     </div>
 
+    <!-- Attack Modal Window -->
+    <div id="attack-modal" class="modal" style="display: none;">
+      <div class="modal-content attack-modal-content">
+        <div class="attack-header">
+          <h3>⚔️ Attack Phase</h3>
+          <button class="close-btn" onclick="window.closeAttackModal()">
+            ×
+          </button>
+        </div>
+
+        <div class="attack-info">
+          <div class="attack-status" id="attack-modal-status">
+            Select territories to attack
+          </div>
+        </div>
+
+        <!-- Step 1: Territory Selection Display -->
+        <div class="attack-selection" id="attack-modal-selection">
+          <div class="attack-territory">
+            <div class="territory-label">🗡️ Attacking From</div>
+            <div class="territory-name" id="attack-modal-attacking-name">
+              -
+            </div>
+            <div
+              class="territory-armies"
+              id="attack-modal-attacking-armies"
+            >
+              0 armies
+            </div>
+          </div>
+          <div class="attack-vs">VS</div>
+          <div class="defend-territory">
+            <div class="territory-label">🛡️ Defending</div>
+            <div class="territory-name" id="attack-modal-defending-name">
+              Select target
+            </div>
+            <div
+              class="territory-armies"
+              id="attack-modal-defending-armies"
+            >
+              0 armies
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Direct Army Input Controls -->
+        <div
+          class="army-input"
+          id="attack-modal-army-input"
+          style="
+            display: none;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+          "
+        >
+          <div
+            style="
+              margin-bottom: 10px;
+              text-align: center;
+              font-weight: bold;
+              color: #333;
+            "
+          >
+            Enter armies remaining after battle
+          </div>
+          <div class="army-controls" style="margin-bottom: 15px">
+            <label
+              style="
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: #2196f3;
+              "
+              >Attacker Remaining Armies:</label
+            >
+            <div style="display: flex; align-items: center; gap: 8px">
+              <button
+                type="button"
+                aria-label="Decrease attacker armies"
+                title="Decrease attacker armies"
+                style="
+                  width: 36px;
+                  height: 36px;
+                  border: 1px solid #ced4da;
+                  background: #fff;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 18px;
+                  font-weight: bold;
+                "
+                onclick="const attackerInput = document.getElementById('attack-modal-attacker-armies-input'); if(parseInt(attackerInput.value) > parseInt(attackerInput.min)) attackerInput.value = parseInt(attackerInput.value) - 1;"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                id="attack-modal-attacker-armies-input"
+                min="1"
+                title="Attacker remaining armies after battle"
+                placeholder="Enter attacker armies"
+                aria-label="Attacker remaining armies after battle"
+                style="
+                  flex: 1;
+                  height: 36px;
+                  text-align: center;
+                  border: 2px solid #2196f3;
+                  border-radius: 4px;
+                  font-size: 16px;
+                  font-weight: bold;
+                "
+                class="army-input-field"
+              />
+              <button
+                type="button"
+                aria-label="Increase attacker armies"
+                title="Increase attacker armies"
+                style="
+                  width: 36px;
+                  height: 36px;
+                  border: 1px solid #ced4da;
+                  background: #fff;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 18px;
+                  font-weight: bold;
+                "
+                onclick="const attackerInput2 = document.getElementById('attack-modal-attacker-armies-input'); if(parseInt(attackerInput2.value) < parseInt(attackerInput2.max)) attackerInput2.value = parseInt(attackerInput2.value) + 1;"
+              >
+                +
+              </button>
+            </div>
+          </div>
+          <div class="army-controls">
+            <label
+              style="
+                display: block;
+                margin-bottom: 5px;
+                font-weight: 600;
+                color: #f44336;
+              "
+              >Defender Remaining Armies:</label
+            >
+            <div style="display: flex; align-items: center; gap: 8px">
+              <button
+                type="button"
+                aria-label="Decrease defender armies"
+                title="Decrease defender armies"
+                style="
+                  width: 36px;
+                  height: 36px;
+                  border: 1px solid #ced4da;
+                  background: #fff;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 18px;
+                  font-weight: bold;
+                "
+                onclick="const defenderInput = document.getElementById('attack-modal-defender-armies-input'); if(parseInt(defenderInput.value) > parseInt(defenderInput.min)) defenderInput.value = parseInt(defenderInput.value) - 1;"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                id="attack-modal-defender-armies-input"
+                min="0"
+                title="Defender remaining armies after battle"
+                placeholder="Enter defender armies"
+                aria-label="Defender remaining armies after battle"
+                style="
+                  flex: 1;
+                  height: 36px;
+                  text-align: center;
+                  border: 2px solid #f44336;
+                  border-radius: 4px;
+                  font-size: 16px;
+                  font-weight: bold;
+                "
+                class="army-input-field"
+              />
+              <button
+                type="button"
+                aria-label="Increase defender armies"
+                title="Increase defender armies"
+                style="
+                  width: 36px;
+                  height: 36px;
+                  border: 1px solid #ced4da;
+                  background: #fff;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  font-size: 18px;
+                  font-weight: bold;
+                "
+                onclick="const defenderInput2 = document.getElementById('attack-modal-defender-armies-input'); if(parseInt(defenderInput2.value) < parseInt(defenderInput2.max)) defenderInput2.value = parseInt(defenderInput2.value) + 1;"
+              >
+                +
+              </button>
+            </div>
+            <div
+              style="
+                margin-top: 8px;
+                font-size: 0.8em;
+                color: #666;
+                font-style: italic;
+              "
+            >
+              Set to 0 to conquer the territory
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Attack Execution Button -->
+        <!-- Event listener attached by CombatUI.initializeEventListeners() - no inline onclick needed -->
+        <button
+          class="attack-btn"
+          id="attack-modal-execute"
+          style="display: none"
+        >
+          ⚔️ COMMENCE BATTLE!
+        </button>
+
+        <!-- Step 4: Combat Results Display -->
+        <div
+          class="combat-results"
+          id="attack-modal-results"
+          style="display: none"
+        >
+          <h5>⚔️ Battle Results</h5>
+          <div class="losses-display">
+            <div class="losses-group">
+              <div><strong>Attacker Losses</strong></div>
+              <div
+                class="losses-display"
+                id="attack-modal-attacker-losses"
+              ></div>
+            </div>
+            <div class="losses-group">
+              <div><strong>Defender Losses</strong></div>
+              <div
+                class="losses-display"
+                id="attack-modal-defender-losses"
+              ></div>
+            </div>
+          </div>
+          <div class="battle-result" id="attack-modal-battle-result"></div>
+
+          <!-- Step 5: Post-Combat Decisions -->
+          <!-- Event listeners attached by CombatUI.initializeEventListeners() - no inline onclick needed -->
+          <div class="attack-options" style="margin-top: 15px">
+            <button
+              class="attack-btn"
+              id="attack-modal-continue"
+              style="display: none; background: #28a745"
+            >
+              ⚔️ Continue Attack
+            </button>
+            <button
+              class="attack-btn"
+              id="attack-modal-end"
+              style="background: #6c757d"
+            >
+              ✋ End Attack
+            </button>
+          </div>
+        </div>
+
+        <!-- Reset Attack Button -->
+        <button
+          class="attack-btn"
+          id="attack-modal-reset"
+          onclick="window.resetAttackState()"
+          style="
+            display: none;
+            background: #ffc107;
+            color: #000;
+            margin-top: 10px;
+          "
+        >
+          🔄 Select New Territories
+        </button>
+      </div>
+    </div>
+
+    <!-- Target Selection Modal (for keyboard navigation) -->
+    <div id="target-selection-modal" class="modal" style="display: none;">
+      <div class="modal-content target-selection-modal-content">
+        <div class="attack-header">
+          <h3>⚔️ Select Attack Target</h3>
+          <button class="close-btn" onclick="window.closeTargetSelectionModal()">×</button>
+        </div>
+
+        <div class="attacking-territory-display">
+          <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">Attacking from:</div>
+          <div class="territory-name" id="target-modal-attacking-name">-</div>
+          <div class="territory-armies" id="target-modal-attacking-armies">0 armies</div>
+        </div>
+
+        <div class="target-list" id="target-list">
+          <!-- Target territories will be populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Unit Transfer Modal -->
+    <div id="unit-transfer-modal" class="modal" style="display: none;">
+      <div class="modal-content unit-transfer-modal-content">
+        <div class="transfer-header">
+          <h3>🏆 Territory Conquered!</h3>
+          <p class="conquest-message">
+            Choose how many armies to move to your new territory
+          </p>
+        </div>
+
+        <div class="transfer-info">
+          <div class="transfer-territories">
+            <div class="transfer-territory source">
+              <div class="territory-label">FROM</div>
+              <div class="territory-name" id="transfer-source-name">
+                Attacking Territory
+              </div>
+              <div class="territory-armies" id="transfer-source-armies">
+                0 armies
+              </div>
+            </div>
+            <div class="transfer-arrow">➡️</div>
+            <div class="transfer-territory destination">
+              <div class="territory-label">TO (CONQUERED)</div>
+              <div class="territory-name" id="transfer-destination-name">
+                Conquered Territory
+              </div>
+              <div
+                class="territory-armies"
+                id="transfer-destination-armies"
+              >
+                1 army (minimum)
+              </div>
+            </div>
+          </div>
+
+          <div class="transfer-constraints">
+            <p><strong>Transfer Rules:</strong></p>
+            <ul>
+              <li>Minimum 1 army must move to conquered territory</li>
+              <li>At least 1 army must remain in attacking territory</li>
+              <li id="transfer-range">You can transfer 1-0 armies</li>
+            </ul>
+          </div>
+
+          <div class="transfer-controls">
+            <label for="transfer-slider">Armies to Transfer:</label>
+            <div class="transfer-input-group">
+              <div class="slider-container">
+                <input
+                  type="range"
+                  id="transfer-slider"
+                  min="1"
+                  max="1"
+                  value="1"
+                  aria-label="Armies to Transfer - drag slider to select amount"
+                  title="Drag slider to select number of armies to transfer"
+                  class="transfer-slider"
+                />
+                <div class="slider-labels">
+                  <span>1</span>
+                  <span id="slider-max-label">1</span>
+                </div>
+              </div>
+              <div class="direct-input">
+                <label for="transfer-input">Or type directly:</label>
+                <div class="transfer-number-input">
+                  <button
+                    type="button"
+                    aria-label="Decrease transfer armies"
+                    title="Decrease armies to transfer"
+                    onclick="window.adjustTransferArmies(-1)"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="number"
+                    id="transfer-input"
+                    min="1"
+                    max="1"
+                    value="1"
+                    aria-label="Transfer armies - enter amount directly"
+                    title="Enter number of armies to transfer"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Increase transfer armies"
+                    title="Increase armies to transfer"
+                    onclick="window.adjustTransferArmies(1)"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="transfer-preview">
+            <h4>Result Preview:</h4>
+            <div class="transfer-result">
+              <div class="result-item">
+                <span id="preview-source-name">Attacking Territory</span>:
+                <span id="preview-source-armies">0 armies remaining</span>
+              </div>
+              <div class="result-item">
+                <span id="preview-destination-name"
+                  >Conquered Territory</span
+                >:
+                <span id="preview-destination-armies">1 army total</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="transfer-error">
+            <p id="transfer-error-message" class="error-message"></p>
+          </div>
+
+          <div class="transfer-actions">
+            <button class="secondary-btn" id="use-minimum-btn">
+              Use Minimum (1 army)
+            </button>
+            <button class="primary-btn" id="confirm-transfer-btn">
+              Confirm Transfer
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Save Game Modal -->
     <div id="save-game-modal" class="save-modal" style="display: none;">
       <div class="save-modal-content">
@@ -4593,6 +4268,12 @@
     <!-- Load game scripts -->
     <script src="js/MusicPlayer.js"></script>
     <script src="js/SaveGameManager.js"></script>
+    <script src="js/GameInterface.js"></script>
+    <script src="js/UICalibration.js"></script>
+    
+    <!-- Multiplayer Support -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    <script src="multiplayer/client/MultiplayerClient.js"></script>
     <script>
       /**
        * RISK GAME DIGITAL EDITION - ARCHITECTURE OVERVIEW
@@ -5248,11 +4929,8 @@
 
           // 6. Update End Turn Button
           updateEndTurnButton(currentPhase);
-
-          // 7. Update Skip Phase Button
-          updateSkipPhaseButton(currentPhase);
           
-          // 8. Update Save Game Button
+          // 7. Update Save Game Button
           updateSaveButton(currentPhase);
           
           // 9. Update Reinforcement Panel
@@ -5458,11 +5136,11 @@
 
         const phaseInfo = {
           reinforce: {
-            text: "💰 End Reinforce Phase",
+            text: "💰 End Reinforce",
             class: "phase-reinforce",
           },
-          attack: { text: "⚔️ End Attack Phase", class: "phase-attack" },
-          fortify: { text: "🛡️ End Fortify Phase", class: "phase-fortify" },
+          attack: { text: "⚔️ End Attack", class: "phase-attack" },
+          fortify: { text: "🛡️ End Fortify", class: "phase-fortify" },
         };
 
         const info = phaseInfo[currentPhase] || {
@@ -5480,22 +5158,10 @@
       }
 
       /**
-       * Update Skip Phase button visibility
-       */
-      function updateSkipPhaseButton(phase) {
-        const skipBtn = document.getElementById("skip-phase-button");
-        if (!skipBtn) return;
-
-        // Attack and Fortify are optional phases
-        const canSkip = phase === "attack" || phase === "fortify";
-        skipBtn.style.display = canSkip ? "block" : "none";
-      }
-
-      /**
        * Update Save Game button state
        */
       function updateSaveButton(phase) {
-        const saveBtn = document.getElementById("save-game-button");
+        const saveBtn = document.getElementById("mobile-save-game-button");
         if (!saveBtn) return;
 
         // Can only save at beginning of reinforcement phase before deploying units
@@ -5715,43 +5381,6 @@
       };
 
       /**
-       * Handle Skip Phase button click
-       */
-      window.handleSkipPhase = function () {
-        console.log("⏭️ Skip Phase clicked");
-        try {
-          if (!window.phaseSynchronizer) {
-            console.error("Phase manager not available");
-            return;
-          }
-
-          const currentPhase = window.gameState.phase;
-
-          // Can only skip attack or fortify
-          if (currentPhase !== "attack" && currentPhase !== "fortify") {
-            showPhaseCompletionNotice("Cannot skip this phase", "required");
-            return;
-          }
-
-          // Advance phase (skips the current optional phase)
-          const result = window.phaseSynchronizer.advanceToNextPhase();
-
-          if (result.success) {
-            showPhaseCompletionNotice(
-              `⏭️ Skipped ${currentPhase}, advancing to ${result.newPhase}`,
-              "success"
-            );
-
-            setTimeout(() => {
-              window.updateTurnManagementUI();
-            }, 500);
-          }
-        } catch (error) {
-          console.error("Error skipping phase:", error);
-        }
-      };
-
-      /**
        * Show temporary completion notice
        */
       function showPhaseCompletionNotice(message, type = "info") {
@@ -5869,6 +5498,227 @@
           script.onerror = () => reject(new Error(`Failed to load ${src}`));
           document.head.appendChild(script);
         });
+      }
+      
+      // ═══════════════════════════════════════════════════════════════
+      // MULTIPLAYER SYNCHRONIZATION FUNCTIONS
+      // ═══════════════════════════════════════════════════════════════
+      
+      /**
+       * Update local game state from server state
+       * This ensures all clients see the same game state in real-time
+       */
+      function updateGameStateFromServer(serverState) {
+        console.log('🔄 Synchronizing local state with server...');
+        
+        if (!window.gameState || !serverState) {
+          console.warn('⚠️ Cannot sync: gameState or serverState missing');
+          return;
+        }
+        
+        // Update core game state
+        window.gameState.currentPlayerIndex = serverState.currentPlayerIndex;
+        window.gameState.phase = serverState.phase;
+        window.gameState.turnNumber = serverState.turnNumber;
+        window.gameState.remainingArmies = serverState.remainingArmies || {};
+        
+        // Update territories
+        if (serverState.territories) {
+          Object.keys(serverState.territories).forEach(territoryId => {
+            if (window.gameState.territories[territoryId]) {
+              window.gameState.territories[territoryId].owner = serverState.territories[territoryId].owner;
+              window.gameState.territories[territoryId].armies = serverState.territories[territoryId].armies;
+            }
+          });
+        }
+        
+        console.log(`   ✅ State synced: Turn ${serverState.turnNumber}, Phase: ${serverState.phase}`);
+        console.log(`   Current player: ${serverState.currentPlayer}`);
+        
+        // Update UI to reflect new state
+        updateAllUI();
+        
+        // Check if it's our turn and update interaction guards
+        updateTurnBasedInteraction();
+      }
+      
+      /**
+       * Update all UI elements after state change
+       */
+      function updateAllUI() {
+        // Update territories on map
+        if (window.updateMapDisplay) {
+          window.updateMapDisplay();
+        }
+        
+        // Update turn management UI
+        if (window.updateTurnManagementUI) {
+          window.updateTurnManagementUI();
+        }
+        
+        // Update reinforcement panel
+        if (window.updateReinforcementPanel) {
+          window.updateReinforcementPanel();
+        }
+        
+        // Update phase progress bar
+        if (window.updatePhaseProgressBar && window.gameState) {
+          window.updatePhaseProgressBar(window.gameState.phase);
+        }
+        
+        // Update territory colors
+        if (window.colorManager && window.gameState && window.gameState.territories) {
+          Object.keys(window.gameState.territories).forEach(territoryId => {
+            const territory = window.gameState.territories[territoryId];
+            if (territory.owner) {
+              const playerColor = window.colorManager.getPlayerColor(territory.owner);
+              const territoryElement = document.getElementById(territoryId);
+              if (territoryElement && playerColor) {
+                territoryElement.style.fill = playerColor;
+                territoryElement.setAttribute('data-owner', territory.owner);
+              }
+            }
+          });
+        }
+        
+        console.log('✅ UI updated across all components');
+      }
+      
+      /**
+       * Check if it's the current client's turn
+       */
+      function isMyTurn() {
+        if (!window.multiplayerSession || !window.multiplayerSession.isActive) {
+          return true; // Single player or not in multiplayer session
+        }
+        
+        const currentPlayer = window.gameState?.players[window.gameState?.currentPlayerIndex];
+        const myPlayers = window.multiplayerSession?.players || [];
+        
+        return myPlayers.includes(currentPlayer);
+      }
+      
+      /**
+       * Update turn-based interaction guards
+       * Enables/disables UI based on whose turn it is
+       */
+      function updateTurnBasedInteraction() {
+        const myTurn = isMyTurn();
+        
+        console.log(`🎮 Turn check: ${myTurn ? 'YOUR TURN' : 'WAITING'}`);
+        
+        if (!myTurn) {
+          showWaitingOverlay();
+        } else {
+          hideWaitingOverlay();
+        }
+      }
+      
+      /**
+       * Show overlay when waiting for other player's turn
+       */
+      function showWaitingOverlay() {
+        let overlay = document.getElementById('waiting-overlay');
+        
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'waiting-overlay';
+          overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: all;
+          `;
+          
+          const currentPlayer = window.gameState?.players[window.gameState?.currentPlayerIndex] || 'Unknown';
+          const phase = window.gameState?.phase || 'unknown';
+          
+          overlay.innerHTML = `
+            <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+              <h2 style="color: #2c3e50; margin: 0 0 20px 0; font-size: 28px;">⏳ Waiting for Turn</h2>
+              <p style="color: #7f8c8d; font-size: 18px; margin: 10px 0;">
+                Current Player: <strong style="color: #e74c3c;">${currentPlayer}</strong>
+              </p>
+              <p style="color: #7f8c8d; font-size: 16px; margin: 10px 0;">
+                Phase: <strong>${phase.toUpperCase()}</strong>
+              </p>
+              <div style="margin-top: 30px;">
+                <div class="spinner" style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto;"></div>
+              </div>
+            </div>
+          `;
+          
+          const style = document.createElement('style');
+          style.textContent = `
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `;
+          document.head.appendChild(style);
+          
+          document.body.appendChild(overlay);
+        }
+        
+        overlay.style.display = 'flex';
+      }
+      
+      /**
+       * Hide waiting overlay when it's your turn
+       */
+      function hideWaitingOverlay() {
+        const overlay = document.getElementById('waiting-overlay');
+        if (overlay) {
+          overlay.style.display = 'none';
+        }
+      }
+      
+      /**
+       * Wrapper function to guard actions in multiplayer mode
+       * Returns true if action should proceed, false if blocked
+       */
+      function checkMultiplayerTurnGuard(actionName = 'action') {
+        if (!window.multiplayerSession || !window.multiplayerSession.isActive) {
+          return true; // Single player - always allow
+        }
+        
+        if (!isMyTurn()) {
+          console.warn(`❌ ${actionName} blocked: Not your turn`);
+          
+          const currentPlayer = window.gameState?.players[window.gameState?.currentPlayerIndex];
+          alert(`Not your turn! Current player: ${currentPlayer}`);
+          
+          return false;
+        }
+        
+        return true;
+      }
+      
+      /**
+       * Send game action to server
+       */
+      function sendGameAction(action, data) {
+        if (!window.multiplayerClient || !window.multiplayerSession) {
+          console.warn('Cannot send action: Not in multiplayer session');
+          return;
+        }
+        
+        const payload = {
+          ...data,
+          sessionCode: window.multiplayerSession.sessionCode,
+          userId: window.multiplayerSession.userId,
+          clientId: window.multiplayerSession.clientId
+        };
+        
+        console.log(`📤 Sending ${action}:`, payload);
+        window.multiplayerClient.emit(action, payload);
       }
 
       // Initialize game once everything is loaded
@@ -6055,6 +5905,89 @@
             sessionCode: sessionCode,
             timestamp: Date.now()
           }));
+          
+          // ═══════════════════════════════════════════════════════════════
+          // MULTIPLAYER: Initialize WebSocket Connection
+          // ═══════════════════════════════════════════════════════════════
+          console.log('\n🌐 MULTIPLAYER: Initializing WebSocket client...');
+          
+          const serverUrl = window.location.origin || 'http://localhost:3000';
+          window.multiplayerClient = new MultiplayerClient(serverUrl);
+          
+          // Get current user info from sessionStorage
+          const userId = sessionStorage.getItem('userId') || 'Player1';
+          const clientId = sessionStorage.getItem('clientId');
+          
+          // Build client-player mapping
+          // This maps which players the current client controls
+          const clientPlayerMapping = {};
+          clientPlayerMapping[clientId || 'default'] = players; // For now, one client controls all players
+          
+          console.log(`   User ID: ${userId}`);
+          console.log(`   Client ID: ${clientId}`);
+          console.log(`   Controlling Players: ${players.join(', ')}`);
+          
+          // Setup multiplayer event handlers
+          window.multiplayerClient.on('game:initialized', (data) => {
+            console.log('🎮 Game initialized on server:', data);
+            
+            if (data.success && data.gameState) {
+              // Sync local game state with server
+              updateGameStateFromServer(data.gameState);
+            }
+          });
+          
+          window.multiplayerClient.on('game:stateUpdate', (data) => {
+            console.log('🔄 Game state update received:', data);
+            
+            if (data.gameState) {
+              updateGameStateFromServer(data.gameState);
+            }
+            
+            if (data.action) {
+              console.log(`   Action: ${data.action.type} by ${data.action.player}`);
+            }
+          });
+          
+          window.multiplayerClient.on('game:phaseChanged', (data) => {
+            console.log(`📢 Phase changed: ${data.oldPhase} → ${data.newPhase}`);
+            console.log(`   Current player: ${data.currentPlayer}`);
+            
+            if (data.gameState) {
+              updateGameStateFromServer(data.gameState);
+            }
+          });
+          
+          window.multiplayerClient.on('game:battleResult', (data) => {
+            console.log('⚔️ Battle result received:', data);
+            
+            if (data.gameState) {
+              updateGameStateFromServer(data.gameState);
+            }
+          });
+          
+          window.multiplayerClient.on('game:actionFailed', (data) => {
+            console.warn(`❌ Action failed: ${data.error}`);
+            alert(`Action failed: ${data.error}`);
+          });
+          
+          window.multiplayerClient.on('game:error', (data) => {
+            console.error('❌ Game error:', data.error);
+            alert(`Game error: ${data.error}`);
+          });
+          
+          // Store multiplayer info globally
+          window.multiplayerSession = {
+            sessionCode,
+            userId,
+            clientId,
+            players,
+            playerColors,
+            clientPlayerMapping,
+            isActive: true
+          };
+          
+          console.log('✅ Multiplayer client initialized and event handlers registered');
           
         } else {
           // ╔══════════════════════════════════════════════════════════╗
@@ -6415,6 +6348,34 @@
 
             // Make riskUI globally available before initializing Combat System
             window.riskUI = riskUI;
+            
+            // Make gameState globally available
+            window.gameState = riskUI.gameState;
+            
+            // ═══════════════════════════════════════════════════════════════
+            // MULTIPLAYER: Initialize game on server if multiplayer mode
+            // ═══════════════════════════════════════════════════════════════
+            if (isMultiplayer && window.multiplayerClient && window.multiplayerSession) {
+              console.log('\n🌐 MULTIPLAYER: Requesting server-side game initialization...');
+              
+              // Wait for multiplayer client to connect
+              window.multiplayerClient.on('connect', () => {
+                console.log('✅ Connected to multiplayer server');
+                
+                // Send game initialization request to server
+                window.multiplayerClient.emit('game:initialize', {
+                  sessionCode: window.multiplayerSession.sessionCode,
+                  players: window.multiplayerSession.players,
+                  playerColors: window.multiplayerSession.playerColors,
+                  clientPlayerMapping: window.multiplayerSession.clientPlayerMapping
+                });
+                
+                console.log('📤 Game initialization request sent to server');
+              });
+              
+              // Connect to server
+              window.multiplayerClient.connect();
+            }
             
             // Initialize StatisticsManager
             if (typeof StatisticsManager !== 'undefined') {
@@ -7727,11 +7688,43 @@
             turnNumber: window.gameState.turnNumber || 0,
             players: {},
             territories: {},
+            combatStats: {}, // Add combat statistics for each player
             statistics: statisticsData,
             version: '1.0',
             dataSource: 'event-driven',
             lastUpdate: Date.now() // Keep for backward compatibility
           };
+          
+          // Get combat stats from CombatManager if available
+          if (window.riskUI && window.riskUI.combatManager) {
+            const allStats = window.riskUI.combatManager.getAllPlayerCombatStats();
+            dashboardData.combatStats = allStats;
+            console.log('💪 Combat stats retrieved from CombatManager:', allStats);
+            
+            // Log individual player stats for debugging
+            Object.keys(allStats).forEach(player => {
+              console.log(`   ⚔️ ${player}: Lost ${allStats[player].unitsLost}, Killed ${allStats[player].unitsKilled}`);
+            });
+          }
+          // Fallback to StatisticsManager if available
+          else if (window.statisticsManager && window.statisticsManager.stats && window.statisticsManager.stats.players) {
+            const statsPlayers = window.statisticsManager.stats.players;
+            Object.keys(statsPlayers).forEach(playerName => {
+              dashboardData.combatStats[playerName] = {
+                unitsLost: statsPlayers[playerName].armiesLost || 0,
+                unitsKilled: statsPlayers[playerName].armiesKilled || 0
+              };
+            });
+            console.log('💪 Combat stats retrieved from StatisticsManager:', dashboardData.combatStats);
+          }
+          else {
+            console.warn('⚠️ No combat stats source available (neither CombatManager nor StatisticsManager)');
+            console.log('   Debug info:', {
+              hasRiskUI: !!window.riskUI,
+              hasCombatManager: !!(window.riskUI && window.riskUI.combatManager),
+              hasStatisticsManager: !!window.statisticsManager
+            });
+          }
 
           // Get all players with enhanced data
           const players = window.gameState.players || [];
@@ -8625,6 +8618,12 @@
           // Check for player elimination
           window.checkPlayerElimination(previousOwner);
 
+          // Update dashboard with combat results
+          console.log('⚔️ Combat completed - updating dashboard with battle results');
+          if (window.updateDashboardData) {
+            window.updateDashboardData();
+          }
+
           // Open unit transfer modal for additional army movement
           setTimeout(() => {
             const availableForTransfer = attackingTerr.armies - 1; // Must leave at least 1
@@ -8654,6 +8653,12 @@
             window.attackState.defendingTerritory,
             attackingTerr.owner
           );
+        } else {
+          // Battle didn't result in conquest - still update dashboard with combat stats
+          console.log('⚔️ Battle completed (no conquest) - updating dashboard with battle stats');
+          if (window.updateDashboardData) {
+            window.updateDashboardData();
+          }
         }
       };
 
@@ -10546,6 +10551,31 @@
             }
           });
         }
+
+        // UI Calibration button handler
+        const uiCalibrationButton = document.getElementById('mobile-ui-calibration-button');
+        if (uiCalibrationButton) {
+          uiCalibrationButton.addEventListener('click', function() {
+            // Toggle the UICalibration system
+            if (window.uiCalibration) {
+              if (window.uiCalibration.isDevelopmentMode) {
+                window.uiCalibration.disableDevelopmentMode();
+              } else {
+                window.uiCalibration.enableDevelopmentMode();
+              }
+            }
+          });
+        }
+
+        // Save Game button handler
+        const saveGameButton = document.getElementById('mobile-save-game-button');
+        if (saveGameButton) {
+          saveGameButton.addEventListener('click', function() {
+            if (window.openSaveGameModal) {
+              window.openSaveGameModal();
+            }
+          });
+        }
       });
 
       console.log('📱 Mobile navigation buttons initialized');
@@ -11009,78 +11039,12 @@
     <script>
     (function() {
       // ═══════════════════════════════════════════════════════
-      // MOBILE SIDEBAR TOGGLE - SINGLE BUTTON FOR BOTH ORIENTATIONS
+      // TOUCH HANDLING REMOVED - Sidebar toggle system removed
       // ═══════════════════════════════════════════════════════
-      // Landscape (horizontal phone): Sidebar at BOTTOM, toggle at TOP-CENTER
-      // Portrait (vertical phone): Sidebar on LEFT, toggle at LEFT-CENTER
+      // All UI elements are now independently positioned and accessible
+      // via the UI Calibration system (press 'X' key)
       
-      const sidebar = document.querySelector('.sidebar');
-      const sidebarToggle = document.getElementById('sidebar-toggle');
-      const sidebarOverlay = document.querySelector('.sidebar-overlay');
-      
-      if (!sidebar || !sidebarToggle) {
-        console.warn('⚠️ Sidebar or toggle not found');
-        return;
-      }
-      
-      // Single toggle function for both orientations
-      function toggleSidebar() {
-        sidebar.classList.toggle('expanded');
-        
-        // Update button icon
-        if (sidebar.classList.contains('expanded')) {
-          sidebarToggle.textContent = '✕';
-          sidebarToggle.style.background = 'rgba(220, 53, 69, 0.9)';
-          if (sidebarOverlay) sidebarOverlay.style.display = 'block';
-        } else {
-          sidebarToggle.textContent = '☰';
-          sidebarToggle.style.background = 'rgba(212, 175, 55, 0.9)';
-          if (sidebarOverlay) sidebarOverlay.style.display = 'none';
-        }
-        
-        console.log('📱 Sidebar toggled:', sidebar.classList.contains('expanded') ? 'OPEN' : 'CLOSED');
-      }
-      
-      // Button click handler
-      sidebarToggle.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleSidebar();
-      });
-      
-      // Close on overlay click (optional background tap)
-      if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', function() {
-          if (sidebar.classList.contains('expanded')) {
-            toggleSidebar();
-          }
-        });
-      }
-      
-      // Close sidebar when clicking outside
-      document.addEventListener('click', function(e) {
-        if (window.matchMedia('(max-width: 1024px)').matches) {
-          if (!sidebar.contains(e.target) && 
-              !sidebarToggle.contains(e.target) && 
-              sidebar.classList.contains('expanded')) {
-            toggleSidebar();
-          }
-        }
-      });
-      
-      // Handle orientation changes - reset sidebar to closed state
-      window.addEventListener('orientationchange', function() {
-        setTimeout(function() {
-          if (sidebar.classList.contains('expanded')) {
-            sidebar.classList.remove('expanded');
-            sidebarToggle.textContent = '☰';
-            sidebarToggle.style.background = 'rgba(212, 175, 55, 0.9)';
-            if (sidebarOverlay) sidebarOverlay.style.display = 'none';
-          }
-          console.log('📱 Orientation changed, sidebar reset to closed');
-        }, 100);
-      });
-      
-      console.log('📱 Mobile sidebar toggle initialized (Landscape=Bottom, Portrait=Left)');
+      console.log('📱 Mobile sidebar toggle system removed - UI elements are now free-floating');
       
       // ═══════════════════════════════════════════════════════
       // PINCH-TO-ZOOM REMOVED - NOW HANDLED BY RiskMap.js

@@ -945,6 +945,37 @@
     </div>
 
     <script>
+        /*
+         * COMBAT EFFICIENCY DATA REQUIREMENTS
+         * ====================================
+         * 
+         * For combat metrics to work correctly, the main game must broadcast data with this structure:
+         * 
+         * gameData = {
+         *     timestamp: Date.now(),
+         *     turnNumber: number,           // Current turn number
+         *     currentPlayer: string,        // Name of current player taking their turn
+         *     territories: { ... },         // Territory data with owner and armies
+         *     playerColors: { ... },        // Player color mappings
+         *     combatStats: {                // Combat statistics per player
+         *         "PlayerName": {
+         *             unitsLost: number,    // Units THIS PLAYER lost in current turn
+         *             unitsKilled: number   // Units THIS PLAYER killed (enemy units destroyed) in current turn
+         *         }
+         *     }
+         * }
+         * 
+         * TRACKING LOGIC:
+         * ===============
+         * 1. Previous Turn: Shows units lost by player in their last completed turn
+         * 2. Worst Turn: Maximum units lost in any single turn throughout the game
+         * 3. Avg S/D: Average units lost per turn across all turns
+         * 4. K/D Ratio: (Total units killed) / (Total units lost) across entire game session
+         * 
+         * The dashboard maintains cumulative totals in the 'combatStats' object and
+         * historical per-turn data in 'historicalData' snapshots.
+         */
+        
         let chartInstances = {};
         let gameData = null;
         let playerColorMap = {};
@@ -956,6 +987,9 @@
         let currentCategoryFilter = 'overview'; // Default filter
         let sectionOrder = []; // Store custom section order
         let draggedSection = null; // Currently dragged section
+        
+        // Combat tracking per player
+        let combatStats = {}; // { playerName: { totalUnitsLost: 0, totalUnitsKilled: 0, unitsLostPerTurn: [] } }
 
         // Toggle section collapse/expand
         function toggleSection(sectionId) {
@@ -1901,11 +1935,16 @@
                 }
             };
 
-            const turnNumber = gameData.turnNumber || gameData.currentTurn || historicalData.length + 1;
+            const turnNumber = gameData.turnNumber || gameData.currentTurn || 1;
+            const currentPlayer = gameData.currentPlayer || gameData.phase || 'Unknown';
             
-            // Check if we already have data for this turn
-            if (historicalData.some(snap => snap.turn === turnNumber)) {
-                return; // Don't duplicate
+            // Create unique snapshot ID combining turn and player
+            const snapshotId = `turn${turnNumber}-${currentPlayer}`;
+            
+            // Check if we already have this exact snapshot
+            if (historicalData.some(snap => snap.snapshotId === snapshotId)) {
+                console.log(`⏭️ Snapshot already exists: ${snapshotId}`);
+                return;
             }
 
             // Calculate player stats
@@ -1949,7 +1988,9 @@
 
             // Calculate metrics for each player
             const snapshot = {
+                snapshotId: snapshotId,
                 turn: turnNumber,
+                currentPlayer: currentPlayer,
                 timestamp: gameData.timestamp || Date.now(),
                 players: {}
             };
@@ -1960,25 +2001,65 @@
                 const reinforcements = Math.max(3, territoryBonus + continentBonus);
                 const power = stats.armies + (stats.territories / 3) + continentBonus;
                 
-                // Try to get combat stats from gameData
-                const combatStats = gameData.combatStats?.[player] || {};
-                const reinforcementsDeployed = combatStats.reinforcementsDeployed || 0;
-                const unitsLost = combatStats.unitsLost || 0;
-                const surplus = reinforcementsDeployed - unitsLost;
+                // Initialize combat tracking for this player if not exists
+                if (!combatStats[player]) {
+                    combatStats[player] = {
+                        totalUnitsLost: 0,
+                        totalUnitsKilled: 0,
+                        unitsLostPerTurn: []
+                    };
+                }
+                
+                // Get combat data from multiple sources with priority:
+                // 1. CombatManager (most reliable - tracks actual battles)
+                // 2. gameData.combatStats (broadcasted from game)
+                // 3. StatisticsManager (if available)
+                let unitsLostThisTurn = 0;
+                let unitsKilledThisTurn = 0;
+                
+                // Try to get from parent window's CombatManager first
+                if (window.opener && window.opener.riskUI && window.opener.riskUI.combatManager) {
+                    const playerCombatData = window.opener.riskUI.combatManager.getPlayerCombatStats(player);
+                    const previousTotal = combatStats[player].totalUnitsLost;
+                    const currentTotal = playerCombatData.unitsLost || 0;
+                    
+                    unitsLostThisTurn = Math.max(0, currentTotal - previousTotal);
+                    unitsKilledThisTurn = (playerCombatData.unitsKilled || 0) - combatStats[player].totalUnitsKilled;
+                    
+                    console.log(`📊 ${player} (from CombatManager): Lost ${unitsLostThisTurn} this turn, Killed ${unitsKilledThisTurn}`);
+                }
+                // Fallback to gameData.combatStats
+                else if (gameData.combatStats && gameData.combatStats[player]) {
+                    const previousTotal = combatStats[player].totalUnitsLost;
+                    const currentTotal = gameData.combatStats[player].unitsLost || 0;
+                    
+                    unitsLostThisTurn = Math.max(0, currentTotal - previousTotal);
+                    unitsKilledThisTurn = (gameData.combatStats[player].unitsKilled || 0) - combatStats[player].totalUnitsKilled;
+                    
+                    console.log(`📊 ${player} (from gameData): Lost ${unitsLostThisTurn} this turn, Killed ${unitsKilledThisTurn}`);
+                } else {
+                    console.log(`📊 ${player}: No combat data available`);
+                }
+                
+                // Update cumulative combat stats
+                combatStats[player].totalUnitsLost += unitsLostThisTurn;
+                combatStats[player].totalUnitsKilled += unitsKilledThisTurn;
+                combatStats[player].unitsLostPerTurn.push(unitsLostThisTurn);
 
                 snapshot.players[player] = {
                     territories: stats.territories,
                     armies: stats.armies,
                     power: power,
                     reinforcements: reinforcements,
-                    surplus: surplus,
-                    reinforcementsDeployed: reinforcementsDeployed,
-                    unitsLost: unitsLost
+                    unitsLostThisTurn: unitsLostThisTurn,
+                    unitsKilledThisTurn: unitsKilledThisTurn,
+                    totalUnitsLost: combatStats[player].totalUnitsLost,
+                    totalUnitsKilled: combatStats[player].totalUnitsKilled
                 };
             });
 
             historicalData.push(snapshot);
-            console.log(`📊 Captured historical snapshot for turn ${turnNumber}:`, snapshot);
+            console.log(`📊 Captured historical snapshot: ${snapshotId}`, snapshot);
         }
 
         // Visualize historical data as line chart
@@ -1988,15 +2069,34 @@
                 return;
             }
 
-            // Get all unique players across all snapshots
-            const allPlayers = new Set();
-            historicalData.forEach(snap => {
-                Object.keys(snap.players).forEach(player => allPlayers.add(player));
+            // Get all unique players from current game data (not from historical snapshots)
+            const activePlayers = new Set();
+            if (gameData && gameData.territories) {
+                Object.values(gameData.territories).forEach(territory => {
+                    activePlayers.add(territory.owner);
+                });
+            }
+            
+            // Fallback: if no active game data, get from most recent snapshot
+            if (activePlayers.size === 0 && historicalData.length > 0) {
+                const latestSnapshot = historicalData[historicalData.length - 1];
+                Object.keys(latestSnapshot.players).forEach(player => {
+                    activePlayers.add(player);
+                });
+            }
+
+            console.log('📊 Active players for chart:', Array.from(activePlayers));
+
+            // Filter snapshots to only include those with active players as currentPlayer
+            const filteredSnapshots = historicalData.filter(snap => {
+                return activePlayers.has(snap.currentPlayer);
             });
 
-            // Prepare datasets for each player
-            const datasets = Array.from(allPlayers).map(player => {
-                const data = historicalData.map(snap => {
+            console.log(`📊 Filtered ${historicalData.length} snapshots down to ${filteredSnapshots.length} (active players only)`);
+
+            // Prepare datasets for each ACTIVE player only
+            const datasets = Array.from(activePlayers).map(player => {
+                const data = filteredSnapshots.map(snap => {
                     const playerData = snap.players[player];
                     if (!playerData) return null;
                     
@@ -2024,12 +2124,18 @@
                     pointRadius: 4,
                     pointHoverRadius: 6,
                     tension: 0.2,
-                    fill: false
+                    fill: false,
+                    spanGaps: true // Connect points even if some data is missing
                 };
             });
 
-            // X-axis labels (turn numbers)
-            const labels = historicalData.map(snap => `Turn ${snap.turn}`);
+            // X-axis labels (Turn + Player format) - only for filtered snapshots
+            const labels = filteredSnapshots.map(snap => {
+                const playerName = snap.currentPlayer || 'Unknown';
+                // Truncate player name if too long
+                const shortName = playerName.length > 10 ? playerName.substring(0, 8) + '...' : playerName;
+                return `T${snap.turn}:${shortName}`;
+            });
 
             // Create line chart
             destroyChart('historicalChart');
@@ -2049,7 +2155,11 @@
                             position: 'bottom',
                             labels: {
                                 usePointStyle: true,
-                                padding: 15
+                                padding: 15,
+                                filter: function(legendItem, chartData) {
+                                    // Only show legend items for active players
+                                    return activePlayers.has(legendItem.text);
+                                }
                             }
                         },
                         tooltip: {
@@ -2057,13 +2167,17 @@
                             intersect: false,
                             callbacks: {
                                 title: function(context) {
-                                    return `Turn ${historicalData[context[0].dataIndex].turn}`;
+                                    const snapshot = filteredSnapshots[context[0].dataIndex];
+                                    return `Turn ${snapshot.turn} - ${snapshot.currentPlayer}`;
                                 },
                                 label: function(context) {
                                     const playerName = context.dataset.label;
                                     const value = context.parsed.y;
                                     
                                     if (value === null) return null;
+                                    
+                                    // Only show tooltip for active players
+                                    if (!activePlayers.has(playerName)) return null;
                                     
                                     switch(historicalVariable) {
                                         case 'territories':
@@ -2086,7 +2200,14 @@
                         x: {
                             title: {
                                 display: true,
-                                text: 'Turn Number'
+                                text: 'Turn:Player'
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: 9
+                                }
                             }
                         },
                         y: {
@@ -2104,6 +2225,8 @@
                     }
                 }
             });
+            
+            console.log(`✅ Historical chart rendered with ${datasets.length} active players and ${filteredSnapshots.length} snapshots`);
         }
 
         // Get Y-axis label based on selected variable
@@ -2205,7 +2328,7 @@
                         <th rowspan="2">Player</th>
                         <th class="category-header category-ranking" colspan="1">🏆 Ranking</th>
                         <th class="category-header category-overview" colspan="4">📊 Player Overview</th>
-                        <th class="category-header category-combat" colspan="3">⚔️ Combat Efficiency</th>
+                        <th class="category-header category-combat" colspan="4">⚔️ Combat Efficiency</th>
                         <th class="category-header category-strategic" colspan="3">🎯 Strategic Overview</th>
                     </tr>
                     <tr>
@@ -2217,6 +2340,7 @@
                         <th data-category="combat">Previous Turn</th>
                         <th data-category="combat">Worst Turn</th>
                         <th data-category="combat">Avg S/D</th>
+                        <th data-category="combat">K/D</th>
                         <th data-category="strategic">Strongest Continent</th>
                         <th data-category="strategic">David & Goliath</th>
                         <th data-category="strategic">Achilles' Heel</th>
@@ -2277,18 +2401,29 @@
                 reinforcementsCell.setAttribute('data-category', 'overview');
                 row.appendChild(reinforcementsCell);
                 
-                // COMBAT EFFICIENCY: Previous Turn S/D, Worst Turn S/D, Avg S/D
-                const prevTurnCell = createMetricCell(formatSurplusDeficit(metrics.previousTurnSD), 'combat');
+                // COMBAT EFFICIENCY: Previous Turn, Worst Turn, Avg S/D, K/D
+                console.log(`🎯 ${playerName} Combat Stats:`, {
+                    previousTurnLost: metrics.previousTurnLost,
+                    worstTurnLost: metrics.worstTurnLost,
+                    avgUnitsLost: metrics.avgUnitsLost,
+                    killDeathRatio: metrics.killDeathRatio
+                });
+                
+                const prevTurnCell = createMetricCell(metrics.previousTurnLost || 0, 'combat');
                 prevTurnCell.setAttribute('data-category', 'combat');
                 row.appendChild(prevTurnCell);
                 
-                const worstTurnCell = createMetricCell(formatSurplusDeficit(metrics.worstTurnSD), 'combat');
+                const worstTurnCell = createMetricCell(metrics.worstTurnLost || 0, 'combat');
                 worstTurnCell.setAttribute('data-category', 'combat');
                 row.appendChild(worstTurnCell);
                 
-                const avgSDCell = createMetricCell(formatSurplusDeficit(metrics.avgSD), 'combat');
-                avgSDCell.setAttribute('data-category', 'combat');
-                row.appendChild(avgSDCell);
+                const avgLostCell = createMetricCell((metrics.avgUnitsLost || 0).toFixed(1), 'combat');
+                avgLostCell.setAttribute('data-category', 'combat');
+                row.appendChild(avgLostCell);
+                
+                const kdRatioCell = createMetricCell((metrics.killDeathRatio || 0).toFixed(2), 'combat');
+                kdRatioCell.setAttribute('data-category', 'combat');
+                row.appendChild(kdRatioCell);
                 
                 // STRATEGIC OVERVIEW: Strongest Continent, David & Goliath, Achilles' Heel
                 const continentCell = createMetricCell(metrics.strongestContinent || 'None', 'strategic', true);
@@ -2335,6 +2470,63 @@
 
         // Calculate comprehensive player metrics
         function calculatePlayerMetrics(gameData) {
+            // Territory adjacency map
+            const territoryNeighbors = {
+                // North America
+                'alaska': ['northwest territory', 'alberta', 'kamchatka'],
+                'northwest territory': ['alaska', 'alberta', 'ontario', 'greenland'],
+                'greenland': ['northwest territory', 'ontario', 'quebec', 'iceland'],
+                'alberta': ['alaska', 'northwest territory', 'ontario', 'western united states'],
+                'ontario': ['northwest territory', 'alberta', 'quebec', 'western united states', 'eastern united states'],
+                'quebec': ['ontario', 'greenland', 'eastern united states'],
+                'western united states': ['alberta', 'ontario', 'eastern united states', 'central america'],
+                'eastern united states': ['quebec', 'ontario', 'western united states', 'central america'],
+                'central america': ['western united states', 'eastern united states', 'venezuela'],
+                
+                // South America
+                'venezuela': ['central america', 'peru', 'brazil'],
+                'peru': ['venezuela', 'brazil', 'argentina'],
+                'brazil': ['venezuela', 'peru', 'argentina', 'north africa'],
+                'argentina': ['peru', 'brazil'],
+                
+                // Europe
+                'iceland': ['greenland', 'great britain', 'scandinavia'],
+                'great britain': ['iceland', 'scandinavia', 'northern europe', 'western europe'],
+                'western europe': ['great britain', 'northern europe', 'southern europe', 'north africa'],
+                'scandinavia': ['iceland', 'great britain', 'northern europe', 'ukraine'],
+                'northern europe': ['great britain', 'scandinavia', 'ukraine', 'southern europe', 'western europe'],
+                'southern europe': ['western europe', 'northern europe', 'ukraine', 'middle east', 'egypt', 'north africa'],
+                'ukraine': ['scandinavia', 'ural', 'afghanistan', 'middle east', 'southern europe', 'northern europe'],
+                
+                // Africa
+                'north africa': ['brazil', 'western europe', 'southern europe', 'egypt', 'east africa', 'congo'],
+                'egypt': ['north africa', 'southern europe', 'middle east', 'east africa'],
+                'congo': ['north africa', 'east africa', 'south africa'],
+                'east africa': ['egypt', 'middle east', 'madagascar', 'south africa', 'congo', 'north africa'],
+                'south africa': ['congo', 'east africa', 'madagascar'],
+                'madagascar': ['east africa', 'south africa'],
+                
+                // Asia
+                'ural': ['ukraine', 'siberia', 'afghanistan', 'china'],
+                'siberia': ['ural', 'yakutsk', 'irkutsk', 'mongolia', 'china'],
+                'yakutsk': ['siberia', 'kamchatka', 'irkutsk'],
+                'kamchatka': ['yakutsk', 'irkutsk', 'mongolia', 'japan', 'alaska'],
+                'irkutsk': ['siberia', 'yakutsk', 'kamchatka', 'mongolia'],
+                'afghanistan': ['ukraine', 'ural', 'china', 'india', 'middle east'],
+                'china': ['ural', 'siberia', 'mongolia', 'siam', 'india', 'afghanistan'],
+                'mongolia': ['siberia', 'irkutsk', 'kamchatka', 'japan', 'china'],
+                'japan': ['kamchatka', 'mongolia'],
+                'middle east': ['ukraine', 'afghanistan', 'india', 'east africa', 'egypt', 'southern europe'],
+                'india': ['afghanistan', 'china', 'siam', 'middle east'],
+                'siam': ['india', 'china', 'indonesia'],
+                
+                // Australia
+                'indonesia': ['siam', 'new guinea', 'western australia'],
+                'new guinea': ['indonesia', 'western australia', 'eastern australia'],
+                'western australia': ['indonesia', 'new guinea', 'eastern australia'],
+                'eastern australia': ['western australia', 'new guinea']
+            };
+            
             const continents = {
                 'North America': {
                     territories: ['alaska', 'northwest territory', 'greenland', 'alberta', 'ontario', 'quebec', 'western united states', 'eastern united states', 'central america'],
@@ -2364,6 +2556,9 @@
 
             const playerMetrics = {};
             
+            console.log(`📈 Calculating metrics for ${Object.keys(gameData.players || {}).length} players`);
+            console.log(`📜 Historical data: ${historicalData.length} snapshots`);
+            
             // Initialize player stats from territories
             Object.entries(gameData.territories).forEach(([territoryId, territory]) => {
                 const owner = territory.owner;
@@ -2391,19 +2586,30 @@
                 }
                 
                 // Calculate attacker/defender ratios for neighboring territories
-                if (territory.neighbors && Array.isArray(territory.neighbors)) {
-                    territory.neighbors.forEach(neighborId => {
-                        const neighbor = gameData.territories[neighborId];
-                        if (neighbor && neighbor.owner !== owner) {
-                            const ratio = territory.armies / neighbor.armies;
-                            playerMetrics[owner].territoryRatios.push({
-                                territory: territoryId,
-                                ratio: ratio,
-                                attackingArmy: territory.armies,
-                                defendingArmy: neighbor.armies
-                            });
-                        }
-                    });
+                // David & Goliath: territory with highest advantage (high own units, low enemy neighbors)
+                // Achilles' Heel: territory with lowest advantage (low own units, high enemy neighbors)
+                const neighbors = territoryNeighbors[territoryId];
+                if (neighbors && neighbors.length > 0) {
+                    // Get all enemy neighbors
+                    const enemyNeighbors = neighbors
+                        .map(neighborId => gameData.territories[neighborId])
+                        .filter(neighbor => neighbor && neighbor.owner !== owner);
+                    
+                    if (enemyNeighbors.length > 0) {
+                        // Find the highest enemy army among bordering territories
+                        const maxEnemyArmies = Math.max(...enemyNeighbors.map(n => n.armies));
+                        
+                        // Calculate advantage ratio: our armies / highest enemy neighbor armies
+                        const advantageRatio = territory.armies / maxEnemyArmies;
+                        
+                        playerMetrics[owner].territoryRatios.push({
+                            territory: territoryId,
+                            ratio: advantageRatio,
+                            ownArmies: territory.armies,
+                            maxEnemyArmies: maxEnemyArmies,
+                            enemyNeighborCount: enemyNeighbors.length
+                        });
+                    }
                 }
             });
 
@@ -2437,23 +2643,54 @@
                     .filter(snap => snap.players && snap.players[player])
                     .map(snap => snap.players[player]);
                 
+                console.log(`   📊 ${player} history: ${playerHistory.length} snapshots`);
+                
                 if (playerHistory.length > 0) {
-                    // Previous turn surplus/deficit
-                    stats.previousTurnSD = playerHistory.length > 0 ? 
-                        (playerHistory[playerHistory.length - 1].surplus || 0) : 0;
+                    // Previous turn units lost (last snapshot)
+                    stats.previousTurnLost = playerHistory.length > 0 ? 
+                        (playerHistory[playerHistory.length - 1].unitsLostThisTurn || 0) : 0;
                     
-                    // Worst turn surplus/deficit
-                    const surplusValues = playerHistory.map(h => h.surplus || 0).filter(v => v !== 0);
-                    stats.worstTurnSD = surplusValues.length > 0 ? Math.min(...surplusValues) : 0;
+                    // Worst turn units lost (maximum units lost in any single turn)
+                    const unitsLostValues = playerHistory.map(h => h.unitsLostThisTurn || 0);
+                    stats.worstTurnLost = unitsLostValues.length > 0 ? Math.max(...unitsLostValues) : 0;
                     
-                    // Average surplus/deficit
-                    const avgSurplus = surplusValues.length > 0 ? 
-                        surplusValues.reduce((a, b) => a + b, 0) / surplusValues.length : 0;
-                    stats.avgSD = avgSurplus;
+                    // Average units lost per turn
+                    const totalLost = unitsLostValues.reduce((a, b) => a + b, 0);
+                    stats.avgUnitsLost = playerHistory.length > 0 ? 
+                        (totalLost / playerHistory.length) : 0;
+                    
+                    // K/D Ratio: Total units killed / Total units lost
+                    const totalKilled = playerHistory[playerHistory.length - 1]?.totalUnitsKilled || 0;
+                    const totalLostCumulative = playerHistory[playerHistory.length - 1]?.totalUnitsLost || 0;
+                    
+                    if (totalLostCumulative > 0) {
+                        stats.killDeathRatio = totalKilled / totalLostCumulative;
+                    } else if (totalKilled > 0) {
+                        stats.killDeathRatio = totalKilled; // Perfect ratio (no deaths)
+                    } else {
+                        stats.killDeathRatio = 0; // No combat yet
+                    }
                 } else {
-                    stats.previousTurnSD = 'N/A';
-                    stats.worstTurnSD = 'N/A';
-                    stats.avgSD = 'N/A';
+                    // No historical data yet - try to get from current gameData or combatStats
+                    stats.previousTurnLost = 0;
+                    stats.worstTurnLost = 0;
+                    stats.avgUnitsLost = 0;
+                    
+                    // Check if we have combat stats from global tracker
+                    if (combatStats[player]) {
+                        const totalKilled = combatStats[player].totalUnitsKilled || 0;
+                        const totalLost = combatStats[player].totalUnitsLost || 0;
+                        
+                        if (totalLost > 0) {
+                            stats.killDeathRatio = totalKilled / totalLost;
+                        } else if (totalKilled > 0) {
+                            stats.killDeathRatio = totalKilled;
+                        } else {
+                            stats.killDeathRatio = 0;
+                        }
+                    } else {
+                        stats.killDeathRatio = 0;
+                    }
                 }
                 
                 // Strategic overview metrics
@@ -2467,18 +2704,24 @@
                     stats.strongestContinent = 'None';
                 }
                 
-                // 2. David & Goliath - territory with highest attacker/defender ratio
+                // 2. David & Goliath - territory with highest advantage ratio
+                // (highest own units compared to strongest enemy neighbor)
                 if (stats.territoryRatios.length > 0) {
-                    const davidGoliath = stats.territoryRatios.sort((a, b) => b.ratio - a.ratio)[0];
-                    stats.davidGoliath = `${formatTerritoryName(davidGoliath.territory)} (${davidGoliath.ratio.toFixed(1)}:1)`;
+                    // Create a copy to avoid mutating the original array
+                    const sortedRatios = [...stats.territoryRatios].sort((a, b) => b.ratio - a.ratio);
+                    const davidGoliath = sortedRatios[0];
+                    stats.davidGoliath = `${formatTerritoryName(davidGoliath.territory)} (${davidGoliath.ownArmies}v${davidGoliath.maxEnemyArmies})`;
                 } else {
                     stats.davidGoliath = 'N/A';
                 }
                 
-                // 3. Achilles' Heel - territory with lowest attacker/defender ratio
+                // 3. Achilles' Heel - territory with lowest advantage ratio
+                // (lowest own units compared to strongest enemy neighbor)
                 if (stats.territoryRatios.length > 0) {
-                    const achillesHeel = stats.territoryRatios.sort((a, b) => a.ratio - b.ratio)[0];
-                    stats.achillesHeel = `${formatTerritoryName(achillesHeel.territory)} (${achillesHeel.ratio.toFixed(1)}:1)`;
+                    // Create a copy to avoid mutating the original array
+                    const sortedRatios = [...stats.territoryRatios].sort((a, b) => a.ratio - b.ratio);
+                    const achillesHeel = sortedRatios[0];
+                    stats.achillesHeel = `${formatTerritoryName(achillesHeel.territory)} (${achillesHeel.ownArmies}v${achillesHeel.maxEnemyArmies})`;
                 } else {
                     stats.achillesHeel = 'N/A';
                 }
@@ -2833,6 +3076,13 @@
                 console.log('📡 PostMessage received - game data updated');
                 loadDashboardData();
             }
+        });
+        
+        // Listen for combat stats updates from CombatManager
+        window.addEventListener('combatStatsUpdated', function(event) {
+            console.log('⚔️ Combat stats updated', event.detail);
+            // Refresh dashboard to show updated combat statistics
+            loadDashboardData();
         });
 
         // Broadcast channel communication (modern browsers) - most reliable method

@@ -974,17 +974,37 @@ function handleTerritoryClick(territoryId) {
   const currentPhase = gameState.phase;
 
   switch (currentPhase) {
+    case "startup":
+      // Handle startup phase deployment
+      if (window.turnManager) {
+        const result = window.turnManager.handleTerritoryClick(territoryId);
+        if (result && window.riskUI) {
+          window.riskUI.updateUI(result);
+        }
+      } else {
+        console.warn("⚠️ TurnManager not available for startup phase");
+      }
+      break;
+
     case "attack":
       handleAttackPhaseClick(territoryId);
       break;
 
     case "reinforce":
+    case "reinforcement":
       if (window.reinforcementManager) {
         window.reinforcementManager.handleTerritoryClick(territoryId);
+      } else if (window.turnManager) {
+        // Fallback to TurnManager if reinforcementManager not available
+        const result = window.turnManager.handleTerritoryClick(territoryId);
+        if (result && window.riskUI) {
+          window.riskUI.updateUI(result);
+        }
       }
       break;
 
     case "fortify":
+    case "fortification":
       if (window.fortificationManager) {
         window.fortificationManager.handleTerritoryClick(territoryId);
       }
@@ -992,6 +1012,13 @@ function handleTerritoryClick(territoryId) {
 
     default:
       console.log("Territory clicked in phase:", currentPhase);
+      // Fallback to TurnManager if available
+      if (window.turnManager) {
+        const result = window.turnManager.handleTerritoryClick(territoryId);
+        if (result && window.riskUI) {
+          window.riskUI.updateUI(result);
+        }
+      }
       break;
   }
 }

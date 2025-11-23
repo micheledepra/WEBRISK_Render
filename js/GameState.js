@@ -31,11 +31,19 @@ class GameState {
             this.initialDeploymentComplete = savedState.initialDeploymentComplete || false;
             this.lastUpdate = savedState.lastUpdate || Date.now();
             
+            // ✅ FIX 6: Restore session information
+            this.sessionCode = savedState.sessionCode || null;
+            this.isMultiplayer = savedState.isMultiplayer || false;
+            this.multiplayerSession = savedState.multiplayerSession || null;
+            
             // ✅ FIX: Mark as restored game (not new) - THIS PREVENTS RE-RANDOMIZATION
             this.isNewGame = false;
             
             // ⚠️ CRITICAL: Skip territory randomization - territories already assigned
             console.log('✅ Game state restored - territories NOT re-randomized');
+            if (this.sessionCode) {
+                console.log(`   📍 Session: ${this.sessionCode}`);
+            }
             return;
         }
 
@@ -63,6 +71,19 @@ class GameState {
             'asia': 7,
             'australia': 2
         };
+        
+        // ✅ FIX 6: Store session information in GameState
+        if (window.isMultiplayerMode && window.sessionCode) {
+            this.sessionCode = window.sessionCode;
+            this.isMultiplayer = true;
+            this.multiplayerSession = window.sessionCode;
+            
+            console.log(`   🎮 GameState initialized for multiplayer session: ${window.sessionCode}`);
+        } else {
+            this.sessionCode = null;
+            this.isMultiplayer = false;
+            this.multiplayerSession = null;
+        }
         
         // Initialize player colors
         this.players.forEach((player, index) => {
@@ -446,9 +467,18 @@ class GameState {
             continentBonuses: this.continentBonuses,
             initialDeploymentComplete: this.initialDeploymentComplete,
             isNewGame: false, // ✅ Always false when saving (game has been initialized)
-            lastUpdate: Date.now()
+            lastUpdate: Date.now(),
+            // ✅ FIX 7: Include session tracking
+            sessionCode: this.sessionCode,
+            isMultiplayer: this.isMultiplayer,
+            multiplayerSession: this.multiplayerSession
         };
         sessionStorage.setItem(GameState.SESSION_KEY, JSON.stringify(state));
+        
+        // Log save with session info
+        if (this.sessionCode) {
+            console.log(`💾 Game state saved for session: ${this.sessionCode}`);
+        }
     }
 
     // Load state from session storage
@@ -456,6 +486,77 @@ class GameState {
         const savedState = sessionStorage.getItem(GameState.SESSION_KEY);
         if (!savedState) return null;
         return JSON.parse(savedState);
+    }
+
+    /**
+     * Update local state from server (multiplayer only)
+     * Synchronizes client state with authoritative server state
+     */
+    updateFromServer(serverState) {
+        console.log('📥 Updating client state from server');
+        
+        if (!serverState) {
+            console.warn('⚠️ No server state provided');
+            return;
+        }
+        
+        try {
+            // Update all territories
+            if (serverState.territories) {
+                Object.keys(serverState.territories).forEach(territoryId => {
+                    const serverTerritory = serverState.territories[territoryId];
+                    const clientTerritory = this.territories[territoryId];
+                    
+                    if (clientTerritory && serverTerritory) {
+                        clientTerritory.armies = serverTerritory.armies;
+                        clientTerritory.owner = serverTerritory.owner;
+                        
+                        // Preserve neighbors (they don't change)
+                        if (!clientTerritory.neighbors && serverTerritory.neighbors) {
+                            clientTerritory.neighbors = serverTerritory.neighbors;
+                        }
+                    }
+                });
+            }
+            
+            // Update game phase and turn
+            if (serverState.phase !== undefined) {
+                this.phase = serverState.phase;
+            }
+            
+            if (serverState.turnNumber !== undefined) {
+                this.turnNumber = serverState.turnNumber;
+            }
+            
+            if (serverState.currentPlayerIndex !== undefined) {
+                this.currentPlayerIndex = serverState.currentPlayerIndex;
+            }
+            
+            // Update remaining armies
+            if (serverState.remainingArmies) {
+                this.remainingArmies = { ...serverState.remainingArmies };
+            }
+            
+            // Update players list (in case of elimination)
+            if (serverState.players) {
+                this.players = [...serverState.players];
+            }
+            
+            // Update player colors if provided
+            if (serverState.playerColors) {
+                this.playerColors = { ...serverState.playerColors };
+            }
+            
+            console.log(`✅ Client synced: Turn ${this.turnNumber}, Phase: ${this.phase}, Player: ${this.getCurrentPlayer()}`);
+            
+            // Trigger UI update if available
+            if (window.riskUI && typeof window.riskUI.updateUI === 'function') {
+                window.riskUI.updateUI();
+            }
+            
+        } catch (error) {
+            console.error('❌ Error updating from server:', error);
+        }
     }
 
     // Clear saved game state

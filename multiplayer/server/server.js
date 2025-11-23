@@ -10,6 +10,7 @@ const path = require('path');
 const SessionManager = require('./SessionManager');
 const SessionPersistence = require('./SessionPersistence');
 const GameDataStore = require('./GameDataStore');
+const GameEngine = require('./GameEngine');
 const { EVENTS, ACTION_TYPES } = require('../shared/constants');
 
 // Configuration
@@ -47,6 +48,15 @@ const sessionManager = new SessionManager(sessionPersistence);
 
 // Initialize Game Data Store for historical data
 const gameDataStore = new GameDataStore();
+
+// Initialize Game Engine (server-side game logic)
+const gameEngine = new GameEngine();
+console.log('🎮 Game Engine initialized - server is now authoritative');
+
+// Clean up old game sessions every hour
+setInterval(() => {
+  gameEngine.cleanupOldSessions();
+}, 60 * 60 * 1000);
 
 // CORS middleware - Allow all origins for development
 app.use((req, res, next) => {
@@ -722,6 +732,277 @@ io.on(EVENTS.CONNECTION, (socket) => {
       });
     }
   });
+
+  // ========================================
+  // GAME ENGINE ENDPOINTS (Server-Side Game Logic)
+  // ========================================
+
+  /**
+   * Initialize Game State on Server
+   * Server creates authoritative game state and broadcasts to all clients
+   * Uses deterministic territory assignment to ensure all clients see same state
+   */
+  socket.on('game:initialize', async (data) => {
+    console.log('🎮 Game initialization request:', data);
+    
+    try {
+      const { sessionCode, players, playerColors, clientPlayerMapping } = data;
+      
+      if (!sessionCode || !players || players.length < 2) {
+        throw new Error('Invalid game initialization data');
+      }
+      
+      // Generate deterministic seed for territory assignment
+      const initSeed = Date.now();
+      
+      // Initialize game on server with client-player mapping
+      const result = gameEngine.initializeGame(
+        sessionCode, 
+        players, 
+        playerColors, 
+        clientPlayerMapping,
+        initSeed
+      );
+      
+      if (result.success) {
+        // Broadcast authoritative initial state to ALL players in session
+        io.to(sessionCode).emit('game:initialized', {
+          success: true,
+          gameState: result.initialState,
+          seed: initSeed,
+          message: 'Game initialized by server with deterministic territory assignment'
+        });
+        
+        console.log(`✅ Game initialized for session ${sessionCode}`);
+        console.log(`   Players: ${players.join(', ')}`);
+        console.log(`   Seed: ${initSeed}`);
+        console.log(`   Client-Player Mapping:`, clientPlayerMapping);
+        
+        // Persist to Firebase
+        if (result.initialState) {
+          await sessionPersistence.saveSessionState(sessionCode, {
+            gameState: result.initialState,
+            lastUpdate: Date.now(),
+            phase: result.initialState.phase,
+            currentPlayer: result.initialState.currentPlayer
+          });
+          console.log(`   💾 Persisted to Firebase`);
+        }
+      } else {
+        socket.emit('game:error', { error: result.error });
+      }
+      
+    } catch (error) {
+      console.error('❌ Game initialization error:', error);
+      socket.emit('game:error', { error: error.message });
+    }
+  });
+
+  /**
+   * Deploy Armies
+   * Server validates and executes army deployment
+   * Now includes client validation to ensure only controlling client can act
+   */
+  socket.on('game:deploy', async (data) => {
+    try {
+      const { sessionCode, userId, territoryId, armyCount } = data;
+      const clientId = socket.id;
+      
+      console.log(`🪖 Deploy request: ${userId} → ${territoryId} (${armyCount} armies) [client: ${clientId}]`);
+      
+      // Pass clientId for validation
+      const result = gameEngine.deployArmies(sessionCode, clientId, userId, territoryId, armyCount);
+      
+      if (result.success) {
+        // Broadcast updated state to ALL players in session
+        io.to(sessionCode).emit('game:stateUpdate', {
+          gameState: result.gameState,
+          action: result.action
+        });
+        
+        console.log(`✅ Deployment successful, state broadcasted to ${sessionCode}`);
+        
+        // Persist to Firebase
+        await sessionPersistence.saveSessionState(sessionCode, {
+          gameState: result.gameState,
+          lastUpdate: Date.now(),
+          phase: result.gameState.phase,
+          currentPlayer: result.gameState.currentPlayer
+        });
+      } else {
+        // Send error only to requesting player
+        socket.emit('game:actionFailed', { 
+          error: result.error,
+          action: 'deploy' 
+        });
+        console.warn(`❌ Deployment failed: ${result.error}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Deploy error:', error);
+      socket.emit('game:error', { error: error.message });
+    }
+  });
+
+  /**
+   * Execute Attack
+   * Server validates, rolls dice, and resolves battle
+   */
+  socket.on('game:attack', async (data) => {
+    try {
+      const { 
+        sessionCode, 
+        userId, 
+        attackingTerritory, 
+        defendingTerritory,
+        attackerArmies 
+      } = data;
+      const clientId = socket.id;
+      
+      console.log(`⚔️ Attack request: ${userId} attacking ${defendingTerritory} from ${attackingTerritory} [client: ${clientId}]`);
+      
+      const result = gameEngine.executeAttack(
+        sessionCode,
+        clientId,
+        userId,
+        attackingTerritory,
+        defendingTerritory,
+        attackerArmies
+      );
+      
+      if (result.success) {
+        // Broadcast battle result to ALL players
+        io.to(sessionCode).emit('game:battleResult', {
+          gameState: result.gameState,
+          battleResult: result.battleResult,
+          attacker: userId,
+          attackingTerritory,
+          defendingTerritory
+        });
+        
+        console.log(`✅ Battle resolved, result broadcasted to ${sessionCode}`);
+        
+        // Persist to Firebase
+        await sessionPersistence.saveSessionState(sessionCode, {
+          gameState: result.gameState,
+          lastUpdate: Date.now(),
+          phase: result.gameState.phase,
+          currentPlayer: result.gameState.currentPlayer
+        });
+      } else {
+        socket.emit('game:actionFailed', { 
+          error: result.error,
+          action: 'attack' 
+        });
+        console.warn(`❌ Attack failed: ${result.error}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Attack error:', error);
+      socket.emit('game:error', { error: error.message });
+    }
+  });
+
+  /**
+   * Fortify Territory
+   * Server validates and executes army movement
+   */
+  socket.on('game:fortify', async (data) => {
+    try {
+      const { sessionCode, userId, sourceTerritory, targetTerritory, armyCount } = data;
+      const clientId = socket.id;
+      
+      console.log(`🔄 Fortify request: ${userId} moving ${armyCount} from ${sourceTerritory} to ${targetTerritory} [client: ${clientId}]`);
+      
+      const result = gameEngine.fortifyTerritory(
+        sessionCode,
+        clientId,
+        userId,
+        sourceTerritory,
+        targetTerritory,
+        armyCount
+      );
+      
+      if (result.success) {
+        // Broadcast to ALL players in session
+        io.to(sessionCode).emit('game:stateUpdate', {
+          gameState: result.gameState,
+          action: result.action
+        });
+        
+        console.log(`✅ Fortification successful, state broadcasted to ${sessionCode}`);
+        
+        // Persist to Firebase
+        await sessionPersistence.saveSessionState(sessionCode, {
+          gameState: result.gameState,
+          lastUpdate: Date.now(),
+          phase: result.gameState.phase,
+          currentPlayer: result.gameState.currentPlayer
+        });
+      } else {
+        socket.emit('game:actionFailed', { 
+          error: result.error,
+          action: 'fortify' 
+        });
+        console.warn(`❌ Fortification failed: ${result.error}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Fortify error:', error);
+      socket.emit('game:error', { error: error.message });
+    }
+  });
+
+  /**
+   * Advance Phase
+   * Server advances game phase and notifies all players
+   */
+  socket.on('game:advancePhase', async (data) => {
+    try {
+      const { sessionCode, userId } = data;
+      const clientId = socket.id;
+      
+      console.log(`🔄 Phase advance request: ${userId} in session ${sessionCode} [client: ${clientId}]`);
+      
+      const result = gameEngine.advancePhase(sessionCode, clientId, userId);
+      
+      if (result.success) {
+        // Broadcast phase change to ALL players in session
+        io.to(sessionCode).emit('game:phaseChanged', {
+          gameState: result.gameState,
+          oldPhase: result.oldPhase,
+          newPhase: result.newPhase,
+          player: userId,
+          currentPlayer: result.gameState.currentPlayer
+        });
+        
+        console.log(`✅ Phase changed: ${result.oldPhase} → ${result.newPhase}`);
+        console.log(`   Current player: ${result.gameState.currentPlayer}`);
+        
+        // Persist to Firebase
+        await sessionPersistence.saveSessionState(sessionCode, {
+          gameState: result.gameState,
+          lastUpdate: Date.now(),
+          phase: result.newPhase,
+          currentPlayer: result.gameState.currentPlayer
+        });
+      } else {
+        socket.emit('game:actionFailed', { 
+          error: result.error,
+          action: 'advancePhase' 
+        });
+        console.warn(`❌ Phase advance failed: ${result.error}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Phase advance error:', error);
+      socket.emit('game:error', { error: error.message });
+    }
+  });
+
+  // ========================================
+  // END OF GAME ENGINE ENDPOINTS
+  // ========================================
   
   // Request Session Data (for game initialization)
   socket.on('requestSessionData', (data) => {

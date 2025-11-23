@@ -27,6 +27,33 @@ class MapCalibration {
             try {
                 const parsed = JSON.parse(savedData);
                 
+                // Ensure eyeballFrame exists (backward compatibility)
+                if (!parsed.eyeballFrame) {
+                    parsed.eyeballFrame = { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 };
+                    console.log('🔄 Added missing eyeballFrame data to saved calibration');
+                }
+                
+                // Ensure sidebarFrame exists (backward compatibility)
+                if (!parsed.sidebarFrame) {
+                    parsed.sidebarFrame = { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 };
+                    console.log('🔄 Added missing sidebarFrame data to saved calibration');
+                }
+                
+                // Convert old scale property to scaleX and scaleY (backward compatibility)
+                if (parsed.eyeballFrame.scale !== undefined && parsed.eyeballFrame.scaleX === undefined) {
+                    parsed.eyeballFrame.scaleX = parsed.eyeballFrame.scale;
+                    parsed.eyeballFrame.scaleY = parsed.eyeballFrame.scale;
+                    delete parsed.eyeballFrame.scale;
+                    console.log('🔄 Converted eyeballFrame scale to scaleX/scaleY');
+                }
+                
+                if (parsed.sidebarFrame && parsed.sidebarFrame.scale !== undefined && parsed.sidebarFrame.scaleX === undefined) {
+                    parsed.sidebarFrame.scaleX = parsed.sidebarFrame.scale;
+                    parsed.sidebarFrame.scaleY = parsed.sidebarFrame.scale;
+                    delete parsed.sidebarFrame.scale;
+                    console.log('🔄 Converted sidebarFrame scale to scaleX/scaleY');
+                }
+                
                 // Check if user has customized the calibration
                 if (parsed.userCustomized === true) {
                     // User has manually calibrated - use their settings
@@ -95,6 +122,8 @@ class MapCalibration {
     loadDefaultCalibration() {
         this.calibrationData = {
             waterLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 0.85 },
+            eyeballFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
+            sidebarFrame: { offsetX: 0, offsetY: 0, scaleX: 1.0, scaleY: 1.0, rotation: 0, opacity: 1.0 },
             mapLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 0.85 },
             territoryLayer: { offsetX: 0, offsetY: 0, scale: 1.0, opacity: 1.0 },
             solidified: true,
@@ -156,6 +185,8 @@ class MapCalibration {
     applyCalibration() {
         // Apply to each layer independently
         this.applyWaterLayer();
+        this.applyEyeballFrame();
+        this.applySidebarFrame();
         this.applyMapLayer();
         this.applyTerritoryLayer();
         
@@ -169,6 +200,8 @@ class MapCalibration {
         
         console.log('Applied multi-layer calibration:', {
             water: this.calibrationData.waterLayer,
+            eyeballFrame: this.calibrationData.eyeballFrame,
+            sidebarFrame: this.calibrationData.sidebarFrame,
             map: this.calibrationData.mapLayer,
             territories: this.calibrationData.territoryLayer,
             solidified: this.calibrationData.solidified
@@ -201,6 +234,48 @@ class MapCalibration {
         });
         
         console.log(`✅ Water layer transform applied: ${transform}`);
+    }
+    
+    /**
+     * Apply eyeball frame layer settings (decorative overlay)
+     */
+    applyEyeballFrame() {
+        const frameContainer = document.getElementById('eyeball-frame-container');
+        if (!frameContainer) {
+            console.warn('⚠️ Eyeball frame container not found');
+            return;
+        }
+        
+        const { offsetX, offsetY, scaleX, scaleY, rotation, opacity } = this.calibrationData.eyeballFrame;
+        
+        // Apply transform to the container group (includes rotation and separate X/Y scaling)
+        const transform = `translate(${offsetX}, ${offsetY}) scale(${scaleX}, ${scaleY}) rotate(${rotation})`;
+        frameContainer.setAttribute('transform', transform);
+        
+        // Apply opacity to the container
+        frameContainer.setAttribute('opacity', opacity);
+        
+        console.log(`✅ Eyeball frame transform applied: ${transform}, opacity: ${opacity}`);
+    }
+    
+    /**
+     * Apply sidebar frame settings (decorative overlay for sidebar)
+     */
+    applySidebarFrame() {
+        const frameImage = document.getElementById('sidebar-frame-image');
+        if (!frameImage) {
+            console.warn('⚠️ Sidebar frame image not found');
+            return;
+        }
+        
+        const { offsetX, offsetY, scaleX, scaleY, rotation, opacity } = this.calibrationData.sidebarFrame;
+        
+        // Apply transform using CSS (since it's an img element, not SVG g)
+        const transform = `translate(${offsetX}px, ${offsetY}px) scale(${scaleX}, ${scaleY}) rotate(${rotation}deg)`;
+        frameImage.style.transform = transform;
+        frameImage.style.opacity = opacity;
+        
+        console.log(`✅ Sidebar frame transform applied: ${transform}, opacity: ${opacity}`);
     }
     
     /**
@@ -435,6 +510,112 @@ class MapCalibration {
                 </div>
             </div>
             
+            <!-- Eyeball Frame Layer -->
+            <div class="layer-section eyeball-section">
+                <h4><span>👁️</span> Ornate Eyeball Frame</h4>
+                
+                <div class="control-group">
+                    <label>X Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="eyeball-offset-x" min="-1000" max="1000" step="1" value="${this.calibrationData.eyeballFrame.offsetX}">
+                        <span class="value-display" id="eyeball-offset-x-value">${this.calibrationData.eyeballFrame.offsetX}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Y Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="eyeball-offset-y" min="-500" max="500" step="1" value="${this.calibrationData.eyeballFrame.offsetY}">
+                        <span class="value-display" id="eyeball-offset-y-value">${this.calibrationData.eyeballFrame.offsetY}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Horizontal Stretch</label>
+                    <div class="slider-row">
+                        <input type="range" id="eyeball-scale-x" min="0.1" max="3" step="0.01" value="${this.calibrationData.eyeballFrame.scaleX}">
+                        <span class="value-display" id="eyeball-scale-x-value">${this.calibrationData.eyeballFrame.scaleX.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Vertical Stretch</label>
+                    <div class="slider-row">
+                        <input type="range" id="eyeball-scale-y" min="0.1" max="3" step="0.01" value="${this.calibrationData.eyeballFrame.scaleY}">
+                        <span class="value-display" id="eyeball-scale-y-value">${this.calibrationData.eyeballFrame.scaleY.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Rotation</label>
+                    <div class="slider-row">
+                        <input type="range" id="eyeball-rotation" min="0" max="360" step="1" value="${this.calibrationData.eyeballFrame.rotation}">
+                        <span class="value-display" id="eyeball-rotation-value">${this.calibrationData.eyeballFrame.rotation}°</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Opacity</label>
+                    <div class="slider-row">
+                        <input type="range" id="eyeball-opacity" min="0" max="1" step="0.01" value="${this.calibrationData.eyeballFrame.opacity}">
+                        <span class="value-display" id="eyeball-opacity-value">${Math.round(this.calibrationData.eyeballFrame.opacity * 100)}%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sidebar Frame Layer -->
+            <div class="layer-section sidebar-frame-section">
+                <h4><span>📐</span> Sidebar Frame</h4>
+                
+                <div class="control-group">
+                    <label>X Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="sidebar-frame-offset-x" min="-200" max="200" step="1" value="${this.calibrationData.sidebarFrame.offsetX}">
+                        <span class="value-display" id="sidebar-frame-offset-x-value">${this.calibrationData.sidebarFrame.offsetX}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Y Offset</label>
+                    <div class="slider-row">
+                        <input type="range" id="sidebar-frame-offset-y" min="-200" max="200" step="1" value="${this.calibrationData.sidebarFrame.offsetY}">
+                        <span class="value-display" id="sidebar-frame-offset-y-value">${this.calibrationData.sidebarFrame.offsetY}px</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Horizontal Stretch</label>
+                    <div class="slider-row">
+                        <input type="range" id="sidebar-frame-scale-x" min="0.1" max="3" step="0.01" value="${this.calibrationData.sidebarFrame.scaleX}">
+                        <span class="value-display" id="sidebar-frame-scale-x-value">${this.calibrationData.sidebarFrame.scaleX.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Vertical Stretch</label>
+                    <div class="slider-row">
+                        <input type="range" id="sidebar-frame-scale-y" min="0.1" max="3" step="0.01" value="${this.calibrationData.sidebarFrame.scaleY}">
+                        <span class="value-display" id="sidebar-frame-scale-y-value">${this.calibrationData.sidebarFrame.scaleY.toFixed(2)}x</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Rotation</label>
+                    <div class="slider-row">
+                        <input type="range" id="sidebar-frame-rotation" min="0" max="360" step="1" value="${this.calibrationData.sidebarFrame.rotation}">
+                        <span class="value-display" id="sidebar-frame-rotation-value">${this.calibrationData.sidebarFrame.rotation}°</span>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Opacity</label>
+                    <div class="slider-row">
+                        <input type="range" id="sidebar-frame-opacity" min="0" max="1" step="0.01" value="${this.calibrationData.sidebarFrame.opacity}">
+                        <span class="value-display" id="sidebar-frame-opacity-value">${Math.round(this.calibrationData.sidebarFrame.opacity * 100)}%</span>
+                    </div>
+                </div>
+            </div>
+            
             <!-- World Map Layer -->
             <div class="layer-section map-section">
                 <h4><span>🗺️</span> World Map (preview.png)</h4>
@@ -590,6 +771,94 @@ class MapCalibration {
         
         // Water Layer
         attachLayerControls('water', 'waterLayer');
+        
+        // Eyeball Frame Layer (with rotation and separate X/Y scaling)
+        const eyeballOffsetX = document.getElementById('eyeball-offset-x');
+        const eyeballOffsetY = document.getElementById('eyeball-offset-y');
+        const eyeballScaleX = document.getElementById('eyeball-scale-x');
+        const eyeballScaleY = document.getElementById('eyeball-scale-y');
+        const eyeballRotation = document.getElementById('eyeball-rotation');
+        const eyeballOpacity = document.getElementById('eyeball-opacity');
+        
+        eyeballOffsetX?.addEventListener('input', (e) => {
+            this.calibrationData.eyeballFrame.offsetX = parseFloat(e.target.value);
+            document.getElementById('eyeball-offset-x-value').textContent = `${e.target.value}px`;
+            this.applyCalibration();
+        });
+        
+        eyeballOffsetY?.addEventListener('input', (e) => {
+            this.calibrationData.eyeballFrame.offsetY = parseFloat(e.target.value);
+            document.getElementById('eyeball-offset-y-value').textContent = `${e.target.value}px`;
+            this.applyCalibration();
+        });
+        
+        eyeballScaleX?.addEventListener('input', (e) => {
+            this.calibrationData.eyeballFrame.scaleX = parseFloat(e.target.value);
+            document.getElementById('eyeball-scale-x-value').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+            this.applyCalibration();
+        });
+        
+        eyeballScaleY?.addEventListener('input', (e) => {
+            this.calibrationData.eyeballFrame.scaleY = parseFloat(e.target.value);
+            document.getElementById('eyeball-scale-y-value').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+            this.applyCalibration();
+        });
+        
+        eyeballRotation?.addEventListener('input', (e) => {
+            this.calibrationData.eyeballFrame.rotation = parseFloat(e.target.value);
+            document.getElementById('eyeball-rotation-value').textContent = `${e.target.value}°`;
+            this.applyCalibration();
+        });
+        
+        eyeballOpacity?.addEventListener('input', (e) => {
+            this.calibrationData.eyeballFrame.opacity = parseFloat(e.target.value);
+            document.getElementById('eyeball-opacity-value').textContent = `${Math.round(parseFloat(e.target.value) * 100)}%`;
+            this.applyCalibration();
+        });
+        
+        // Sidebar Frame Layer (with rotation and separate X/Y scaling)
+        const sidebarFrameOffsetX = document.getElementById('sidebar-frame-offset-x');
+        const sidebarFrameOffsetY = document.getElementById('sidebar-frame-offset-y');
+        const sidebarFrameScaleX = document.getElementById('sidebar-frame-scale-x');
+        const sidebarFrameScaleY = document.getElementById('sidebar-frame-scale-y');
+        const sidebarFrameRotation = document.getElementById('sidebar-frame-rotation');
+        const sidebarFrameOpacity = document.getElementById('sidebar-frame-opacity');
+        
+        sidebarFrameOffsetX?.addEventListener('input', (e) => {
+            this.calibrationData.sidebarFrame.offsetX = parseFloat(e.target.value);
+            document.getElementById('sidebar-frame-offset-x-value').textContent = `${e.target.value}px`;
+            this.applyCalibration();
+        });
+        
+        sidebarFrameOffsetY?.addEventListener('input', (e) => {
+            this.calibrationData.sidebarFrame.offsetY = parseFloat(e.target.value);
+            document.getElementById('sidebar-frame-offset-y-value').textContent = `${e.target.value}px`;
+            this.applyCalibration();
+        });
+        
+        sidebarFrameScaleX?.addEventListener('input', (e) => {
+            this.calibrationData.sidebarFrame.scaleX = parseFloat(e.target.value);
+            document.getElementById('sidebar-frame-scale-x-value').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+            this.applyCalibration();
+        });
+        
+        sidebarFrameScaleY?.addEventListener('input', (e) => {
+            this.calibrationData.sidebarFrame.scaleY = parseFloat(e.target.value);
+            document.getElementById('sidebar-frame-scale-y-value').textContent = `${parseFloat(e.target.value).toFixed(2)}x`;
+            this.applyCalibration();
+        });
+        
+        sidebarFrameRotation?.addEventListener('input', (e) => {
+            this.calibrationData.sidebarFrame.rotation = parseFloat(e.target.value);
+            document.getElementById('sidebar-frame-rotation-value').textContent = `${e.target.value}°`;
+            this.applyCalibration();
+        });
+        
+        sidebarFrameOpacity?.addEventListener('input', (e) => {
+            this.calibrationData.sidebarFrame.opacity = parseFloat(e.target.value);
+            document.getElementById('sidebar-frame-opacity-value').textContent = `${Math.round(parseFloat(e.target.value) * 100)}%`;
+            this.applyCalibration();
+        });
         
         // Map Layer
         attachLayerControls('map', 'mapLayer');

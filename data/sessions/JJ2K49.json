@@ -1,0 +1,35 @@
+{
+  "sessionId": "JJ2K49",
+  "hostUserId": "_zZ2_MyRSnmW-QIBAAAB",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1763867133926,
+  "startedAt": 1763867156778,
+  "savedAt": "2025-11-23T03:05:56.778Z",
+  "timestamp": 1763867156778,
+  "players": {
+    "_zZ2_MyRSnmW-QIBAAAB": {
+      "userId": "_zZ2_MyRSnmW-QIBAAAB",
+      "playerName": "sdfqq",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1763867133926,
+      "color": "red",
+      "isHost": true
+    },
+    "ZBC4YoT5CCpcFlrtAAAD": {
+      "userId": "ZBC4YoT5CCpcFlrtAAAD",
+      "playerName": "popi",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "blue",
+      "isHost": false,
+      "joinedAt": 1763867150723
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

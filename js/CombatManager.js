@@ -19,6 +19,38 @@
  * - Territories must be adjacent to attack
  * - Cannot attack own territories
  *
+ * COMBAT STATISTICS TRACKING:
+ * --------------------------
+ * This CombatManager automatically tracks detailed combat statistics for each player:
+ * 
+ * Per Player Tracking:
+ * - unitsLost: Total units this player has lost in all combats
+ * - unitsKilled: Total enemy units this player has destroyed
+ * 
+ * Integration with Dashboard:
+ * - Statistics are automatically broadcast after each battle round
+ * - Dashboard receives updates via three methods:
+ *   1. Custom events (combatStatsUpdated)
+ *   2. updateDashboardData() function call
+ *   3. StatisticsManager integration
+ * 
+ * Usage Example:
+ * ```javascript
+ * // In processBattle, stats are automatically tracked:
+ * // - Attacker loses 2 units, defender loses 3 units
+ * // - attackerPlayer.unitsLost += 2
+ * // - attackerPlayer.unitsKilled += 3 (defender's losses)
+ * // - defenderPlayer.unitsLost += 3
+ * // - defenderPlayer.unitsKilled += 2 (attacker's losses)
+ * 
+ * // Get stats for a specific player:
+ * const stats = combatManager.getPlayerCombatStats("Alice");
+ * console.log(`Alice lost ${stats.unitsLost}, killed ${stats.unitsKilled}`);
+ * 
+ * // Get all players' stats:
+ * const allStats = combatManager.getAllPlayerCombatStats();
+ * ```
+ *
  * ARCHITECTURE:
  * ------------
  * This CombatManager acts as the orchestration layer, coordinating:
@@ -26,6 +58,7 @@
  * - CombatValidator: Input validation and rule enforcement
  * - DirectCombat: Battle outcome determination
  * - CombatUI: User interface and visual feedback
+ * - Dashboard: Real-time statistics broadcasting
  *
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -108,6 +141,9 @@ class CombatManager {
       totalConquests: 0,
       totalArmiesLost: { attacker: 0, defender: 0 },
     };
+    
+    // Player-specific combat tracking for dashboard
+    this.playerCombatStats = {}; // { playerName: { unitsLost: 0, unitsKilled: 0 } }
 
     // Official Risk Rules Constants
     this.RULES = {
@@ -432,6 +468,29 @@ class CombatManager {
       // Update statistics
       this.combatStatistics.totalArmiesLost.attacker += attackerLosses;
       this.combatStatistics.totalArmiesLost.defender += defenderLosses;
+      
+      // Track player-specific combat stats
+      const attackerPlayer = attacker.owner;
+      const defenderPlayer = defender.owner;
+      
+      // Initialize player stats if not exists
+      if (!this.playerCombatStats[attackerPlayer]) {
+        this.playerCombatStats[attackerPlayer] = { unitsLost: 0, unitsKilled: 0 };
+      }
+      if (!this.playerCombatStats[defenderPlayer]) {
+        this.playerCombatStats[defenderPlayer] = { unitsLost: 0, unitsKilled: 0 };
+      }
+      
+      // Update attacker stats: their losses and their kills (defender's losses)
+      this.playerCombatStats[attackerPlayer].unitsLost += attackerLosses;
+      this.playerCombatStats[attackerPlayer].unitsKilled += defenderLosses;
+      
+      // Update defender stats: their losses and their kills (attacker's losses)
+      this.playerCombatStats[defenderPlayer].unitsLost += defenderLosses;
+      this.playerCombatStats[defenderPlayer].unitsKilled += attackerLosses;
+      
+      // Broadcast to dashboard
+      this._broadcastCombatStats();
 
       if (isConquest) {
         this.currentBattle.status = "conquest";
@@ -1040,6 +1099,85 @@ class CombatManager {
     }, 0);
 
     return Math.round(totalDuration / this.battleHistory.length);
+  }
+
+  /**
+   * Get combat statistics for a specific player
+   * Used by dashboard to display kills and deaths
+   * 
+   * @param {string} playerName - Name of the player
+   * @returns {Object} Player's combat stats { unitsLost, unitsKilled }
+   */
+  getPlayerCombatStats(playerName) {
+    if (!this.playerCombatStats[playerName]) {
+      return { unitsLost: 0, unitsKilled: 0 };
+    }
+    return { ...this.playerCombatStats[playerName] };
+  }
+
+  /**
+   * Get all players' combat statistics
+   * Returns object mapping player names to their combat stats
+   * 
+   * @returns {Object} All players' combat stats
+   */
+  getAllPlayerCombatStats() {
+    return { ...this.playerCombatStats };
+  }
+
+  /**
+   * Reset combat statistics for a specific player
+   * 
+   * @param {string} playerName - Name of the player
+   */
+  resetPlayerCombatStats(playerName) {
+    if (this.playerCombatStats[playerName]) {
+      this.playerCombatStats[playerName] = { unitsLost: 0, unitsKilled: 0 };
+    }
+  }
+
+  /**
+   * Reset all combat statistics
+   */
+  resetAllCombatStats() {
+    this.playerCombatStats = {};
+    this.combatStatistics = {
+      totalBattles: 0,
+      totalConquests: 0,
+      totalArmiesLost: { attacker: 0, defender: 0 },
+    };
+    this._log("📊 Combat statistics reset");
+  }
+
+  /**
+   * Broadcast combat statistics to dashboard
+   * Triggers dashboard update with current player combat stats
+   * 
+   * @private
+   */
+  _broadcastCombatStats() {
+    // Update StatisticsManager if available
+    if (window.statisticsManager && typeof window.statisticsManager.updateCombatStats === 'function') {
+      window.statisticsManager.updateCombatStats(this.playerCombatStats);
+    }
+    
+    // Trigger dashboard update if function exists
+    if (window.updateDashboardData && typeof window.updateDashboardData === 'function') {
+      window.updateDashboardData();
+    }
+    
+    // Broadcast via custom event for dashboard
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      const event = new CustomEvent('combatStatsUpdated', {
+        detail: {
+          playerCombatStats: this.playerCombatStats,
+          timestamp: Date.now()
+        }
+      });
+      window.dispatchEvent(event);
+    }
+    
+    this._log("📡 Combat stats broadcasted to dashboard", this.playerCombatStats);
   }
 
   /**

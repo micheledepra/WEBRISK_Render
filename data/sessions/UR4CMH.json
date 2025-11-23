@@ -1,0 +1,35 @@
+{
+  "sessionId": "UR4CMH",
+  "hostUserId": "aSmCE4owN597aqDFAAAB",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1763830359316,
+  "startedAt": 1763830376702,
+  "savedAt": "2025-11-22T16:52:56.703Z",
+  "timestamp": 1763830376703,
+  "players": {
+    "aSmCE4owN597aqDFAAAB": {
+      "userId": "aSmCE4owN597aqDFAAAB",
+      "playerName": "sadwq",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1763830359316,
+      "color": "orange",
+      "isHost": true
+    },
+    "7-qXHtbs-D9VY5Z2AAAD": {
+      "userId": "7-qXHtbs-D9VY5Z2AAAD",
+      "playerName": "vzxcz",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "red",
+      "isHost": false,
+      "joinedAt": 1763830369606
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

@@ -1,0 +1,314 @@
+{
+  "gameId": "risk-1766674521345",
+  "timestamp": 1766674521345,
+  "savedAt": "2025-12-25T14:55:21.389Z",
+  "phase": "startup",
+  "currentPlayer": "Elia",
+  "turnNumber": 0,
+  "players": {
+    "Elia": {
+      "name": "Elia",
+      "territories": 11,
+      "totalArmies": 11,
+      "armies": 11,
+      "continentBonus": 0,
+      "remainingArmies": 19,
+      "color": "#ff4444",
+      "isCurrentPlayer": true
+    },
+    "Miki": {
+      "name": "Miki",
+      "territories": 11,
+      "totalArmies": 11,
+      "armies": 11,
+      "continentBonus": 0,
+      "remainingArmies": 19,
+      "color": "#4444ff",
+      "isCurrentPlayer": false
+    },
+    "Simpo": {
+      "name": "Simpo",
+      "territories": 10,
+      "totalArmies": 10,
+      "armies": 10,
+      "continentBonus": 0,
+      "remainingArmies": 20,
+      "color": "#44ff44",
+      "isCurrentPlayer": false
+    },
+    "Sofi": {
+      "name": "Sofi",
+      "territories": 10,
+      "totalArmies": 10,
+      "armies": 10,
+      "continentBonus": 0,
+      "remainingArmies": 20,
+      "color": "#ffff44",
+      "isCurrentPlayer": false
+    }
+  },
+  "territories": {
+    "alaska": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "alaska"
+    },
+    "northwest territory": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "northwest territory"
+    },
+    "greenland": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "greenland"
+    },
+    "alberta": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "alberta"
+    },
+    "ontario": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "ontario"
+    },
+    "quebec": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "quebec"
+    },
+    "western united states": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "western united states"
+    },
+    "eastern united states": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "eastern united states"
+    },
+    "central america": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "north-america",
+      "displayName": "central america"
+    },
+    "venezuela": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "venezuela"
+    },
+    "brazil": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "brazil"
+    },
+    "peru": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "peru"
+    },
+    "argentina": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "south-america",
+      "displayName": "argentina"
+    },
+    "iceland": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "iceland"
+    },
+    "scandinavia": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "scandinavia"
+    },
+    "great britain": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "great britain"
+    },
+    "ukraine": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "ukraine"
+    },
+    "northern europe": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "northern europe"
+    },
+    "western europe": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "western europe"
+    },
+    "southern europe": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "europe",
+      "displayName": "southern europe"
+    },
+    "north africa": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "north africa"
+    },
+    "egypt": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "egypt"
+    },
+    "east africa": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "east africa"
+    },
+    "congo": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "congo"
+    },
+    "madagascar": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "madagascar"
+    },
+    "south africa": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "africa",
+      "displayName": "south africa"
+    },
+    "ural": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "ural"
+    },
+    "siberia": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "siberia"
+    },
+    "yakutsk": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "yakutsk"
+    },
+    "kamchatka": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "kamchatka"
+    },
+    "irkutsk": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "irkutsk"
+    },
+    "japan": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "japan"
+    },
+    "mongolia": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "mongolia"
+    },
+    "china": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "china"
+    },
+    "afghanistan": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "afghanistan"
+    },
+    "middle east": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "middle east"
+    },
+    "india": {
+      "owner": "Elia",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "india"
+    },
+    "siam": {
+      "owner": "Sofi",
+      "armies": 1,
+      "continent": "asia",
+      "displayName": "siam"
+    },
+    "indonesia": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "indonesia"
+    },
+    "new guinea": {
+      "owner": "Simpo",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "new guinea"
+    },
+    "western australia": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "western australia"
+    },
+    "eastern australia": {
+      "owner": "Miki",
+      "armies": 1,
+      "continent": "australia",
+      "displayName": "eastern australia"
+    }
+  },
+  "combatStats": {},
+  "statistics": {
+    "totalBattles": 0,
+    "totalArmiesDeployed": 0,
+    "gameStartTime": "2025-12-25T14:55:19.962Z",
+    "gameDuration": 1383
+  },
+  "version": "1.0",
+  "dataSource": "event-driven",
+  "lastUpdate": 1766674521345
+}

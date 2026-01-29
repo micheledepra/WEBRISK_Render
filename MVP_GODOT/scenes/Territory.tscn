@@ -1,0 +1,42 @@
+[gd_scene load_steps=2 format=3 uid="uid://b3nmw8qxuv7cp"]
+
+[ext_resource type="Script" path="res://scripts/Territory.gd" id="1_territory"]
+
+[node name="Territory" type="Node2D"]
+script = ExtResource("1_territory")
+
+[node name="TerritoryShape" type="Polygon2D" parent="."]
+color = Color(0.5, 0.5, 0.5, 1)
+antialiased = true
+
+[node name="ClickArea" type="Area2D" parent="."]
+input_pickable = true
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="ClickArea"]
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -60.0
+offset_top = -40.0
+offset_right = 60.0
+offset_bottom = -20.0
+text = "Territory"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="ArmyLabel" type="Label" parent="."]
+offset_left = -40.0
+offset_top = -10.0
+offset_right = 40.0
+offset_bottom = 15.0
+theme_override_font_sizes/font_size = 24
+text = "0"
+horizontal_alignment = 1
+
+[node name="OwnerLabel" type="Label" parent="."]
+offset_left = -60.0
+offset_top = 20.0
+offset_right = 60.0
+offset_bottom = 40.0
+theme_override_font_sizes/font_size = 10
+text = "Owner"
+horizontal_alignment = 1

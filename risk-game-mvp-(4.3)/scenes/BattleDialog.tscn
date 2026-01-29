@@ -1,0 +1,91 @@
+[gd_scene load_steps=2 format=3 uid="uid://dwq2h8vxb1m7n"]
+
+[ext_resource type="Script" path="res://scripts/BattleDialog.gd" id="1_battle"]
+
+[node name="BattleDialog" type="Window"]
+title = "Battle"
+initial_position = 2
+size = Vector2i(400, 300)
+script = ExtResource("1_battle")
+
+[node name="Panel" type="Panel" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TitleLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Battle in Progress"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="AttackerLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Attacker: Territory (10 armies)"
+
+[node name="DefenderLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Defender: Territory (8 armies)"
+
+[node name="HSeparator2" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="InstructionLabel" type="Label" parent="Panel/VBox"]
+layout_mode = 2
+text = "Enter remaining armies after battle:"
+autowrap_mode = 3
+
+[node name="AttackerInput" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/AttackerInput"]
+layout_mode = 2
+text = "Attacker Remaining:"
+
+[node name="SpinBox" type="SpinBox" parent="Panel/VBox/AttackerInput"]
+layout_mode = 2
+min_value = 1.0
+max_value = 100.0
+value = 1.0
+
+[node name="DefenderInput" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="Panel/VBox/DefenderInput"]
+layout_mode = 2
+text = "Defender Remaining:"
+
+[node name="SpinBox" type="SpinBox" parent="Panel/VBox/DefenderInput"]
+layout_mode = 2
+max_value = 100.0
+
+[node name="HSeparator3" type="HSeparator" parent="Panel/VBox"]
+layout_mode = 2
+
+[node name="Buttons" type="HBoxContainer" parent="Panel/VBox"]
+layout_mode = 2
+alignment = 1
+
+[node name="ResolveButton" type="Button" parent="Panel/VBox/Buttons"]
+layout_mode = 2
+text = "Resolve Battle"
+
+[node name="CancelButton" type="Button" parent="Panel/VBox/Buttons"]
+layout_mode = 2
+text = "Cancel"

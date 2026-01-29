@@ -1,0 +1,22 @@
+{
+  "sessionId": "M3VB8M",
+  "hostUserId": "Iot17W9lMexcSbyjAABJ",
+  "maxPlayers": 2,
+  "state": "waiting",
+  "createdAt": 1764005508599,
+  "savedAt": "2025-11-24T17:31:48.599Z",
+  "timestamp": 1764005508599,
+  "players": {
+    "Iot17W9lMexcSbyjAABJ": {
+      "userId": "Iot17W9lMexcSbyjAABJ",
+      "playerName": "oijjionkl",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "not_ready",
+      "joinedAt": 1764005508599
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

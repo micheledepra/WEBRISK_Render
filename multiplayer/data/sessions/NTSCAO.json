@@ -1,0 +1,35 @@
+{
+  "sessionId": "NTSCAO",
+  "hostUserId": "7w5drmKdwguUGxWYAABX",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1764006598135,
+  "startedAt": 1764006620144,
+  "savedAt": "2025-11-24T17:50:20.146Z",
+  "timestamp": 1764006620146,
+  "players": {
+    "7w5drmKdwguUGxWYAABX": {
+      "userId": "7w5drmKdwguUGxWYAABX",
+      "playerName": "sadas",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1764006598135,
+      "color": "blue",
+      "isHost": true
+    },
+    "aMkeT4poMzeNJZTZAABZ": {
+      "userId": "aMkeT4poMzeNJZTZAABZ",
+      "playerName": "dasdas",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "green",
+      "isHost": false,
+      "joinedAt": 1764006615376
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

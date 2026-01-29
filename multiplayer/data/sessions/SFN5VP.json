@@ -1,0 +1,22 @@
+{
+  "sessionId": "SFN5VP",
+  "hostUserId": "AAixNjQmjCGlaNigAAAx",
+  "maxPlayers": 2,
+  "state": "waiting",
+  "createdAt": 1764004983571,
+  "savedAt": "2025-11-24T17:23:03.571Z",
+  "timestamp": 1764004983571,
+  "players": {
+    "AAixNjQmjCGlaNigAAAx": {
+      "userId": "AAixNjQmjCGlaNigAAAx",
+      "playerName": "mpopi",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "not_ready",
+      "joinedAt": 1764004983571
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk - Multiplayer Game</title>
+    <link rel="icon" type="image/x-icon" href="../../favicon.ico">
+    
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+    
+    <!-- Multiplayer Components -->
+    <script src="MultiplayerClient.js"></script>
+    <script src="MultiplayerGameAdapter.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            overflow: hidden;
+        }
+        
+        #game-frame {
+            width: 100vw;
+            height: 100vh;
+            border: none;
+            display: block;
+        }
+        
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+        
+        #loading-screen.hidden {
+            display: none;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255, 215, 0, 0.3);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            color: #ffd700;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .loading-details {
+            color: #aaa;
+            font-size: 16px;
+        }
+        
+        #error-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+            padding: 20px;
+        }
+        
+        #error-screen.visible {
+            display: flex;
+        }
+        
+        .error-icon {
+            font-size: 80px;
+            color: #f44336;
+            margin-bottom: 20px;
+        }
+        
+        .error-title {
+            color: #f44336;
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .error-message {
+            color: #eee;
+            font-size: 18px;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .error-actions {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Connecting to game...</div>
+        <div class="loading-details" id="loading-details">Initializing multiplayer session</div>
+    </div>
+    
+    <!-- Error Screen -->
+    <div id="error-screen">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">Connection Error</div>
+        <div class="error-message" id="error-message">
+            Unable to connect to the multiplayer server. Please check your connection and try again.
+        </div>
+        <div class="error-actions">
+            <a href="lobby.html" class="btn btn-primary">Back to Lobby</a>
+            <button onclick="location.reload()" class="btn btn-secondary">Retry</button>
+        </div>
+    </div>
+    
+    <!-- Game Frame (loads the actual game) -->
+    <iframe id="game-frame" src="about:blank"></iframe>
+    
+    <script>
+        // Get session ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+        const loadSaveId = urlParams.get('loadSave');
+        
+        console.log('🎮 Multiplayer Game Wrapper Starting');
+        console.log('Session ID:', sessionId);
+        console.log('Load Save ID:', loadSaveId);
+        
+        if (!sessionId) {
+            showError('No session ID provided. Please start a game from the lobby.');
+        } else {
+            initializeMultiplayerGame();
+        }
+        
+        let multiplayerClient;
+        let multiplayerAdapter;
+
+        async function initializeMultiplayerGame() {
+            try {
+                // Update loading status
+                updateLoadingStatus('Connecting to server...');
+                
+                // Initialize multiplayer client - ASSIGN FIRST
+                const client = new MultiplayerClient('http://localhost:3000');
+                
+                // Connect to server
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Connection timeout'));
+                    }, 10000);
+                    
+                    client.on('connected', () => {
+                        clearTimeout(timeout);
+                        console.log('✅ Connected to multiplayer server');
+                        resolve();
+                    });
+                    
+                    client.on('error', (error) => {
+                        clearTimeout(timeout);
+                        reject(error);
+                    });
+                });
+                
+                // NOW assign to the global variable after connection succeeds
+                multiplayerClient = client;
+                
+                updateLoadingStatus('Joining game session...');
+                
+                // Join the session
+                await multiplayerClient.joinSession(sessionId);
+                
+                updateLoadingStatus('Loading game...');
+                
+                // Initialize the game adapter
+                multiplayerAdapter = new MultiplayerGameAdapter(multiplayerClient, sessionId);
+                
+                // Build the game URL with all parameters
+                let gameUrl = '../../game.html?' + urlParams.toString();
+                
+                // Load the game in the iframe
+                const gameFrame = document.getElementById('game-frame');
+                gameFrame.src = gameUrl;
+                
+                // Wait for game to load
+                gameFrame.onload = () => {
+                    console.log('✅ Game loaded in iframe');
+                    
+                    // Give the game time to initialize
+                    setTimeout(() => {
+                        initializeGameIntegration();
+                    }, 2000);
+                };
+                
+            } catch (error) {
+                console.error('❌ Failed to initialize multiplayer game:', error);
+                showError(`Failed to initialize multiplayer: ${error.message}`);
+            }
+        }
+        
+        function initializeGameIntegration() {
+            try {
+                const gameFrame = document.getElementById('game-frame');
+                const gameWindow = gameFrame.contentWindow;
+                
+                // Inject the multiplayer adapter into the game window
+                gameWindow.multiplayerAdapter = multiplayerAdapter;
+                gameWindow.multiplayerClient = multiplayerClient;
+                
+                // Initialize the adapter with the game instance
+                if (gameWindow.riskGame || gameWindow.gameState) {
+                    multiplayerAdapter.initialize(gameWindow.riskGame || gameWindow.gameState);
+                    
+                    // Hide loading screen
+                    document.getElementById('loading-screen').classList.add('hidden');
+                    
+                    console.log('✅ Multiplayer game fully initialized');
+                } else {
+                    // Game not ready yet, try again
+                    console.warn('⚠️ Game not ready, retrying...');
+                    setTimeout(initializeGameIntegration, 1000);
+                }
+            } catch (error) {
+                console.error('❌ Failed to integrate multiplayer:', error);
+                showError(`Failed to integrate multiplayer: ${error.message}`);
+            }
+        }
+        
+        function updateLoadingStatus(message) {
+            const detailsElement = document.getElementById('loading-details');
+            if (detailsElement) {
+                detailsElement.textContent = message;
+            }
+            console.log('📝', message);
+        }
+        
+        function showError(message) {
+            const errorScreen = document.getElementById('error-screen');
+            const errorMessage = document.getElementById('error-message');
+            const loadingScreen = document.getElementById('loading-screen');
+            
+            if (errorMessage) {
+                errorMessage.textContent = message;
+            }
+            
+            if (loadingScreen) {
+                loadingScreen.classList.add('hidden');
+            }
+            
+            if (errorScreen) {
+                errorScreen.classList.add('visible');
+            }
+        }
+        
+        // Handle window unload
+        window.addEventListener('beforeunload', () => {
+            if (multiplayerClient) {
+                multiplayerClient.disconnect();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "sessionId": "G9BGVF",
+  "hostUserId": "_bEVn2-5uBFsfe-pAAA1",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1763949334626,
+  "startedAt": 1763949356338,
+  "savedAt": "2025-11-24T01:55:56.339Z",
+  "timestamp": 1763949356339,
+  "players": {
+    "_bEVn2-5uBFsfe-pAAA1": {
+      "userId": "_bEVn2-5uBFsfe-pAAA1",
+      "playerName": "1234",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1763949334626,
+      "color": "yellow",
+      "isHost": true
+    },
+    "1vO_qxIzIktzbzChAAA3": {
+      "userId": "1vO_qxIzIktzbzChAAA3",
+      "playerName": "5678",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "purple",
+      "isHost": false,
+      "joinedAt": 1763949351744
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

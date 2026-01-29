@@ -642,6 +642,17 @@
         localStorage.setItem('multiplayerPlayerIndex', myPlayerIndex.toString());
         localStorage.setItem('multiplayerUserId', client.userId);
         
+        // Store userId and clientId for multiplayer turn-based system
+        sessionStorage.setItem('userId', currentPlayerName); // Player name as userId
+        sessionStorage.setItem('clientId', client.socket.id); // Socket ID as clientId
+        sessionStorage.setItem('multiplayerUserId', client.userId);
+        
+        console.log('🔑 Multiplayer credentials stored:', {
+          userId: currentPlayerName,
+          clientId: client.socket.id,
+          internalUserId: client.userId
+        });
+        
         // Individual player info (for reconnection)
         localStorage.setItem('lastPlayerName', currentPlayerName);
         localStorage.setItem('lastSessionCode', currentSession);
@@ -671,7 +682,7 @@
           params.set(`color${index + 1}`, allPlayerColors[index]);
         });
         
-        const gameUrl = `../../game.html?${params.toString()}`;
+        const gameUrl = `multiplayer-game.html?${params.toString()}`;
         console.log('🎮 Starting game with URL:', gameUrl);
         console.log('📦 Primary data in: sessionStorage.riskPlayers');
         

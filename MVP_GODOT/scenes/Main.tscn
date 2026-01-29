@@ -1,0 +1,64 @@
+[gd_scene load_steps=2 format=3 uid="uid://c7oqhb7vpxvjf"]
+
+[ext_resource type="Script" path="res://scripts/Main.gd" id="1_main"]
+
+[node name="Main" type="Node"]
+script = ExtResource("1_main")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(2500, 800)
+zoom = Vector2(0.4, 0.4)
+
+[node name="GameBoard" type="Node2D" parent="."]
+
+[node name="UIOverlay" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="Panel" parent="UIOverlay"]
+offset_right = 300.0
+offset_bottom = 200.0
+
+[node name="VBox" type="VBoxContainer" parent="UIOverlay/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TurnLabel" type="Label" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = "Turn: 0"
+horizontal_alignment = 1
+
+[node name="PhaseLabel" type="Label" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = "Phase: Startup"
+horizontal_alignment = 1
+
+[node name="PlayerLabel" type="Label" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = "Current Player: "
+horizontal_alignment = 1
+
+[node name="ArmiesLabel" type="Label" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = "Remaining Armies: 0"
+horizontal_alignment = 1
+
+[node name="InstructionsLabel" type="Label" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = "Select a territory..."
+autowrap_mode = 3
+
+[node name="EndPhaseButton" type="Button" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = "End Phase"
+
+[node name="MessageLabel" type="Label" parent="UIOverlay/Panel/VBox"]
+layout_mode = 2
+text = ""
+autowrap_mode = 3

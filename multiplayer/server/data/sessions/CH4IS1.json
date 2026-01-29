@@ -1,0 +1,35 @@
+{
+  "sessionId": "CH4IS1",
+  "hostUserId": "sS03wrCZdRJyD22VAAAF",
+  "maxPlayers": 3,
+  "state": "playing",
+  "createdAt": 1763925843744,
+  "startedAt": 1763925928465,
+  "savedAt": "2025-11-23T19:25:28.465Z",
+  "timestamp": 1763925928465,
+  "players": {
+    "sS03wrCZdRJyD22VAAAF": {
+      "userId": "sS03wrCZdRJyD22VAAAF",
+      "playerName": "kiki",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1763925843744,
+      "color": "red",
+      "isHost": true
+    },
+    "-7Gp7QAGGPl6l04oAAAH": {
+      "userId": "-7Gp7QAGGPl6l04oAAAH",
+      "playerName": "CH4IS1",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "purple",
+      "isHost": false,
+      "joinedAt": 1763925903196
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

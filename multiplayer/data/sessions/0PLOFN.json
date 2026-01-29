@@ -1,0 +1,22 @@
+{
+  "sessionId": "0PLOFN",
+  "hostUserId": "UWOdKS2tWFwO7_ipAAAz",
+  "maxPlayers": 2,
+  "state": "waiting",
+  "createdAt": 1764004994818,
+  "savedAt": "2025-11-24T17:23:14.818Z",
+  "timestamp": 1764004994818,
+  "players": {
+    "UWOdKS2tWFwO7_ipAAAz": {
+      "userId": "UWOdKS2tWFwO7_ipAAAz",
+      "playerName": "mlk",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "not_ready",
+      "joinedAt": 1764004994818
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

@@ -554,6 +554,12 @@ class GameState {
                 window.riskUI.updateUI();
             }
             
+            // CRITICAL: Refresh territory colors with dynamic opacity after state sync
+            if (window.colorManager && typeof window.colorManager.refreshAllTerritories === 'function') {
+                window.colorManager.refreshAllTerritories(this);
+                console.log('✅ Territory colors refreshed with dynamic opacity after server sync');
+            }
+            
         } catch (error) {
             console.error('❌ Error updating from server:', error);
         }

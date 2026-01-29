@@ -1,0 +1,35 @@
+{
+  "sessionId": "OTJHNB",
+  "hostUserId": "nWwDtvVXvMW12OSTAAAt",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1763949261275,
+  "startedAt": 1763949282230,
+  "savedAt": "2025-11-24T01:54:42.231Z",
+  "timestamp": 1763949282231,
+  "players": {
+    "nWwDtvVXvMW12OSTAAAt": {
+      "userId": "nWwDtvVXvMW12OSTAAAt",
+      "playerName": "ibkn",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1763949261275,
+      "color": "red",
+      "isHost": true
+    },
+    "cDY0e2BCQ_V-yAv6AAAv": {
+      "userId": "cDY0e2BCQ_V-yAv6AAAv",
+      "playerName": "kpmii",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "purple",
+      "isHost": false,
+      "joinedAt": 1763949277202
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

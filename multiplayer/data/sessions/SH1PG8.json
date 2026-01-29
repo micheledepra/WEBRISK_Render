@@ -1,0 +1,35 @@
+{
+  "sessionId": "SH1PG8",
+  "hostUserId": "h3M_-VEAru_pNkdsAAAJ",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1764002602096,
+  "startedAt": 1764002632211,
+  "savedAt": "2025-11-24T16:43:52.212Z",
+  "timestamp": 1764002632212,
+  "players": {
+    "h3M_-VEAru_pNkdsAAAJ": {
+      "userId": "h3M_-VEAru_pNkdsAAAJ",
+      "playerName": "mimkimka",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1764002602096,
+      "color": "red",
+      "isHost": true
+    },
+    "tRfK9BgTiBZoedgQAAAL": {
+      "userId": "tRfK9BgTiBZoedgQAAAL",
+      "playerName": "lucadavic",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "blue",
+      "isHost": false,
+      "joinedAt": 1764002624397
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

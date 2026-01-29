@@ -1,0 +1,35 @@
+{
+  "sessionId": "VU840Z",
+  "hostUserId": "TNaAUveNblBBb2aoAAAX",
+  "maxPlayers": 2,
+  "state": "playing",
+  "createdAt": 1763927956820,
+  "startedAt": 1763927977727,
+  "savedAt": "2025-11-23T19:59:37.727Z",
+  "timestamp": 1763927977727,
+  "players": {
+    "TNaAUveNblBBb2aoAAAX": {
+      "userId": "TNaAUveNblBBb2aoAAAX",
+      "playerName": "MIKI",
+      "socketId": null,
+      "playerIndex": 0,
+      "state": "ready",
+      "joinedAt": 1763927956820,
+      "color": "red",
+      "isHost": true
+    },
+    "sUzh3SbooxZzXiTcAAAZ": {
+      "userId": "sUzh3SbooxZzXiTcAAAZ",
+      "playerName": "Mario",
+      "socketId": null,
+      "playerIndex": 1,
+      "state": "ready",
+      "color": "blue",
+      "isHost": false,
+      "joinedAt": 1763927971019
+    }
+  },
+  "gameState": null,
+  "currentPlayerIndex": 0,
+  "turnNumber": 0
+}

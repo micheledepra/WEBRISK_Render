@@ -445,6 +445,18 @@ class MultiplayerClient {
   }
 
   /**
+   * Emit custom event to server
+   * Generic method for sending any event
+   */
+  emit(eventName, data) {
+    if (!this.socket) {
+      console.error('Cannot emit: Socket not connected');
+      return;
+    }
+    this.socket.emit(eventName, data);
+  }
+
+  /**
    * Register event callback
    */
   on(eventName, callback) {

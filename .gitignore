@@ -1,8 +1,7 @@
 # Dependencies
 node_modules/
 multiplayer/node_modules/
-package-lock.json
-multiplayer/package-lock.json
+# Note: package-lock.json files are kept for Render deployment consistency
 
 # Environment variables
 .env
